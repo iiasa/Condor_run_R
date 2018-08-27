@@ -2,15 +2,16 @@
 
 # Experiment names you gave to your Condor runs
 #EXPERIMENTS <- c("test1", "test2")
-EXPERIMENTS <- c("ICAO_Jet_aa_new")
+#EXPERIMENTS <- c("ICAO_Jet_aa_new")
 #EXPERIMENTS <- c("CIRA2_reg_all")
+#EXPERIMENTS <- c("limpopo1_original", "limpopo1_original_b", "limpopo1_affinity",, "limpopo1_affinity_b")
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
 #CLUSTER <- "83?" 
 CLUSTER <- "*"
 # Name of directory under Model/Condor with output files to analyze. Set to NULL to default to the experiment name.
-#SUBDIRECTORY <- NULL
-SUBDIRECTORY <- "Hugo"
-#warnSUBDIRECTORY <- "Petr"
+SUBDIRECTORY <- NULL
+#SUBDIRECTORY <- "Hugo"
+#SUBDIRECTORY <- "Petr"
 
 # Map known IP4s to hostnames for readability
 hostname_map <- c("147.125.99.211"="limpopo1",
@@ -34,9 +35,11 @@ for (experiment in EXPERIMENTS) {
     experiment_dir<-file.path(getwd(), "..", "Model", "Condor", SUBDIRECTORY)
   }
   if (!dir.exists(experiment_dir)) stop(str_glue("Experiment directory not found! Expected location: {experiment_dir}!"))
-  out_files <- c(out_files, list.files(path=experiment_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.out"), full.names=TRUE, recursive=FALSE))
-  log_files <- c(log_files, list.files(path=experiment_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.log"), full.names=TRUE, recursive=FALSE))
-  experiments <- c(experiments, rep(experiment, length(log_files)))
+  outs <- list.files(path=experiment_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.out"), full.names=TRUE, recursive=FALSE)
+  out_files <- c(out_files, outs)
+  logs <- list.files(path=experiment_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.log"), full.names=TRUE, recursive=FALSE)
+  log_files <- c(log_files, logs)
+  experiments <- c(experiments, rep(experiment, length(logs)))
 }
 if (length(out_files)!=length(log_files)) stop(str_glue("The number of .out ({length(out_files)}) and .log ({length(log_files)}) files should be equal!"))
 if (length(out_files)==0) stop(str_glue("No output files for CLUSTER {CLUSTER} found in {experiment_dir}!"))
@@ -104,7 +107,7 @@ for (root in roots) {
   lines <- grep("\\) \\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d Job executing on host: <\\d+\\.\\d+\\.\\d+\\.\\d+:", readLines(str_glue("{root}.log")), value=TRUE)
   if (length(lines) < 1) stop(str_glue("Cannot extract execution start time from {root}.log!"))
   if (length(lines) > 1) warning(str_glue("Execution started multiple times for job. Probably the initial execution host disconnected. See {root}.log!"))
-  # Pick the last execution start time since that's onthe host that can be assumed to have made it to the end.
+  # Pick the last execution start time since that's on the host that can be assumed to have made it to the end.
   mat <- str_match(lines[length(lines)], "\\) (\\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d) Job executing on host: <(\\d+\\.\\d+\\.\\d+\\.\\d+):")
   dtstr = mat[2]
   ipstr = mat[3]
@@ -128,7 +131,6 @@ for (root in roots) {
   # Use guessed year (can fail for leap days)
   terminate_times = c(terminate_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
 }
-
 
 # Calculate the execution latencies in seconds (difference between submit and execute times)
 latencies <- c()
