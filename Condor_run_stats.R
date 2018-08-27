@@ -4,7 +4,7 @@
 #EXPERIMENTS <- c("test1", "test2")
 #EXPERIMENTS <- c("ICAO_Jet_aa_new")
 #EXPERIMENTS <- c("CIRA2_reg_all")
-#EXPERIMENTS <- c("limpopo1_original", "limpopo1_original_b", "limpopo1_affinity",, "limpopo1_affinity_b")
+EXPERIMENTS <- c("limpopo1_original", "limpopo1_original_b", "limpopo1_affinity", "limpopo1_affinity_b")
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
 #CLUSTER <- "83?" 
 CLUSTER <- "*"
@@ -253,7 +253,8 @@ if ("Cplex Time 1 [s]" %in% names(jobs)) ggplot(jobs, aes(x=host, y=`Cplex Time 
 print(jobs %>%
         select(experiment, cluster, submitted, `duration [min]`) %>%
         group_by(cluster) %>%
-        summarize(submitted=min(submitted),
+        summarize(experiment=dplyr::first(experiment),
+                  submitted=min(submitted),
                   `not-aborted processes`=n(),
                   `min duration [min]`=min(`duration [min]`),
                   `mean duration [min]`=mean(`duration [min]`),
