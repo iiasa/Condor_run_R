@@ -4,7 +4,7 @@
 #EXPERIMENTS <- c("test1", "test2")
 #EXPERIMENTS <- c("ICAO_Jet_aa_new")
 #EXPERIMENTS <- c("CIRA2_reg_all")
-EXPERIMENTS <- c("limpopo1_original", "limpopo1_original_b", "limpopo1_affinity", "limpopo1_affinity_b")
+EXPERIMENTS <- c("limpopo1_original", "limpopo1_original_b", "limpopo1_affinity", "limpopo1_affinity_b", "limpopo1_affinity_c", "limpopo1_affinity_d")
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
 #CLUSTER <- "83?" 
 CLUSTER <- "*"
@@ -161,7 +161,7 @@ execution_times <- list()
 max_matches <- 0
 for (root in roots) {
   seconds <- c()
-  for (line in grep("^EXECUTION TIME\\s+=\\s+[0-9]+[.][0-9]+ SECONDS", readLines(str_glue("{root}.out")), value=TRUE)) {
+  for (line in grep("^EXECUTION TIME\\s+=\\s+[0-9]+[.][0-9]+ SECONDS", readLines(str_glue("{root}.out"), warn=FALSE), value=TRUE)) {
     seconds <- c(seconds, as.double(str_match(line, "^EXECUTION TIME\\s+=\\s+([0-9]+[.][0-9]+) SECONDS")[2]))
   }
   max_matches = max(max_matches, length(seconds))
@@ -186,7 +186,7 @@ cplex_times <- list()
 max_matches <- 0
 for (root in roots) {
   seconds <- c()
-  for (line in grep("^Cplex Time: [0-9]+[.][0-9]+sec", readLines(str_glue("{root}.out")), value=TRUE)) {
+  for (line in grep("^Cplex Time: [0-9]+[.][0-9]+sec", readLines(str_glue("{root}.out"), warn=FALSE), value=TRUE)) {
     seconds <- c(seconds, as.double(str_match(line, "^Cplex Time: ([0-9]+[.][0-9]+)sec")[2]))
   }
   max_matches = max(max_matches, length(seconds))
@@ -258,6 +258,7 @@ print(jobs %>%
                   `not-aborted processes`=n(),
                   `min duration [min]`=min(`duration [min]`),
                   `mean duration [min]`=mean(`duration [min]`),
+                  `stdev [min]`=sd(`duration [min]`),
                   `max duration [min]`=max(`duration [min]`)) %>%
         arrange(submitted)
 )
