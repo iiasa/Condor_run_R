@@ -4,7 +4,8 @@
 #EXPERIMENTS <- c("test1", "test2")
 #EXPERIMENTS <- c("ICAO_Jet_aa_new")
 #EXPERIMENTS <- c("CIRA2_reg_all")
-EXPERIMENTS <- c("limpopo1_original", "limpopo1_original_b", "limpopo1_affinity", "limpopo1_affinity_b", "limpopo1_affinity_c", "limpopo1_affinity_d")
+EXPERIMENTS <- c("limpopo1_original", "limpopo1_original_b", "limpopo1_affinity", "limpopo1_affinity_b", "limpopo1_affinity_c", "limpopo1_affinity_d", "limpopo1_affinity_e", "limpopo1_affinity_f")
+#EXPERIMENTS <- c("limpopo1_original", "limpopo1_affinity_e")
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
 #CLUSTER <- "83?" 
 CLUSTER <- "*"
@@ -242,11 +243,11 @@ for (name in names(jobs)) {
 
 # Plot
 ggplot(jobs, aes(x=process, y=`latency [min]`, color=run)) + geom_point()
-ggplot(jobs, aes(x=process, y=`duration [min]`, color=run)) + geom_point()
+ggplot(jobs, aes(x=process, y=`duration [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point()
 ggplot(jobs, aes(x=host, y=`duration [min]`, color=run)) + geom_point()
-if ("EXECUTION TIME 1 [s]" %in% names(jobs)) ggplot(jobs, aes(x=process, y=`EXECUTION TIME 1 [min]`, color=run)) + geom_point()
-if ("EXECUTION TIME 2 [s]" %in% names(jobs)) ggplot(jobs, aes(x=process, y=`EXECUTION TIME 2 [min]`, color=run)) + geom_point()
-if ("Cplex Time 1 [s]" %in% names(jobs)) ggplot(jobs, aes(x=process, y=`Cplex Time 1 [min]`, color=run)) + geom_point()
+if ("EXECUTION TIME 1 [s]" %in% names(jobs)) ggplot(jobs, aes(x=process, y=`EXECUTION TIME 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point()
+if ("EXECUTION TIME 2 [s]" %in% names(jobs)) ggplot(jobs, aes(x=process, y=`EXECUTION TIME 2 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point()
+if ("Cplex Time 1 [s]" %in% names(jobs)) ggplot(jobs, aes(x=process, y=`Cplex Time 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point()
 if ("Cplex Time 1 [s]" %in% names(jobs)) ggplot(jobs, aes(x=host, y=`Cplex Time 1 [min]`, color=run)) + geom_point()
 
 # Print summary
