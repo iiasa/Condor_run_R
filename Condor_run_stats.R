@@ -1,24 +1,26 @@
-# Extract and plot stats from output files of Condor runs
+#!/usr/bin/env Rscript
+# Plot and summarize performance stats from output files of Condor runs
+#
+# Usage: run this script from RStudio by setting up an RStudio project in
+# <GLOBIOM>/R. This makes <GLOBIOM>/R the working directory, as required.
+# This script reads the output files of the Condor runs to analyze from either
+# <GLOBIOM>/Model/Condor/<EXPERIMENTS[]>
+# or
+# <GLOBIOM>/Model/Condor/<SUBDIRECTORY>
+#
+# Beware that if you run this script from the command line via Rscript, the
+# plots are output to a PDF file. 
+#
+# Author: Albert Brouwer
 
 # Experiment names you gave to your Condor runs
-#EXPERIMENTS <- c("test1", "test2")
-#EXPERIMENTS <- c("ICAO_Jet_aa_new")
 #EXPERIMENTS <- c("limpopo1_affinity_half", "limpopo1_affinity_f", "limpopo1_affinity_double")
-#EXPERIMENTS <- c("CIRA2_reg_all")
-#EXPERIMENTS <- c("limpopo1_original", "limpopo1_original_b", "limpopo1_affinity", "limpopo1_affinity_b", "limpopo1_affinity_c", "limpopo1_affinity_d", "limpopo1_affinity_e", "limpopo1_affinity_f", "limpopo1_affinity_half")
-#EXPERIMENTS <- c("limpopo1_affinity_half", "limpopo1_affinity_f", "limpopo1_affinity_double")
-#EXPERIMENTS <- c("limpopo_all_5x8", "limpopo_all_5x16", "limpopo_all_5x24"
 EXPERIMENTS <- c("limpopo_nusw_5x8", "limpopo_nusw_5x16", "limpopo_nusw_5x24", "limpopo_nusw_4x32_30", "limpopo_nusw_500")
-#EXPERIMENTS <- c("limpopo_nusw_4x32_30")
-#EXPERIMENTS <- c("limpopo_nusw_5x8")
-#EXPERIMENTS <- c("limpopo1_original", "limpopo1_affinity_e")
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
 #CLUSTER <- "83?" 
 CLUSTER <- "*"
 # Name of directory under Model/Condor with output files to analyze. Set to NULL to default to the experiment name.
 SUBDIRECTORY <- NULL
-#SUBDIRECTORY <- "Hugo"
-#SUBDIRECTORY <- "Petr"
 
 # Map known IP4s to hostnames for readability
 hostname_map <- c("147.125.199.211"="limpopo1",
@@ -29,6 +31,10 @@ hostname_map <- c("147.125.199.211"="limpopo1",
 
 # Required packages
 library(tidyverse)
+
+# ----
+# Extract lists of jobs data from the output files of the specified Condor run(s). 
+# ----
 
 # Alphabetically list the .out and .log files resulting from the Condor run and check that they match up
 if (basename(getwd()) != "R") stop("Directory R at the GLOBIOM root must be the working directory! When running this script using RScript from the command line, CD into the R directory first. When running this script from RStudio, make sure R is the project directory.")
@@ -77,10 +83,14 @@ if (length(roots) == 0) stop("No jobs left to analyze!")
 # Pre-load the .log and .out files to speed up extraction
 log_files <- list()
 out_files <- list()
+print("Preloading...")
+pb <- txtProgressBar(min = 0, max = length(roots), style = 3)
 for (i in seq_along(roots)) {
+  setTxtProgressBar(pb, i)
   log_files[[i]] <- readLines(str_glue("{roots[[i]]}.log"))
   out_files[[i]] <- readLines(str_glue("{roots[[i]]}.out"), warn=FALSE)
 }
+close(pb)
 
 # Extract the experiment cluster strings and process numbers
 clusters = c()
@@ -245,9 +255,13 @@ if (max_matches > 0) {
   cplex_times <- list()
 }
 
-# Loaded .log and .out files are no longer needed
+# Extraction complete, loaded .log and .out files are no longer needed
 rm(log_files)
 rm(out_files)
+
+# ----
+# Collect the jobs data in a tibble / data frame
+# ----
 
 # Create a tibble with the collected jobs data
 jobs <- tibble(experiment=unlist(experiments),
@@ -283,9 +297,9 @@ for (name in names(jobs)) {
   }
 }
 
-# ---
-# Done constructing the Condor jobs tibble, proceed with analysis.
-# ---
+# ----
+# Analyse jobs data
+# ----
 
 # Plot
 ggplot(jobs, aes(x=process, y=host_slot, color=run)) + geom_point() + ggtitle("slot allocation")
