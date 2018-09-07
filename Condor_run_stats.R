@@ -12,10 +12,14 @@
 # plots are output to a PDF file. 
 #
 # Author: Albert Brouwer
+#
+# Todo:
+# Solver-independent extraction from "S O L V E      S U M M A R Y" sections
 
 # Experiment names you gave to your Condor runs
 #EXPERIMENTS <- c("limpopo1_affinity_half", "limpopo1_affinity_f", "limpopo1_affinity_double")
-EXPERIMENTS <- c("limpopo_nusw_5x8", "limpopo_nusw_5x16", "limpopo_nusw_5x24", "limpopo_nusw_4x32_30", "limpopo_nusw_500")
+#EXPERIMENTS <- c("limpopo_nusw_5x8", "limpopo_nusw_5x16", "limpopo_nusw_5x24", "limpopo_nusw_4x32_30", "limpopo_nusw_500")
+EXPERIMENTS <- c("test")
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
 #CLUSTER <- "83?" 
 CLUSTER <- "*"
@@ -32,9 +36,7 @@ hostname_map <- c("147.125.199.211"="limpopo1",
 # Required packages
 library(tidyverse)
 
-# ----
-# Extract lists of jobs data from the output files of the specified Condor run(s). 
-# ----
+# ---- Load the output files of the specified Condor run(s) ----
 
 # Alphabetically list the .out and .log files resulting from the Condor run and check that they match up
 if (basename(getwd()) != "R") stop("Directory R at the GLOBIOM root must be the working directory! When running this script using RScript from the command line, CD into the R directory first. When running this script from RStudio, make sure R is the project directory.")
@@ -83,7 +85,7 @@ if (length(roots) == 0) stop("No jobs left to analyze!")
 # Pre-load the .log and .out files to speed up extraction
 log_files <- list()
 out_files <- list()
-print("Preloading...")
+cat("Preloading...\n")
 pb <- txtProgressBar(min = 0, max = length(roots), style = 3)
 for (i in seq_along(roots)) {
   setTxtProgressBar(pb, i)
@@ -91,6 +93,8 @@ for (i in seq_along(roots)) {
   out_files[[i]] <- readLines(str_glue("{roots[[i]]}.out"), warn=FALSE)
 }
 close(pb)
+
+# ---- Extract lists of jobs data from the loaded output ----
 
 # Extract the experiment cluster strings and process numbers
 clusters = c()
@@ -193,11 +197,11 @@ for (i in seq_along(roots)) {
 
 # If available, obtain the Condor partitionable slot name from the .out file
 # To make it available, execute the following command in the batch file of your jobs:
-# echo _CONDOR_SLOT=%_CONDOR_SLOT%
+# echo _CONDOR_SLOT = %_CONDOR_SLOT%
 slots <- list()
 for (i in seq_along(roots)) {
-  slot_line = grep("^_CONDOR_SLOT=.*$", out_files[[i]], value=TRUE)
-  slot = str_match(slot_line, "^_CONDOR_SLOT=(.*)_\\d+$")[2] # clip off the dynamic slot number
+  slot_line = grep("^_CONDOR_SLOT ?= ?.*$", out_files[[i]], value=TRUE)
+  slot = str_match(slot_line, "^_CONDOR_SLOT ?= ?(.*)_\\d+$")[2] # clip off the dynamic slot number
   if (is.na(slot)) {
     slots[[i]] = NA
   } else {
@@ -259,9 +263,7 @@ if (max_matches > 0) {
 rm(log_files)
 rm(out_files)
 
-# ----
-# Collect the jobs data in a tibble / data frame
-# ----
+# ---- Collect the jobs data in a tibble / data frame -----
 
 # Create a tibble with the collected jobs data
 jobs <- tibble(experiment=unlist(experiments),
@@ -297,9 +299,7 @@ for (name in names(jobs)) {
   }
 }
 
-# ----
-# Analyse jobs data
-# ----
+# ---- Analyse jobs data ----
 
 # Plot
 ggplot(jobs, aes(x=process, y=host_slot, color=run)) + geom_point() + ggtitle("slot allocation")
@@ -314,31 +314,31 @@ if ("Cplex Time 1 [s]" %in% names(jobs)) ggplot(jobs, aes(x=host, y=`Cplex Time 
 
 # Print summary
 print(jobs %>%
-        select(experiment, cluster, submitted, `duration [min]`, `latency [h]`, `duration [h]`) %>%
-        group_by(cluster) %>%
-        summarize(experiment=dplyr::first(experiment),
-                  submitted=min(submitted),
-                  `processes`=n(),
-                  `mean [min]`=mean(`duration [min]`),
-                  `stdev [min]`=sd(`duration [min]`),
-                  `min [min]`=min(`duration [min]`),
-                  `max [min]`=max(`duration [min]`),
-                  `throughput [jobs/h]`=n()/max(`latency [h]`+`duration [h]`)) %>%
-        arrange(cluster)
+      select(experiment, cluster, submitted, `duration [min]`, `latency [h]`, `duration [h]`) %>%
+      group_by(cluster) %>%
+      summarize(experiment=dplyr::first(experiment),
+                submitted=min(submitted),
+                `processes`=n(),
+                `mean [min]`=mean(`duration [min]`),
+                `stdev [min]`=sd(`duration [min]`),
+                `min [min]`=min(`duration [min]`),
+                `max [min]`=max(`duration [min]`),
+                `throughput [jobs/h]`=n()/max(`latency [h]`+`duration [h]`)) %>%
+      arrange(cluster)
 )
 
 options(tibble.print_max = Inf)
 
 # Print summary grouped by job cluster and host
 print(jobs %>%
-        select(experiment, cluster, host, submitted, `duration [min]`) %>%
-        group_by(cluster,host) %>%
-        summarize(experiment=dplyr::first(experiment),
-                  submitted=min(submitted),
-                  `processes`=n(),
-                  `mean [min]`=mean(`duration [min]`),
-                  `stdev [min]`=sd(`duration [min]`),
-                  `min [min]`=min(`duration [min]`),
-                  `max [min]`=max(`duration [min]`)) %>%
-        arrange(host, cluster)
+      select(experiment, cluster, host, submitted, `duration [min]`) %>%
+      group_by(cluster,host) %>%
+      summarize(experiment=dplyr::first(experiment),
+                submitted=min(submitted),
+                `processes`=n(),
+                `mean [min]`=mean(`duration [min]`),
+                `stdev [min]`=sd(`duration [min]`),
+                `min [min]`=min(`duration [min]`),
+                `max [min]`=max(`duration [min]`)) %>%
+      arrange(host, cluster)
 )
