@@ -21,7 +21,7 @@
 #EXPERIMENTS <- c("limpopo_nusw_5x8", "limpopo_nusw_5x16", "limpopo_nusw_5x24", "limpopo_nusw_4x32_30", "limpopo_nusw_500")
 EXPERIMENTS <- c("test")
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
-#CLUSTER <- "83?" 
+#CLUSTER <- "191"
 CLUSTER <- "*"
 # Name of directory under Model/Condor with output files to analyze. Set to NULL to default to the experiment name.
 SUBDIRECTORY <- NULL
@@ -301,16 +301,16 @@ for (name in names(jobs)) {
 
 # ---- Analyse jobs data ----
 
-# Plot
-ggplot(jobs, aes(x=process, y=host_slot, color=run)) + geom_point() + ggtitle("slot allocation")
-ggplot(jobs, aes(x=process, y=`latency [min]`, color=run)) + geom_point(alpha=1/2) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1/2) + geom_segment(aes(xend=process, yend=`latency [min]`+`duration [min]`), alpha=1/5) + ylab("job start-stop time after submission [min]")
-ggplot(jobs, aes(x=process, y=`latency [min]`, color=slot)) + geom_point(alpha=1) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1) + geom_segment(aes(xend=process, yend=`latency [min]`+`duration [min]`), alpha=1) + ylab("job start-stop time after submission [min]")
-ggplot(jobs, aes(x=process, y=`duration [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point()
-ggplot(jobs, aes(x=host, y=`duration [min]`, color=run)) + geom_point()
-if ("EXECUTION TIME 1 [s]" %in% names(jobs)) ggplot(jobs, aes(x=process, y=`EXECUTION TIME 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point()
-if ("EXECUTION TIME 2 [s]" %in% names(jobs)) ggplot(jobs, aes(x=process, y=`EXECUTION TIME 2 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point()
-if ("Cplex Time 1 [s]" %in% names(jobs)) ggplot(jobs, aes(x=process, y=`Cplex Time 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point()
-if ("Cplex Time 1 [s]" %in% names(jobs)) ggplot(jobs, aes(x=host, y=`Cplex Time 1 [min]`, color=run)) + geom_point()
+# Plot, print() needed for sourcing because of https://yihui.name/en/2017/06/top-level-r-expressions/
+print(ggplot(jobs, aes(x=process, y=host_slot, color=run)) + geom_point() + ggtitle("slot allocation"))
+print(ggplot(jobs, aes(x=process, y=`latency [min]`, color=run)) + geom_point(alpha=1/2) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1/2) + geom_segment(aes(xend=process, yend=`latency [min]`+`duration [min]`), alpha=1/5) + ylab("job start-stop time after submission [min]"))
+print(ggplot(jobs, aes(x=process, y=`latency [min]`, color=slot)) + geom_point(alpha=1) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1) + geom_segment(aes(xend=process, yend=`latency [min]`+`duration [min]`), alpha=1) + ylab("job start-stop time after submission [min]"))
+print(ggplot(jobs, aes(x=process, y=`duration [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point())
+print(ggplot(jobs, aes(x=host, y=`duration [min]`, color=run)) + geom_point())
+if ("EXECUTION TIME 1 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=process, y=`EXECUTION TIME 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point())
+if ("EXECUTION TIME 2 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=process, y=`EXECUTION TIME 2 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point())
+if ("Cplex Time 1 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=process, y=`Cplex Time 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point())
+if ("Cplex Time 1 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=host, y=`Cplex Time 1 [min]`, color=run)) + geom_point())
 
 # Print summary
 print(jobs %>%
