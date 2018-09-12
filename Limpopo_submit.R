@@ -14,10 +14,8 @@
 #
 # Todo:
 # - Test access right on non-me-user created bundle subdirectory (through %USERNAME%)
-# - Seggregate reference files in experiment_dir by cluster
-#   * or have per-cluster subdirectories?
-# - Seggregate cached bundles of different runs
 # - Clean up cached bundles.
+# - Delete run batch file
 # - Should all the output really go into the gdx directory?
 # - Check termination status of jobs, flag aborted / evicted ones (capture condor_wait -status output)
 # - Make include and exclude patterns configurable
@@ -26,8 +24,9 @@
 # - More error handling for system2 commands
 # - Generate merging batch file as an alternative when not waiting for completion
 # - Collect historical use using condor_stats
-# - check that restart file is compatible with GAMS_VERSION
+# - Check that restart file is compatible with GAMS_VERSION
 # - Do merge in process instead of alphabetical order
+# - Implement custom condor_wait to monitor more state
 
 rm(list=ls())
 
@@ -37,7 +36,7 @@ rm(list=ls())
 # to this script. Lines with settings like the ones just below can be used
 # in the config file. No settings may be omitted from the config file.
 # Use / as path separator.
-EXPERIMENT = "test"
+EXPERIMENT = "test" # label for your experiment, pick something without spaces and valid as part of a filename
 NUMBER_OF_JOBS = 5
 REQUEST_MEMORY = 5000 # memory in MB to reserve for each job
 REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
@@ -46,6 +45,7 @@ RESTART_G00_FILE = "a4_limpopo.g00"
 GAMS_VERSION = "24.4" # must be installed on all limpopo machines
 GAMS_ARGUMENTS = "//nsim='%3' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cerr=5 pw 100"
 ADDITIONAL_INPUT_FILES = "" # comma-separated, leave empty if none
+RETAIN_BUNDLE = FALSE
 GET_G00_OUTPUT = FALSE
 GET_GDX_OUTPUT = TRUE
 GDX_OUTPUT_FORMAT_DEF_GMS_FILE = "outputs_limpopo.gms"
@@ -66,8 +66,8 @@ model_dir <- getwd()
 if (basename(model_dir) != 'Model') stop("Working directory should be the GLOBIOM Model subdirectory!")
 
 # Read config file if specified via an argument, check presence and types.
-args <- commandArgs(trailingOnly=TRUE)
-#args = c("..\\R\\config")
+#args <- commandArgs(trailingOnly=TRUE)
+args = c("..\\R\\config")
 if (length(args) == 0) {
   warning("No config file argument supplied, using default run settings.")
 } else if (length(args) == 1) {
@@ -84,14 +84,13 @@ if (length(args) == 0) {
 }
 
 # Check and massage specific config settings
-if (str_detect(EXPERIMENT, fixed(" "))) stop(str_glue("Configured EXPERIMENT name has forbidden space character(s)!"))
+if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT name has forbidden character(s)!"))
 if (str_sub(SCENARIO_GMS_FILE, -4) != ".gms") stop(str_glue("Configured SCENARIO_GMS_FILE has no .gms extension!"))
-if (str_detect(SCENARIO_GMS_FILE, fixed(" "))) stop(str_glue("Configured SCENARIO_GMS_FILE has forbidden space character(s)!"))
-prefix = str_glue(str_sub(SCENARIO_GMS_FILE, 1, -5), "-", EXPERIMENT)
+if (str_detect(SCENARIO_GMS_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCENARIO_GMS_FILE has forbidden character(s)!"))
 scenario_gms_path = file.path(model_dir, SCENARIO_GMS_FILE)
 if (!(file.exists(scenario_gms_path))) stop(str_glue('Configured SCENARIO_GMS_FILE "{SCENARIO_GMS_FILE}" does not exist relative to the Model directory!'))
 if (str_sub(RESTART_G00_FILE, -4) != ".g00") stop(str_glue("Configured RESTART_G00_FILE has no .g00 extension!"))
-if (str_detect(RESTART_G00_FILE, fixed(" "))) stop(str_glue("Configured RESTART_G00_FILE has forbidden space character(s)!"))
+if (str_detect(RESTART_G00_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured RESTART_G00_FILE has forbidden character(s)!"))
 restart_g00_path = file.path(model_dir, "t", RESTART_G00_FILE)
 if (!(file.exists(restart_g00_path))) stop(str_glue('Configured RESTART_G00_FILE "{RESTART_G00_FILE}" does not exist relative to the Model/t directory!'))
 version_match = str_match(GAMS_VERSION, "^(\\d+)[.]\\d+$")
@@ -114,14 +113,15 @@ if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT 
 
 # ---- Check status of limpopo servers ----
 
-# Collect available limpopos
-limpopos <- system2("condor_status", c("-compact", "-autoformat", "Machine", "-constraint", '"regexp(\\"^limpopo\\",machine)"'), stdout=TRUE)
-if (!is.null(attr(limpopos, "status")) && attr(limpopos, "status") != 0) stop("Cannot get Condor pool status")
-
 # Show limpopo status summary
 error_code = system2("condor_status", args=c("-compact", "-constraint", '"regexp(\\"^limpopo\\",machine)"'))
 if (error_code > 0) stop("Cannot show Condor pool status")
 cat("\n")
+
+# Collect available limpopos
+limpopos <- system2("condor_status", c("-compact", "-autoformat", "Machine", "-constraint", '"regexp(\\"^limpopo\\",machine)"'), stdout=TRUE)
+if (!is.null(attr(limpopos, "status")) && attr(limpopos, "status") != 0) stop("Cannot get Condor pool status")
+if (length(limpopos) == 0) stop("No limpopo servers available!")
 
 # ---- Bundle the model ----
 
@@ -132,6 +132,7 @@ temp_dir <- str_replace_all(temp_dir, fixed(fsep), .Platform$file.sep)
 
 # Set R-default and platform-specific paths to the submission bundle
 bundle <- "globiom_bundle.7z"
+unique_bundle <- str_glue('bundle_{str_replace_all(Sys.time(), "[- :]", "")}.7z') # To keep multiple cached bundles separate
 bundle_path <- file.path(temp_dir, bundle)
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
 if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing?"))
@@ -197,12 +198,12 @@ bat_template <- c(
   "set bundle_dir=e:\\condor\\bundles\\%USERNAME%",
   "if not exist %bundle_dir%\\ mkdir %bundle_dir% || exit /b %errorlevel%",
   "@echo on",
-  "move /Y %1 %bundle_dir%"
+  "move /Y {bundle} %bundle_dir%\\{unique_bundle}"
 ) 
 
 # Apply settings to bat template and write the .bat file
-bat_file <- file.path(temp_dir, str_glue("_seed.bat"))
-bat_conn<-file(bat_file, open="wt")
+seed_bat <- file.path(temp_dir, str_glue("_seed.bat"))
+bat_conn<-file(seed_bat, open="wt")
 writeLines(unlist(lapply(bat_template, str_glue)), bat_conn)
 close(bat_conn)
 
@@ -214,8 +215,7 @@ for (limpopo in limpopos) {
 
   # Define the Condor .job file template for bundle seeding
   job_template <- c(
-    "executable = {temp_dir}/_seed.bat",
-    "arguments = {bundle}",
+    "executable = {seed_bat}",
     "universe = vanilla",
     "",
     "# -- Job log, output, and error files",
@@ -251,30 +251,42 @@ for (limpopo in limpopos) {
   writeLines(unlist(lapply(job_template, str_glue)), job_conn)
   close(job_conn)
 
-  err <- system2("condor_submit", args=str_glue("{job_file}"), stdout=FALSE, stderr=TRUE)
-  cat(err, sep="\n")
-  if (!is.null(attr(err, "status")) && attr(err, "status") != 0) {
+  outerr <- system2("condor_submit", args=str_glue("{job_file}"), stdout=TRUE, stderr=TRUE)
+  if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
+    cat(outerr, sep="\n")
     stop("Submission of bundle seed job failed!")
   }
+  cluster <- as.integer(str_match(outerr[-1], "cluster (\\d+)[.]$")[2])
 }
+
+# Predict the cluster number for the actual run
+predicted_cluster <- cluster+1
 
 # Wait until all limpopos are seeded with a bundle
 cat("Waiting for bundle seeding to complete...\n")
 for (limpopo in limpopos) {
   hostname <- str_extract(limpopo, "^[^.]*")
-  log_file = file.path(temp_dir, str_glue("_seed_{hostname}.log"))
-  system2("condor_wait", args=log_file, stdout=NULL)
+  log_file <- file.path(temp_dir, str_glue("_seed_{hostname}.log"))
+  system2("condor_wait", args=log_file, stdout=NULL) #TODO: handle errors
 }
 cat("Seeding done: limpopo servers have received and cached the bundle.\n")
 cat("\n")
 
-# Remove the bundle locally
-file.remove(bundle_path)
+# Remove seeding temp files
+
+file.remove(seed_bat)
+for (limpopo in limpopos) {
+  hostname <- str_extract(limpopo, "^[^.]*")
+  file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.job")))
+  file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.log")))
+  file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.out")))
+  file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.err")))
+}
 
 # ---- Prepare files for run ----
 
 # Make sure that the Model/Condor directory exists
-condor_dir = file.path(model_dir, "Condor")
+condor_dir <- file.path(model_dir, "Condor")
 if (!dir.exists(condor_dir)) stop(str_glue("GLOBIOM Model/Condor directory not found!"))
 
 # Ensure that the experiment directory to hold the results exists
@@ -282,7 +294,7 @@ experiment_dir <- file.path(condor_dir, EXPERIMENT)
 if (!dir.exists(experiment_dir)) dir.create(experiment_dir)
 
 # Copy the configuration to the experiment directory for reference
-config_file <- file.path(experiment_dir, str_glue("_config_{EXPERIMENT}.txt"))
+config_file <- file.path(experiment_dir, str_glue("_config_{EXPERIMENT}_{predicted_cluster}.txt"))
 if (length(args) > 0) {
   if (!file.copy(args[1], config_file, overwrite=TRUE)) {
     stop(str_glue("Cannot copy the configuration file {args[1]} to {experiment_dir}")) 
@@ -301,14 +313,41 @@ if (length(args) > 0) {
 }
 
 # Copy the scenario GAMS script to the experiment directory
-if (!file.copy(file.path(model_dir, SCENARIO_GMS_FILE), file.path(experiment_dir, str_glue("{prefix}.gms")), overwrite=TRUE)) {
+scenario_prefix = str_glue("{str_sub(SCENARIO_GMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}")
+if (!file.copy(file.path(model_dir, SCENARIO_GMS_FILE), file.path(experiment_dir, str_glue("{scenario_prefix}.gms")), overwrite=TRUE)) {
   stop(str_glue("Cannot copy the configured SCENARIO_GMS_FILE file to {experiment_dir}")) 
 }
 
+# Define the template for the .bat file that specifies what should be run on the limpopo side for each job
+bat_template <- c(
+  "@echo off",
+  'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
+  "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
+  "mkdir gdx 2>NUL || exit /b %errorlevel%",
+  "@echo on",
+  "7za.exe x e:\\condor\\bundles\\{unique_bundle} -y > NUL || exit /b %errorlevel%",
+  "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe %1.gms -r .\\t\\%2 -s .\\t\\a6_out {GAMS_ARGUMENTS}",
+  "set gams_errorlevel=%errorlevel%",
+  "@echo off",
+  "cat %1.lst",
+  "if %gams_errorlevel% neq 0 (",
+  "  echo ERROR: GAMS failed with error code %gams_errorlevel%",
+  "  echo See https://www.gams.com/latest/docs/UG_GAMSReturnCodes.html#UG_GAMSReturnCodes_ListOfErrorCodes",
+  ")",
+  "sleep 1,", # Make it less likely that the .out file is truncated.
+  "exit /b %gams_errorlevel%"
+)
+
+# Apply settings to bat template and write the .bat file
+job_bat <- file.path(temp_dir, str_glue("_globiom_{EXPERIMENT}_{predicted_cluster}.bat"))
+bat_conn<-file(job_bat, open="wt")
+writeLines(unlist(lapply(bat_template, str_glue)), bat_conn)
+close(bat_conn)
+
 # Define the Condor .job file template for the run
 job_template <- c(
-  "executable = Condor/{EXPERIMENT}/_globiom_{EXPERIMENT}.bat",
-  "arguments = {prefix} {RESTART_G00_FILE} $(Process)",
+  "executable = {job_bat}",
+  "arguments = {scenario_prefix} {RESTART_G00_FILE} $(Process)",
   "universe = vanilla",
   "",
   "# -- Job log, output, and error files",
@@ -331,7 +370,7 @@ job_template <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_input_files = 7za.exe, Condor/{EXPERIMENT}/{prefix}.gms{ifelse(ADDITIONAL_INPUT_FILES!="", ", ", "")}{ADDITIONAL_INPUT_FILES}',
+  'transfer_input_files = 7za.exe, Condor/{EXPERIMENT}/{scenario_prefix}.gms{ifelse(ADDITIONAL_INPUT_FILES!="", ", ", "")}{ADDITIONAL_INPUT_FILES}',
   'transfer_output_files = {ifelse(GET_G00_OUTPUT, "t/a6_out.g00", "")}{ifelse(GET_G00_OUTPUT&&GET_GDX_OUTPUT, ", ", "")}{ifelse(GET_GDX_OUTPUT, "gdx/output.gdx", "")}',
   'transfer_output_remaps = "{ifelse(GET_G00_OUTPUT, str_glue("a6_out.g00 = t/a6_{EXPERIMENT}-$(Process).g00"), "")}{ifelse(GET_G00_OUTPUT&&GET_GDX_OUTPUT, "; ", "")}{ifelse(GET_GDX_OUTPUT, str_glue("output.gdx = gdx/output_{EXPERIMENT}_$(Cluster).$(Process).gdx"), "")}"',
   "",
@@ -341,45 +380,23 @@ job_template <- c(
 )
 
 # Apply settings to job template and write the .job file to use for submission
-job_file <- file.path(experiment_dir, str_glue("_globiom_{EXPERIMENT}.job"))
+job_file <- file.path(experiment_dir, str_glue("_globiom_{EXPERIMENT}_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(job_template, str_glue)), job_conn)
 close(job_conn)
 
-# Define the template for the .bat file that specifies what should be run on the limpopo side for each job
-bat_template <- c(
-  "@echo off",
-  'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
-  "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
-  "mkdir gdx 2>NUL || exit /b %errorlevel%",
-  "@echo on",
-  "7za.exe x e:\\condor\\bundles\\{bundle} -y > NUL || exit /b %errorlevel%",
-  "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe %1.gms -r .\\t\\%2 -s .\\t\\a6_out {GAMS_ARGUMENTS}",
-  "set gams_errorlevel=%errorlevel%",
-  "@echo off",
-  "cat %1.lst",
-  "if %gams_errorlevel% neq 0 (",
-  "  echo ERROR: GAMS failed with error code %gams_errorlevel%",
-  "  echo See https://www.gams.com/latest/docs/UG_GAMSReturnCodes.html#UG_GAMSReturnCodes_ListOfErrorCodes",
-  ")",
-  "sleep 1,", # Make it less likely that the .out file is truncated.
-  "exit /b %gams_errorlevel%"
-)
+# ---- Submit the run and remove or retain the bundle locally ----
 
-# Apply settings to bat template and write the .bat file
-bat_file <- file.path(experiment_dir, str_glue("_globiom_{EXPERIMENT}.bat"))
-bat_conn<-file(bat_file, open="wt")
-writeLines(unlist(lapply(bat_template, str_glue)), bat_conn)
-close(bat_conn)
-
-# ---- Submit the run ----
-
-outerr <- system2("condor_submit", args=str_glue("Condor{fsep}{EXPERIMENT}{fsep}_globiom_{EXPERIMENT}.job"), stdout=TRUE, stderr=TRUE)
+outerr <- system2("condor_submit", args=str_glue("Condor{fsep}{EXPERIMENT}{fsep}_globiom_{EXPERIMENT}_{predicted_cluster}.job"), stdout=TRUE, stderr=TRUE)
 cat(outerr, sep="\n")
 if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
   stop("Submission of Condor run failed!")
 }
 cluster <- as.integer(str_match(outerr[-1], "cluster (\\d+)[.]$")[2])
+if (cluster != predicted_cluster) warning(str_glue("Cluster {cluster} not equal to prediction {predicted_cluster}!"))
+
+if (RETAIN_BUNDLE) file.copy(bundle_path, file.path(experiment_dir, str_glue("bundle_{EXPERIMENT}_{predicted_cluster}.7z")))
+file.remove(bundle_path) # Removing the bundle unblocks this script for another submission
 
 # ---- Handle run results ----
 
@@ -387,8 +404,8 @@ cluster <- as.integer(str_match(outerr[-1], "cluster (\\d+)[.]$")[2])
 if (WAIT_FOR_RUN_COMPLETION) {
   cat("Waiting for run to complete...\n")
   for (job in 0:(NUMBER_OF_JOBS-1)) {
-    log_file = file.path(experiment_dir, str_glue("_globiom_{EXPERIMENT}_{cluster}.{job}.log"))
-    system2("condor_wait", args=log_file, stdout=NULL)
+    log_file <- file.path(experiment_dir, str_glue("_globiom_{EXPERIMENT}_{cluster}.{job}.log"))
+    system2("condor_wait", args=log_file, stdout=NULL) #TODO: handle errors
   }
   cat("All jobs are done.\n")
 }
