@@ -22,8 +22,6 @@
 #   * E.g. by capturing condor_wait -status output
 # - Get reasonable emails through notification option somehow
 # - Check that restart file is compatible with GAMS_VERSION
-# - Do merge in process instead of alphabetical order
-#   * Make job/process numbers have leading zeroes for fixed ceiling(log10(NUMBER_OF_JOBS+eps))-digit field width
 
 rm(list=ls())
 
@@ -65,7 +63,7 @@ if (basename(model_dir) != 'Model') stop("Working directory should be the GLOBIO
 
 # Read config file if specified via an argument, check presence and types.
 args <- commandArgs(trailingOnly=TRUE)
-#args = c("..\\R\\config")
+#args <- c("..\\R\\config")
 if (length(args) == 0) {
   warning("No config file argument supplied, using default run settings.")
 } else if (length(args) == 1) {
@@ -84,27 +82,28 @@ if (length(args) == 0) {
 # Check and massage specific config settings
 if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT name has forbidden character(s)!"))
 if (NUMBER_OF_JOBS < 1) stop("NUMBER_OF_JOBS should be at least one!")
+if (NUMBER_OF_JOBS > 1e6) stop("NUMBER_OF_JOBS should be at most one million!") # to not overflow fixed-field GDX file numbering.
 if (str_sub(SCENARIO_GMS_FILE, -4) != ".gms") stop(str_glue("Configured SCENARIO_GMS_FILE has no .gms extension!"))
 if (str_detect(SCENARIO_GMS_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCENARIO_GMS_FILE has forbidden character(s)!"))
-scenario_gms_path = file.path(model_dir, SCENARIO_GMS_FILE)
+scenario_gms_path <- file.path(model_dir, SCENARIO_GMS_FILE)
 if (!(file.exists(scenario_gms_path))) stop(str_glue('Configured SCENARIO_GMS_FILE "{SCENARIO_GMS_FILE}" does not exist relative to the Model directory!'))
 if (str_sub(RESTART_G00_FILE, -4) != ".g00") stop(str_glue("Configured RESTART_G00_FILE has no .g00 extension!"))
 if (str_detect(RESTART_G00_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured RESTART_G00_FILE has forbidden character(s)!"))
-restart_g00_path = file.path(model_dir, "t", RESTART_G00_FILE)
+restart_g00_path <- file.path(model_dir, "t", RESTART_G00_FILE)
 if (!(file.exists(restart_g00_path))) stop(str_glue('Configured RESTART_G00_FILE "{RESTART_G00_FILE}" does not exist relative to the Model/t directory!'))
-version_match = str_match(GAMS_VERSION, "^(\\d+)[.]\\d+$")
+version_match <- str_match(GAMS_VERSION, "^(\\d+)[.]\\d+$")
 if (is.na(version_match[1])) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
 if (as.integer(version_match[2]) < 24) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Version too old for Limpopo'))
 if (!str_detect(GAMS_ARGUMENTS, fixed("%3"))) stop("Configured GAMS_ARGUMENTS lack a %3 batch file argument expansion that must be used for passing the job/process number with which the scenario variant can be selected per-job.")
 if (ADDITIONAL_INPUT_FILES != "") {
   for (file in str_split(ADDITIONAL_INPUT_FILES, ",")[[1]]) {
-    file = str_trim(file)
+    file <- str_trim(file)
     if (!(file.exists(file.path(model_dir, file)))) stop(str_glue('Misconfigured ADDITIONAL_INPUT_FILES: "{file}" does not exist relative to the Model directory!'))
   }
 }
 if (str_sub(GDX_OUTPUT_FORMAT_DEF_GMS_FILE, -4) != ".gms") stop(str_glue("Configured GDX_OUTPUT_FORMAT_DEF_GMS_FILE has no .gms extension!"))
 if (str_detect(GDX_OUTPUT_FORMAT_DEF_GMS_FILE, fixed(" "))) stop(str_glue("Configured GDX_OUTPUT_FORMAT_DEF_GMS_FILE has forbidden space character(s)!"))
-gdx_output_format_def_gms_path = file.path(model_dir, GDX_OUTPUT_FORMAT_DEF_GMS_FILE)
+gdx_output_format_def_gms_path <- file.path(model_dir, GDX_OUTPUT_FORMAT_DEF_GMS_FILE)
 if (!(file.exists(gdx_output_format_def_gms_path))) stop(str_glue('Configured GDX_OUTPUT_FORMAT_DEF_GMS_FILE "{GDX_OUTPUT_FORMAT_DEF_GMS_FILE}" does not exist relative to the Model directory!'))
 if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
 if (MERGE_GDX_OUTPUT && !GET_GDX_OUTPUT) stop("Cannot MERGE_GDX_OUTPUT without first doing GET_GDX_OUTPUT!")
@@ -114,7 +113,7 @@ if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX
 # ---- Check status of limpopo servers ----
 
 # Show limpopo status summary
-error_code = system2("condor_status", args=c("-compact", "-constraint", '"regexp(\\"^limpopo\\",machine)"'))
+error_code <- system2("condor_status", args=c("-compact", "-constraint", '"regexp(\\"^limpopo\\",machine)"'))
 if (error_code > 0) stop("Cannot show Condor pool status")
 cat("\n")
 
@@ -126,7 +125,7 @@ if (length(limpopos) == 0) stop("No limpopo servers available!")
 # ---- Bundle the model ----
 
 # Determine the platform file separator and the temp directory with R-default separators
-temp_dir = tempdir()
+temp_dir <- tempdir()
 fsep <- ifelse(str_detect(temp_dir, fixed("\\") ), "\\", ".Platform$file.sep") # Get the platform file separator: .Platform$file.sep is set to / on Windows
 temp_dir <- str_replace_all(temp_dir, fixed(fsep), .Platform$file.sep)
 temp_dir_parent <- dirname(temp_dir) # Remove the R-session-specific random subdirectory: identical between sessions
@@ -138,7 +137,7 @@ bundle_path <- file.path(temp_dir_parent, bundle) # Identical between sessions
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
 if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing?"))
 
-# Define a function to check and sanitize 7zip output
+# Define a function to check and sanitize 7zip output and return the overal byte size of the input files
 handle_7zip <- function(out) {
   if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
     cat(out, sep="\n")
@@ -146,12 +145,16 @@ handle_7zip <- function(out) {
   } 
   else {
     cat(out[grep("^Scanning the drive:", out)+1], sep="\n")
-    cat(grep("^Archive size:", out, value=TRUE), sep="\n")
+    size_line <- grep("^Archive size:", out, value=TRUE)
+    cat(size_line, sep="\n")
+    byte_size <- as.integer(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
+    if (is.na(byte_size)) stop("7zip archive size extraction failed!") # 7zip output format has changed?
+    return(byte_size)
   }
 }
 
 cat("Compressing model files into job bundle...\n")
-handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
+model_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
   args=c("a",
     "-mx1",
     "-bb0",
@@ -180,7 +183,7 @@ handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
 cat("\n")
 
 cat("Adding restart file to job bundle...\n")
-handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
+restart_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
   args=c("a",
     str_glue("{bundle_platform_path}"),
     str_glue("t{fsep}{RESTART_G00_FILE}") # t directory is excluded, make an exception
@@ -268,7 +271,7 @@ cat("Waiting for bundle seeding to complete...\n")
 for (limpopo in limpopos) {
   hostname <- str_extract(limpopo, "^[^.]*")
   log_file <- file.path(temp_dir, str_glue("_seed_{hostname}.log"))
-  outerr = system2("condor_wait", args=log_file, stdout=TRUE, stderr=TRUE)
+  outerr <- system2("condor_wait", args=log_file, stdout=TRUE, stderr=TRUE)
   if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
     cat(outerr, sep="\n")
     stop("condor_wait failed!")
@@ -292,7 +295,10 @@ for (limpopo in limpopos) {
 
 # Make sure that the Model/Condor directory exists
 condor_dir <- file.path(model_dir, "Condor")
-if (!dir.exists(condor_dir)) stop(str_glue("GLOBIOM Model/Condor directory not found!"))
+if (!dir.exists(condor_dir)) {
+  invisible(file.remove(bundle_path))
+  stop(str_glue("GLOBIOM Model/Condor directory not found!"))
+}
 
 # Ensure that the experiment directory to hold the results exists
 experiment_dir <- file.path(condor_dir, EXPERIMENT)
@@ -302,6 +308,7 @@ if (!dir.exists(experiment_dir)) dir.create(experiment_dir)
 config_file <- file.path(experiment_dir, str_glue("_config_{EXPERIMENT}_{predicted_cluster}.txt"))
 if (length(args) > 0) {
   if (!file.copy(args[1], config_file, overwrite=TRUE)) {
+    invisible(file.remove(bundle_path))
     stop(str_glue("Cannot copy the configuration file {args[1]} to {experiment_dir}")) 
   }
 } else {
@@ -318,8 +325,9 @@ if (length(args) > 0) {
 }
 
 # Copy the scenario GAMS script to the experiment directory
-scenario_prefix = str_glue("{str_sub(SCENARIO_GMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}")
+scenario_prefix <- str_glue("{str_sub(SCENARIO_GMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}")
 if (!file.copy(file.path(model_dir, SCENARIO_GMS_FILE), file.path(experiment_dir, str_glue("{scenario_prefix}.gms")), overwrite=TRUE)) {
+  invisible(file.remove(bundle_path))
   stop(str_glue("Cannot copy the configured SCENARIO_GMS_FILE file to {experiment_dir}")) 
 }
 
@@ -354,10 +362,11 @@ job_template <- c(
   "executable = {job_bat}",
   "arguments = {scenario_prefix} {RESTART_G00_FILE} $(Process)",
   "universe = vanilla",
+  'sortable_process = $$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(Process))),-6)])', # 6-digit leading-zeroes field so as to have number order coincide with alphabetical order for .gdx merging.
   "",
   "# -- Job log, output, and error files",
-  "log = Condor/{EXPERIMENT}/_globiom_{EXPERIMENT}_$(Cluster).$(Process).log",
-  "output = Condor/{EXPERIMENT}/_globiom_{EXPERIMENT}_$(Cluster).$(Process).out",
+  "log = Condor/{EXPERIMENT}/_globiom_{EXPERIMENT}_$(Cluster).$(Process).log", # don't use $(sortable_process) here: Condor creates the log file before it can resolve the expansion
+  "output = Condor/{EXPERIMENT}/_globiom_{EXPERIMENT}_$(Cluster).$(Process).out", # don't use $(sortable_process) here: the stats script does not expect it
   "stream_output = True",
   "error = Condor/{EXPERIMENT}/_globiom_{EXPERIMENT}_$(Cluster).$(Process).err",
   "stream_error = True",
@@ -368,7 +377,8 @@ job_template <- c(
   "  ( GLOBIOM =?= True ) && \\",
   "  ( ( TARGET.Machine == \"{str_c(limpopos, collapse='\" ) || ( TARGET.Machine == \"')}\") )",
   "request_memory = {REQUEST_MEMORY}",
-  "request_cpus = {REQUEST_CPUS}",     # Number of "CPUs" (hardware threads) to reserve for each job
+  "request_cpus = {REQUEST_CPUS}", # Number of "CPUs" (hardware threads) to reserve for each job
+  "request_disk = {ceiling((model_byte_size+restart_byte_size)/1024)+2*1024*1024}", # KiB, decompressed bundle content + 2GiB for output (.g00, .gdx, .lst, ...)
   "",
   '+IIASAGroup = "ESM"', # Identifies you as part of the group allowed to use ESM cluster
   "run_as_owner = True", # Jobs will run as you, so you'll have access to H: and your own temp space
@@ -377,7 +387,7 @@ job_template <- c(
   "when_to_transfer_output = ON_EXIT",
   'transfer_input_files = 7za.exe, Condor/{EXPERIMENT}/{scenario_prefix}.gms{ifelse(ADDITIONAL_INPUT_FILES!="", ", ", "")}{ADDITIONAL_INPUT_FILES}',
   'transfer_output_files = {ifelse(GET_G00_OUTPUT, "t/a6_out.g00", "")}{ifelse(GET_G00_OUTPUT&&GET_GDX_OUTPUT, ", ", "")}{ifelse(GET_GDX_OUTPUT, "gdx/output.gdx", "")}',
-  'transfer_output_remaps = "{ifelse(GET_G00_OUTPUT, str_glue("a6_out.g00 = t/a6_{EXPERIMENT}-$(Process).g00"), "")}{ifelse(GET_G00_OUTPUT&&GET_GDX_OUTPUT, "; ", "")}{ifelse(GET_GDX_OUTPUT, str_glue("output.gdx = gdx/output_{EXPERIMENT}_$(Cluster).$(Process).gdx"), "")}"',
+  'transfer_output_remaps = "{ifelse(GET_G00_OUTPUT, str_glue("a6_out.g00 = t/a6_{EXPERIMENT}-$(Process).g00"), "")}{ifelse(GET_G00_OUTPUT&&GET_GDX_OUTPUT, "; ", "")}{ifelse(GET_GDX_OUTPUT, str_glue("output.gdx = gdx/output_{EXPERIMENT}_$(Cluster).$(sortable_process).gdx"), "")}"',
   "",
   "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete. And Error does not seem to catch execution errors.
   "",
@@ -390,11 +400,12 @@ job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(job_template, str_glue)), job_conn)
 close(job_conn)
 
-# ---- Submit the run and remove or retain the bundle and job batch file locally ----
+# ---- Submit the run and remove or retain the bundle locally ----
 
 outerr <- system2("condor_submit", args=str_glue("Condor{fsep}{EXPERIMENT}{fsep}_globiom_{EXPERIMENT}_{predicted_cluster}.job"), stdout=TRUE, stderr=TRUE)
 cat(outerr, sep="\n")
 if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
+  invisible(file.remove(bundle_path))
   stop("Submission of Condor run failed!")
 }
 cluster <- as.integer(str_match(outerr[-1], "cluster (\\d+)[.]$")[2])
@@ -412,7 +423,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   cat("Waiting for run to complete...\n")
   for (job in 0:(NUMBER_OF_JOBS-1)) {
     log_file <- file.path(experiment_dir, str_glue("_globiom_{EXPERIMENT}_{cluster}.{job}.log"))
-    outerr = system2("condor_wait", args=log_file, stdout=TRUE, stderr=TRUE)
+    outerr <- system2("condor_wait", args=log_file, stdout=TRUE, stderr=TRUE)
     if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
       cat(outerr, sep="\n")
       stop("condor_wait failed!")
@@ -431,7 +442,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
     if (REMOVE_MERGED_GDX_FILES) {
       setwd(file.path(model_dir, "gdx"))
       for (job in 0:(NUMBER_OF_JOBS-1)) {
-        file.remove(str_glue("output_{EXPERIMENT}_{cluster}.{job}.gdx"))
+        file.remove(str_glue('output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx'))
       }
       setwd(model_dir)
     }
