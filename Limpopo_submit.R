@@ -13,18 +13,14 @@
 # Author: Albert Brouwer
 #
 # Todo:
-# - Test access rights on non-me-user created bundle subdirectory (through %USERNAME%)
-# - Clean up cached bundles.
-# - Clean up old job batch files in temp resulting from non-wait runs
+# - Check available GDX files before merge
+# W Clean up cached bundles (WIP Helmuth)
 # - Make include and exclude patterns configurable
 # - Handle jobs put on hold on account of error instead of waiting indefinately, flag aborted / evicted ones 
 #   * E.g. by implementing custom equivalent of condor_wait
 #   * E.g. by capturing condor_wait -status output
-# - Get reasonable emails through notification option somehow
 # - Check that restart file is compatible with GAMS_VERSION
-# - Test running on Linux
-# - extract maximum "	4110  -  MemoryUsage of job (MB)" from logs.
-#   * 	   Memory (MB)          :     4110     5000      5000
+# - Test submitting from Linux
 
 rm(list=ls())
 
@@ -35,7 +31,7 @@ rm(list=ls())
 # in the config file. No settings may be omitted from the config file.
 # Use / as path separator.
 EXPERIMENT = "test" # label for your experiment, pick something without spaces and valid as part of a filename
-JOBS = c(0,1,2,3)
+JOBS = c(0:3,7,10)
 REQUEST_MEMORY = 5000 # memory in MB to reserve for each job
 REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 SCENARIO_GMS_FILE = "6_scenarios_limpopo.gms"
@@ -76,7 +72,7 @@ if (length(args) == 0) {
     name <- config_names[i]
     if (!exists(name)) stop(str_glue("{name} not set in {args[1]}!"))
     type <- typeof(get(name))
-    if (type != config_types[[i]]) stop(str_glue("{name} set to wrong type in {args[1]}, type should be {config_types[[i]]}"))
+    if (type != config_types[[i]] && name != "JOBS") stop(str_glue("{name} set to wrong type in {args[1]}, type should be {config_types[[i]]}"))
   }
 } else {
   stop("Multiple arguments provided! Expecting at most a single config file argument.")
@@ -84,10 +80,12 @@ if (length(args) == 0) {
 
 # Check and massage specific config settings
 if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT name has forbidden character(s)!"))
-if (length(JOBS) < 1) stop("There should be at least on job in JOBS!")
+if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
+if (length(JOBS) < 1) stop("There should be at least one job in JOBS!")
 if (!all(JOBS == floor(JOBS))) stop("Job numbers in JOBS must be whole numbers!")
 if (!all(JOBS < 1e6)) stop("Job numbers in JOBS must be less than 1000000 (one million)!")
 if (!all(JOBS >= 0)) stop("Job numbers in JOBS may not be negative!")
+if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
 if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
 if (str_sub(SCENARIO_GMS_FILE, -4) != ".gms") stop(str_glue("Configured SCENARIO_GMS_FILE has no .gms extension!"))
 if (str_detect(SCENARIO_GMS_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCENARIO_GMS_FILE has forbidden character(s)!"))
@@ -118,19 +116,19 @@ if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX
 
 # Get username in a way that works on MacOS, Linux, and Windows
 username <- Sys.getenv("USERNAME")
-if (username == "") username = Sys.getenv("USER")
+if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
 # ---- Check status of limpopo servers ----
 
 # Show limpopo status summary
 error_code <- system2("condor_status", args=c("-compact", "-constraint", '"regexp(\\"^limpopo\\",machine)"'))
-if (error_code > 0) stop("Cannot show Condor pool status")
+if (error_code > 0) stop("Cannot show Condor pool status!")
 cat("\n")
 
 # Collect available limpopos
 limpopos <- system2("condor_status", c("-compact", "-autoformat", "Machine", "-constraint", '"regexp(\\"^limpopo\\",machine)"'), stdout=TRUE)
-if (!is.null(attr(limpopos, "status")) && attr(limpopos, "status") != 0) stop("Cannot get Condor pool status")
+if (!is.null(attr(limpopos, "status")) && attr(limpopos, "status") != 0) stop("Cannot get Condor pool status!")
 if (length(limpopos) == 0) stop("No limpopo servers available!")
 
 # ---- Bundle the model ----
@@ -202,6 +200,10 @@ restart_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
 ))
 cat("\n")
 
+# Estimate the amount of disk to request for run, in KiB
+# decompressed bundle content + 2GiB for output (.g00, .gdx, .lst, ...)
+request_disk <- ceiling((model_byte_size+restart_byte_size)/1024)+2*1024*1024
+
 # Determine the bundle size in KiB
 bundle_size <- as.integer(floor(file.info(bundle_path)$size/1024))
 
@@ -224,6 +226,7 @@ writeLines(unlist(lapply(bat_template, str_glue)), bat_conn)
 close(bat_conn)
 
 # Transfer bundle to each available limpopo server
+cluster_regexp <- "submitted to cluster (\\d+)[.]$"
 for (limpopo in limpopos) {
 
   hostname <- str_extract(limpopo, "^[^.]*")
@@ -272,7 +275,6 @@ for (limpopo in limpopos) {
     cat(outerr, sep="\n")
     stop("Submission of bundle seed job failed!")
   }
-  cluster_regexp <- "submitted to cluster (\\d+)[.]$"
   cluster <- as.integer(str_match(grep(cluster_regexp, outerr, value=TRUE), cluster_regexp)[2])
 }
 
@@ -346,14 +348,16 @@ if (!file.copy(file.path(model_dir, SCENARIO_GMS_FILE), file.path(experiment_dir
 
 # Define the template for the .bat file that specifies what should be run on the limpopo side for each job
 # Note that the use of POSIX commands: requires MKS Toolkit of GAMS gbin to be on-path on the limpopo side.
+# Limpopo-side automated bundle cleanup is assumed to be active:
+# https://mis.iiasa.ac.at/portal/page/portal/IIASA/Content/TicketS/Ticket?defpar=1%26pWFLType=24%26pItemKey=103034818402942720
 bat_template <- c(
   "@echo off",
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
   "mkdir gdx 2>NUL || exit /b %errorlevel%",
   "@echo on",
-  "touch e:\\condor\\bundles\\{username}\\{unique_bundle}", # prevents cached bundle from being cleaned up while jobs are started from it
-  '7za.exe x e:\\condor\\bundles\\{username}\\{unique_bundle} -y > NUL || exit /b %errorlevel%',
+  "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
+  '7za.exe x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
   "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe %1.gms -logOption=3 -r .\\t\\%2 -s .\\t\\a6_out {GAMS_ARGUMENTS}",
   "set gams_errorlevel=%errorlevel%",
   "@echo off",
@@ -395,7 +399,7 @@ job_template <- c(
   "  ( ( TARGET.Machine == \"{str_c(limpopos, collapse='\" ) || ( TARGET.Machine == \"')}\") )",
   "request_memory = {REQUEST_MEMORY}",
   "request_cpus = {REQUEST_CPUS}", # Number of "CPUs" (hardware threads) to reserve for each job
-  "request_disk = {ceiling((model_byte_size+restart_byte_size)/1024)+2*1024*1024}", # KiB, decompressed bundle content + 2GiB for output (.g00, .gdx, .lst, ...)
+  "request_disk = {request_disk}",
   "",
   '+IIASAGroup = "ESM"', # Identifies you as part of the group allowed to use ESM cluster
   "run_as_owner = True", # Jobs will run as you, so you'll have access to H: and your own temp space
@@ -417,7 +421,7 @@ job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(job_template, str_glue)), job_conn)
 close(job_conn)
 
-# ---- Submit the run and remove or retain the bundle locally ----
+# ---- Submit the run and clean up temp files ----
 
 outerr <- system2("condor_submit", args=str_glue("Condor{fsep}{EXPERIMENT}{fsep}_globiom_{EXPERIMENT}_{predicted_cluster}.job"), stdout=TRUE, stderr=TRUE)
 cat(outerr, sep="\n")
@@ -425,14 +429,22 @@ if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
   invisible(file.remove(bundle_path))
   stop("Submission of Condor run failed!")
 }
-cluster <- as.integer(str_match(outerr[-1], "cluster (\\d+)[.]$")[2])
+cluster <- as.integer(str_match(grep(cluster_regexp, outerr, value=TRUE), cluster_regexp)[2])
 if (cluster != predicted_cluster) warning(str_glue("Cluster {cluster} not equal to prediction {predicted_cluster}!"))
 
+# Retain the bundle if so requested, then remove it from temp
 if (RETAIN_BUNDLE) {
   success <- file.copy(bundle_path, file.path(experiment_dir, str_glue("bundle_{EXPERIMENT}_{predicted_cluster}.7z")))
   if (!success) warning("Could not make a reference copy of bundle!")
 } 
 invisible(file.remove(bundle_path)) # Removing the bundle unblocks this script for another submission
+
+# Remove dated job batch files that are almost certainly no longer in use (older than 10 days)
+# Needed because Windows does not periodically clean up TEMP and because the current job batch
+# file is not deleted unless you make this script wait for the run to complete.
+for (bat_path in list.files(path=temp_dir_parent, pattern=str_glue("job_.*_\\d+.bat"), full.names=TRUE)) {
+  if (difftime(Sys.time(), file.info(bat_path)$ctime, unit="days") > 10) invisible(file.remove(bat_path))
+}
 
 # ---- Handle run results ----
 
@@ -447,6 +459,10 @@ if (WAIT_FOR_RUN_COMPLETION) {
     }
   }
   cat("All jobs are done.\n")
+  
+  # Remove the job batch file. This is done after waiting for the run to complete
+  # because jobs can continue to be scheduled well after the initial submission when
+  # there are more jobs in the run than available slot partitions.
   invisible(file.remove(job_bat))
 
   # Merge returned GDX files (implies GET_GDX_OUTPUT and WAIT_FOR_RUN_COMPLETION)
@@ -463,6 +479,25 @@ if (WAIT_FOR_RUN_COMPLETION) {
       }
       setwd(model_dir)
     }
+  }
+
+  # Warn when REQUEST_MEMORY turns out to be set too low or significantly too high
+  max_memory_use <- -1
+  max_memory_job <- -1
+  memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
+  for (job in JOBS) {
+    job_lines <- readLines(file.path("Condor", EXPERIMENT, str_glue("_globiom_{EXPERIMENT}_{cluster}.{job}.log")))
+    memory_use <- as.integer(str_match(grep(memory_use_regexp, job_lines, value=TRUE), memory_use_regexp)[2])
+    if (!is.na(memory_use) && memory_use > max_memory_use) {
+      max_memory_use <- memory_use
+      max_memory_job <- job
+    }
+  }
+  if (max_memory_job >= 0 && max_memory_use > REQUEST_MEMORY) {
+    warning(str_glue("The job ({max_memory_job}) with the highest memory use ({max_memory_use} MiB) exceeded the REQUEST_MEMORY config."))
+  }
+  if (max_memory_job >= 0 && max_memory_use/REQUEST_MEMORY < 0.75 && max_memory_use > 1000) {
+    warning(str_glue("REQUEST_MEMORY ({REQUEST_MEMORY} Mib) is significantly larger than the memory use ({max_memory_use} MiB) of the job ({max_memory_job}) using the most memory, you can request less."))
   }
 } else {
   cat("Query progress with: condor_q.\n")
