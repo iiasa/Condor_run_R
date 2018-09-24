@@ -16,11 +16,12 @@
 # - Check available GDX files before merge
 # W Clean up cached bundles (WIP Helmuth)
 # - Make include and exclude patterns configurable
-# - Handle jobs put on hold on account of error instead of waiting indefinately, flag aborted / evicted ones 
-#   * E.g. by implementing custom equivalent of condor_wait
-#   * E.g. by capturing condor_wait -status output
 # - Check that restart file is compatible with GAMS_VERSION
 # - Test submitting from Linux
+# - Cache and merge gdx files limpopo-side?
+# - Separately retrieve the .lst file
+# - Generalize beyond limpopo hosts?
+# - Make _globiom prefix configurable
 
 rm(list=ls())
 
@@ -119,6 +120,127 @@ username <- Sys.getenv("USERNAME")
 if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
+# Make sure that the Model/Condor directory exists
+condor_dir <- file.path(model_dir, "Condor")
+if (!dir.exists(condor_dir)) {
+  stop(str_glue("GLOBIOM Model/Condor directory not found!"))
+}
+
+# Ensure that the experiment directory to hold the results exists
+experiment_dir <- file.path(condor_dir, EXPERIMENT)
+if (!dir.exists(experiment_dir)) dir.create(experiment_dir)
+
+# ---- Define some helper functions ----
+
+# Check and sanitize 7zip output and return the overal byte size of the input files
+handle_7zip <- function(out) {
+  if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
+    cat(out, sep="\n")
+    stop("7zip compression failed!")
+  } 
+  else {
+    cat(out[grep("^Scanning the drive:", out)+1], sep="\n")
+    size_line <- grep("^Archive size:", out, value=TRUE)
+    cat(size_line, sep="\n")
+    byte_size <- as.integer(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
+    if (is.na(byte_size)) stop("7zip archive size extraction failed!") # 7zip output format has changed?
+    return(byte_size)
+  }
+}
+
+# Remove a file if it exists
+remove_if_exists <- function(dir_path, file_name) {
+  file_path <- file.path(dir_path, file_name)
+  if (file.exists(file_path)) file.remove(file_path)
+}
+
+# Monitor jobs by waiting for them to finish while reporting queue totals changes
+monitor <- function(clusters) {
+  warn <- FALSE
+  regexp <- "^(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
+  prior_jobs      <- -1
+  prior_completed <- -1
+  prior_removed   <- -1
+  prior_idle      <- -1
+  prior_running   <- -1
+  prior_held      <- -1
+  prior_suspended <- -1
+  while (prior_jobs != 0) {
+    # Collect Condor queue information via condor_q
+    outerr <- system2("condor_q", args=c("-totals", "-wide", clusters), stdout=TRUE, stderr=TRUE)
+    if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
+      cat(outerr, sep="\n")
+      stop("Invocation of condor_q failed!")
+    }
+    # Extract the totals line and parse it out
+    match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
+    if (is.na(match[1])) {
+      cat(outerr, sep="\n")
+      stop("Monitoring Condor queue status with condor_q failed: unexpected output! Are you running an old Condor version?")
+    }
+    jobs      <- as.integer(match[2])
+    completed <- as.integer(match[3])
+    removed   <- as.integer(match[4])
+    idle      <- as.integer(match[5])
+    running   <- as.integer(match[6])
+    held      <- as.integer(match[7])
+    suspended <- as.integer(match[8])
+    # Report changes
+    if (jobs != prior_jobs || idle != prior_idle || running != prior_running || held != prior_held || suspended != prior_suspended) {
+      cat(str_sub(str_glue('{jobs} jobs:{ifelse(completed==0, "", str_glue(" {completed} completed,"))}{ifelse(removed==0, "", str_glue(" {removed} removed;"))}{ifelse(idle==0, "", str_glue(" {idle} idle (queued),"))}{ifelse(running==0, "", str_glue(" {running} running,"))}{ifelse(held==0, "", str_glue(" {held} held (execution error?),"))}{ifelse(suspended==0, "", str_glue(" {suspended} suspended,"))}'), 1, -2), sep="\n")
+    }
+    if (held > 0 && !warn) {
+      cat("Jobs are held! Likely an execution error occurred, investigate and remove with condor_rm.\n")
+      warn <- TRUE
+    }
+    Sys.sleep(1)
+    # Remember for next iteration
+    prior_jobs      <- jobs
+    prior_completed <- completed
+    prior_removed   <- removed
+    prior_idle      <- idle
+    prior_running   <- running
+    prior_held      <- held
+    prior_suspended <- suspended
+  }
+}
+
+# Get the return values of job log files, or NA when a job did not terminate normally.
+get_return_values <- function(log_directory, log_file_names) {
+  return_values <- c()
+  return_value_regexp = "\\(1\\) Normal termination \\(return value (\\d+)\\)"
+  for (name in log_file_names) {
+    loglines <- readLines(file.path(log_directory, name))
+    return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
+    return_values <- c(return_values, return_value)
+  }
+  return(return_values)
+}
+
+# Summarize job numbers by using ranges
+summarize_jobs <- function(jobs) {
+  ranging <- FALSE
+  prior <- NULL
+  for (job in sort(jobs)) {
+    if (is.null(prior)) {
+      summary <- c(job)
+    } else {
+      if (job-prior == 1) {
+        ranging <- TRUE
+      } else {
+        if (ranging) {
+          summary <- c(summary, "-", prior)
+          ranging <- FALSE
+        }
+        summary <- c(summary, ",", job)
+      }
+    }
+    prior <- job
+  }
+  if (ranging) summary <- c(summary, "-", job)
+  return(str_c(summary, collapse=""))
+}
+
 # ---- Check status of limpopo servers ----
 
 # Show limpopo status summary
@@ -145,22 +267,6 @@ unique_bundle <- str_glue('bundle_{str_replace_all(Sys.time(), "[- :]", "")}.7z'
 bundle_path <- file.path(temp_dir_parent, bundle) # Identical between sessions
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
 if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing?"))
-
-# Define a function to check and sanitize 7zip output and return the overal byte size of the input files
-handle_7zip <- function(out) {
-  if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
-    cat(out, sep="\n")
-    stop("7zip compression failed!")
-  } 
-  else {
-    cat(out[grep("^Scanning the drive:", out)+1], sep="\n")
-    size_line <- grep("^Archive size:", out, value=TRUE)
-    cat(size_line, sep="\n")
-    byte_size <- as.integer(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
-    if (is.na(byte_size)) stop("7zip archive size extraction failed!") # 7zip output format has changed?
-    return(byte_size)
-  }
-}
 
 cat("Compressing model files into job bundle...\n")
 model_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
@@ -209,7 +315,6 @@ bundle_size <- as.integer(floor(file.info(bundle_path)$size/1024))
 
 # ---- Seed available limpopos with the bundle ----
 
-
 # Define the template for the .bat that caches the transferred bundle on the limpopo side
 bat_template <- c(
   "@echo off",
@@ -227,9 +332,12 @@ close(bat_conn)
 
 # Transfer bundle to each available limpopo server
 cluster_regexp <- "submitted to cluster (\\d+)[.]$"
+clusters <- c()
+hostnames <- c()
 for (limpopo in limpopos) {
 
   hostname <- str_extract(limpopo, "^[^.]*")
+  hostnames <- c(hostnames, hostname)
   cat(str_glue("Starting transfer of bundle to {hostname}."), sep="\n")
 
   # Define the Condor .job file template for bundle seeding
@@ -238,11 +346,9 @@ for (limpopo in limpopos) {
     "universe = vanilla",
     "",
     "# -- Job log, output, and error files",
-    "log = {temp_dir}/_seed_{hostname}.log",
-    "output = {temp_dir}/_seed_{hostname}.out",
-    "stream_output = True",
-    "error = {temp_dir}/_seed_{hostname}.err",
-    "stream_error = True",
+    "log = {experiment_dir}/_seed_{hostname}.log",
+    "output = {experiment_dir}/_seed_{hostname}.out",
+    "error = {experiment_dir}/_seed_{hostname}.err",
     "",
     "requirements = \\",
     '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
@@ -252,7 +358,7 @@ for (limpopo in limpopos) {
     "",
     "# -- We want to transfer even when all slots are taken",
     "request_memory = 0",
-    "request_cpus = 0",
+    "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
     "request_disk = {2*bundle_size+500}", # KiB, twice needed for move, add some for the extra files
     "",
     '+IIASAGroup = "ESM"',
@@ -269,13 +375,24 @@ for (limpopo in limpopos) {
   job_conn<-file(job_file, open="wt")
   writeLines(unlist(lapply(job_template, str_glue)), job_conn)
   close(job_conn)
+  
+  # Remove any job output left over from an aborted prior run
+  remove_if_exists(experiment_dir, str_glue("_seed_{hostname}.log"))
+  remove_if_exists(experiment_dir, str_glue("_seed_{hostname}.out"))
+  remove_if_exists(experiment_dir, str_glue("_seed_{hostname}.err"))
 
   outerr <- system2("condor_submit", args=str_glue("{job_file}"), stdout=TRUE, stderr=TRUE)
   if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
     cat(outerr, sep="\n")
+    invisible(file.remove(bundle_path))
     stop("Submission of bundle seed job failed!")
   }
-  cluster <- as.integer(str_match(grep(cluster_regexp, outerr, value=TRUE), cluster_regexp)[2])
+  cluster <- as.integer(str_match(tail(grep(cluster_regexp, outerr, value=TRUE), 1), cluster_regexp)[2])
+  if (is.na(cluster)) {
+    invisible(file.remove(bundle_path))
+    stop("Cannot extract cluster number from condor_submit output!")
+  }
+  clusters <- c(clusters, cluster)
 }
 
 # Predict the cluster number for the actual run
@@ -283,14 +400,15 @@ predicted_cluster <- cluster+1
 
 # Wait until all limpopos are seeded with a bundle
 cat("Waiting for bundle seeding to complete...\n")
-for (limpopo in limpopos) {
-  hostname <- str_extract(limpopo, "^[^.]*")
-  log_file <- file.path(temp_dir, str_glue("_seed_{hostname}.log"))
-  outerr <- system2("condor_wait", args=log_file, stdout=TRUE, stderr=TRUE)
-  if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-    cat(outerr, sep="\n")
-    stop("condor_wait failed!")
-  }
+monitor(clusters)
+return_values <- get_return_values(experiment_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
+if (any(is.na(return_values))) {
+  invisible(file.remove(bundle_path))
+  stop(str_glue("Abnormal termination of seeding job(s) for {str_c(hostnames[is.na(return_values)], collapse=', ')}! For details, see the _seed_* files in {experiment_dir}"))
+}
+if (any(return_values != 0)) {
+  invisible(file.remove(bundle_path))
+  stop(str_glue("Seeding job(s) for {str_c(hostnames[return_values != 0], collapse=', ')} returned a non-zero return value! For details, see the _seed_* files in {experiment_dir}"))
 }
 cat("Seeding done: limpopo servers have received and cached the bundle.\n")
 cat("\n")
@@ -301,23 +419,12 @@ invisible(file.remove(seed_bat))
 for (limpopo in limpopos) {
   hostname <- str_extract(limpopo, "^[^.]*")
   file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.job")))
-  file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.log")))
-  file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.out")))
-  file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.err")))
+  file.remove(file.path(experiment_dir, str_glue("_seed_{hostname}.log")))
+  file.remove(file.path(experiment_dir, str_glue("_seed_{hostname}.out")))
+  file.remove(file.path(experiment_dir, str_glue("_seed_{hostname}.err")))
 }
 
 # ---- Prepare files for run ----
-
-# Make sure that the Model/Condor directory exists
-condor_dir <- file.path(model_dir, "Condor")
-if (!dir.exists(condor_dir)) {
-  invisible(file.remove(bundle_path))
-  stop(str_glue("GLOBIOM Model/Condor directory not found!"))
-}
-
-# Ensure that the experiment directory to hold the results exists
-experiment_dir <- file.path(condor_dir, EXPERIMENT)
-if (!dir.exists(experiment_dir)) dir.create(experiment_dir)
 
 # Copy the configuration to the experiment directory for reference
 config_file <- file.path(experiment_dir, str_glue("_config_{EXPERIMENT}_{predicted_cluster}.txt"))
@@ -369,7 +476,6 @@ bat_template <- c(
   "  echo ERROR: GAMS failed with error code %gams_errorlevel%",
   "  echo See https://www.gams.com/latest/docs/UG_GAMSReturnCodes.html#UG_GAMSReturnCodes_ListOfErrorCodes",
   ")",
-  "sleep 1", # Make it less likely that the .out file is truncated.
   "exit /b %gams_errorlevel%"
 )
 
@@ -429,7 +535,11 @@ if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
   invisible(file.remove(bundle_path))
   stop("Submission of Condor run failed!")
 }
-cluster <- as.integer(str_match(grep(cluster_regexp, outerr, value=TRUE), cluster_regexp)[2])
+cluster <- as.integer(str_match(tail(grep(cluster_regexp, outerr, value=TRUE), 1), cluster_regexp)[2])
+if (is.na(cluster)) {
+  invisible(file.remove(bundle_path))
+  stop("Cannot extract cluster number from condor_submit output!")
+}
 if (cluster != predicted_cluster) warning(str_glue("Cluster {cluster} not equal to prediction {predicted_cluster}!"))
 
 # Retain the bundle if so requested, then remove it from temp
@@ -450,16 +560,16 @@ for (bat_path in list.files(path=temp_dir_parent, pattern=str_glue("job_.*_\\d+.
 
 if (WAIT_FOR_RUN_COMPLETION) {
   cat(str_glue('Waiting for experiment "{EXPERIMENT}" to complete...'), sep="\n")
-  for (job in JOBS) {
-    log_file <- file.path(experiment_dir, str_glue("_globiom_{EXPERIMENT}_{cluster}.{job}.log"))
-    outerr <- system2("condor_wait", args=log_file, stdout=TRUE, stderr=TRUE)
-    if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-      cat(outerr, sep="\n")
-      stop("condor_wait failed!")
-    }
+  monitor(cluster)
+  return_values <- get_return_values(experiment_dir, lapply(JOBS, function(job) return(str_glue("_globiom_{EXPERIMENT}_{cluster}.{job}.log"))))
+  if (any(is.na(return_values))) {
+    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS)}! For details, see the _globiom_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
+  }
+  if (any(return_values != 0)) {
+    stop(str_glue("Job(s) {summarize_jobs(JOBS)} returned a non-zero return value! For details, see the _globiom_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
   }
   cat("All jobs are done.\n")
-  
+
   # Remove the job batch file. This is done after waiting for the run to complete
   # because jobs can continue to be scheduled well after the initial submission when
   # there are more jobs in the run than available slot partitions.
@@ -487,7 +597,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
   for (job in JOBS) {
     job_lines <- readLines(file.path("Condor", EXPERIMENT, str_glue("_globiom_{EXPERIMENT}_{cluster}.{job}.log")))
-    memory_use <- as.integer(str_match(grep(memory_use_regexp, job_lines, value=TRUE), memory_use_regexp)[2])
+    memory_use <- as.integer(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
       max_memory_job <- job
