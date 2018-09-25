@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Submit a GLOBIOM Limpopo run via Condor.
+# Submit a Condor run and optionally monitor progress and completion.
 #
 # Usage: invoke this script via Rscript, or, on Linux/MacOS, you can
 # invoke the script directly if its execute flag is set. The working
@@ -8,36 +8,45 @@
 # argument to this script. The format of the configuration file is
 # shown in the "Default run config settings section" below.
 #
+# To adapt this script to submit non-GLOBIOM jobs, change what is
+# bundled, revise the templates, and adapt the output checking and
+# handling.
+#
+# This script requires you to have Condor installed. The installation
+# should add the Condor/bin directory to the PATH system environment
+# variable, thus making the Condor commands available. Tested with
+# Condor version 8.6.
+#
 # Based on: GLOBIOM-limpopo scripts by David Leclere
 #
 # Author: Albert Brouwer
 #
 # Todo:
-# - Check available GDX files before merge
-# W Clean up cached bundles (WIP Helmuth)
+# W Clean up cached bundles (WIP Helmut)
 # - Make include and exclude patterns configurable
 # - Check that restart file is compatible with GAMS_VERSION
 # - Test submitting from Linux
-# - Cache and merge gdx files limpopo-side?
-# - Separately retrieve the .lst file
-# - Generalize beyond limpopo hosts?
-# - Make _globiom prefix configurable
+# - Cache and merge gdx files on the execute hosts?
+#  * not if low-memory merge has a slow fallback
+#  * complication: distributed over hosts after main run
 
 rm(list=ls())
 
 # ---- Default run config settings ----
 
-# You can replace these via a run config # file passed as a first argument
+# You can replace these via a run-config file passed as a first argument
 # to this script. Lines with settings like the ones just below can be used
 # in the config file. No settings may be omitted from the config file.
 # Use / as path separator.
 EXPERIMENT = "test" # label for your experiment, pick something without spaces and valid as part of a filename
+PREFIX = "_globiom" # prefix for per-job .err, log, .lst, and .out files
 JOBS = c(0:3,7,10)
+HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
 REQUEST_MEMORY = 5000 # memory in MB to reserve for each job
 REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 SCENARIO_GMS_FILE = "6_scenarios_limpopo.gms"
 RESTART_G00_FILE = "a4_limpopo.g00"
-GAMS_VERSION = "24.4" # must be installed on all limpopo machines
+GAMS_VERSION = "24.4" # must be installed on all execute hosts
 GAMS_ARGUMENTS = "//nsim='%3' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cerr=5 pw 100"
 ADDITIONAL_INPUT_FILES = "" # comma-separated, leave empty if none
 RETAIN_BUNDLE = FALSE
@@ -81,6 +90,7 @@ if (length(args) == 0) {
 
 # Check and massage specific config settings
 if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT name has forbidden character(s)!"))
+if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
 if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
 if (length(JOBS) < 1) stop("There should be at least one job in JOBS!")
 if (!all(JOBS == floor(JOBS))) stop("Job numbers in JOBS must be whole numbers!")
@@ -98,7 +108,7 @@ restart_g00_path <- file.path(model_dir, "t", RESTART_G00_FILE)
 if (!(file.exists(restart_g00_path))) stop(str_glue('Configured RESTART_G00_FILE "{RESTART_G00_FILE}" does not exist relative to the Model/t directory!'))
 version_match <- str_match(GAMS_VERSION, "^(\\d+)[.]\\d+$")
 if (is.na(version_match[1])) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
-if (as.integer(version_match[2]) < 24) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Version too old for Limpopo'))
+if (as.integer(version_match[2]) < 24) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Version too old.'))
 if (!str_detect(GAMS_ARGUMENTS, fixed("%3"))) stop("Configured GAMS_ARGUMENTS lack a %3 batch file argument expansion that must be used for passing the job number with which the scenario variant can be selected per-job.")
 if (ADDITIONAL_INPUT_FILES != "") {
   for (file in str_split(ADDITIONAL_INPUT_FILES, ",")[[1]]) {
@@ -241,17 +251,17 @@ summarize_jobs <- function(jobs) {
   return(str_c(summary, collapse=""))
 }
 
-# ---- Check status of limpopo servers ----
+# ---- Check status of execute hosts ----
 
-# Show limpopo status summary
-error_code <- system2("condor_status", args=c("-compact", "-constraint", '"regexp(\\"^limpopo\\",machine)"'))
+# Show status summary of selected execute hosts
+error_code <- system2("condor_status", args=c("-compact", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
 if (error_code > 0) stop("Cannot show Condor pool status!")
 cat("\n")
 
-# Collect available limpopos
-limpopos <- system2("condor_status", c("-compact", "-autoformat", "Machine", "-constraint", '"regexp(\\"^limpopo\\",machine)"'), stdout=TRUE)
-if (!is.null(attr(limpopos, "status")) && attr(limpopos, "status") != 0) stop("Cannot get Condor pool status!")
-if (length(limpopos) == 0) stop("No limpopo servers available!")
+# Collect available execute hosts including domain
+hostdoms <- system2("condor_status", c("-compact", "-autoformat", "Machine", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE)
+if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot get Condor pool status!")
+if (length(hostdoms) == 0) stop("No execute hosts matching HOST_REGEXP are available!")
 
 # ---- Bundle the model ----
 
@@ -313,9 +323,9 @@ request_disk <- ceiling((model_byte_size+restart_byte_size)/1024)+2*1024*1024
 # Determine the bundle size in KiB
 bundle_size <- as.integer(floor(file.info(bundle_path)$size/1024))
 
-# ---- Seed available limpopos with the bundle ----
+# ---- Seed available execute hosts with the bundle ----
 
-# Define the template for the .bat that caches the transferred bundle on the limpopo side
+# Define the template for the .bat that caches the transferred bundle on the execute host side
 bat_template <- c(
   "@echo off",
   'set bundle_dir=e:\\condor\\bundles\\{username}',
@@ -330,13 +340,13 @@ bat_conn<-file(seed_bat, open="wt")
 writeLines(unlist(lapply(bat_template, str_glue)), bat_conn)
 close(bat_conn)
 
-# Transfer bundle to each available limpopo server
+# Transfer bundle to each available execute host
 cluster_regexp <- "submitted to cluster (\\d+)[.]$"
 clusters <- c()
 hostnames <- c()
-for (limpopo in limpopos) {
+for (hostdom in hostdoms) {
 
-  hostname <- str_extract(limpopo, "^[^.]*")
+  hostname <- str_extract(hostdom, "^[^.]*")
   hostnames <- c(hostnames, hostname)
   cat(str_glue("Starting transfer of bundle to {hostname}."), sep="\n")
 
@@ -354,7 +364,7 @@ for (limpopo in limpopos) {
     '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
     '  ( (OpSys == "WINDOWS")||(OpSys == "WINNT61") ) && \\',
     "  ( GLOBIOM =?= True ) && \\",
-    '  ( TARGET.Machine == "{limpopo}" )',
+    '  ( TARGET.Machine == "{hostdom}" )',
     "",
     "# -- We want to transfer even when all slots are taken",
     "request_memory = 0",
@@ -398,7 +408,7 @@ for (limpopo in limpopos) {
 # Predict the cluster number for the actual run
 predicted_cluster <- cluster+1
 
-# Wait until all limpopos are seeded with a bundle
+# Wait until all execute hosts are seeded with a bundle
 cat("Waiting for bundle seeding to complete...\n")
 monitor(clusters)
 return_values <- get_return_values(experiment_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
@@ -410,14 +420,14 @@ if (any(return_values != 0)) {
   invisible(file.remove(bundle_path))
   stop(str_glue("Seeding job(s) for {str_c(hostnames[return_values != 0], collapse=', ')} returned a non-zero return value! For details, see the _seed_* files in {experiment_dir}"))
 }
-cat("Seeding done: limpopo servers have received and cached the bundle.\n")
+cat("Seeding done: execute hosts have received and cached the bundle.\n")
 cat("\n")
 
 # Remove seeding temp files
 
 invisible(file.remove(seed_bat))
-for (limpopo in limpopos) {
-  hostname <- str_extract(limpopo, "^[^.]*")
+for (hostdom in hostdoms) {
+  hostname <- str_extract(hostdom, "^[^.]*")
   file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.job")))
   file.remove(file.path(experiment_dir, str_glue("_seed_{hostname}.log")))
   file.remove(file.path(experiment_dir, str_glue("_seed_{hostname}.out")))
@@ -453,9 +463,9 @@ if (!file.copy(file.path(model_dir, SCENARIO_GMS_FILE), file.path(experiment_dir
   stop(str_glue("Cannot copy the configured SCENARIO_GMS_FILE file to {experiment_dir}")) 
 }
 
-# Define the template for the .bat file that specifies what should be run on the limpopo side for each job
-# Note that the use of POSIX commands: requires MKS Toolkit of GAMS gbin to be on-path on the limpopo side.
-# Limpopo-side automated bundle cleanup is assumed to be active:
+# Define the template for the .bat file that specifies what should be run on the execute host side for each job.
+# Note that the use of POSIX commands: requires MKS Toolkit or GAMS gbin to be on-path on Windows execute hosts.
+# Execute-host-side automated bundle cleanup is assumed to be active:
 # https://mis.iiasa.ac.at/portal/page/portal/IIASA/Content/TicketS/Ticket?defpar=1%26pWFLType=24%26pItemKey=103034818402942720
 bat_template <- c(
   "@echo off",
@@ -468,14 +478,11 @@ bat_template <- c(
   "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe %1.gms -logOption=3 -r .\\t\\%2 -s .\\t\\a6_out {GAMS_ARGUMENTS}",
   "set gams_errorlevel=%errorlevel%",
   "@echo off",
-  "echo =========================",
-  "echo Dump of .lst file follows",
-  "echo =========================",
-  "cat %1.lst",
   "if %gams_errorlevel% neq 0 (",
   "  echo ERROR: GAMS failed with error code %gams_errorlevel%",
   "  echo See https://www.gams.com/latest/docs/UG_GAMSReturnCodes.html#UG_GAMSReturnCodes_ListOfErrorCodes",
   ")",
+  "sleep 1", # Make it less likely that the .out file is truncated.
   "exit /b %gams_errorlevel%"
 )
 
@@ -492,17 +499,17 @@ job_template <- c(
   "universe = vanilla",
   "",
   "# -- Job log, output, and error files",
-  "log = Condor/{EXPERIMENT}/_globiom_{EXPERIMENT}_$(Cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
-  "output = Condor/{EXPERIMENT}/_globiom_{EXPERIMENT}_$(Cluster).$(job).out",
+  "log = Condor/{EXPERIMENT}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
+  "output = Condor/{EXPERIMENT}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).out",
   "stream_output = True",
-  "error = Condor/{EXPERIMENT}/_globiom_{EXPERIMENT}_$(Cluster).$(job).err",
+  "error = Condor/{EXPERIMENT}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).err",
   "stream_error = True",
   "",
   "requirements = \\",
   '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
   '  ( (OpSys == "WINDOWS")||(OpSys == "WINNT61") ) && \\',
   "  ( GLOBIOM =?= True ) && \\",
-  "  ( ( TARGET.Machine == \"{str_c(limpopos, collapse='\" ) || ( TARGET.Machine == \"')}\") )",
+  "  ( ( TARGET.Machine == \"{str_c(hostdoms, collapse='\" ) || ( TARGET.Machine == \"')}\") )",
   "request_memory = {REQUEST_MEMORY}",
   "request_cpus = {REQUEST_CPUS}", # Number of "CPUs" (hardware threads) to reserve for each job
   "request_disk = {request_disk}",
@@ -513,8 +520,8 @@ job_template <- c(
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
   'transfer_input_files = 7za.exe, Condor/{EXPERIMENT}/{scenario_prefix}.gms{ifelse(ADDITIONAL_INPUT_FILES!="", ", ", "")}{ADDITIONAL_INPUT_FILES}',
-  'transfer_output_files = {ifelse(GET_G00_OUTPUT, "t/a6_out.g00", "")}{ifelse(GET_G00_OUTPUT&&GET_GDX_OUTPUT, ", ", "")}{ifelse(GET_GDX_OUTPUT, "gdx/output.gdx", "")}',
-  'transfer_output_remaps = "{ifelse(GET_G00_OUTPUT, str_glue("a6_out.g00 = t/a6_{EXPERIMENT}-$(job).g00"), "")}{ifelse(GET_G00_OUTPUT&&GET_GDX_OUTPUT, "; ", "")}{ifelse(GET_GDX_OUTPUT, str_glue("output.gdx = gdx/output_{EXPERIMENT}_$(Cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_output_files = {scenario_prefix}.lst{ifelse(GET_G00_OUTPUT, ",t/a6_out.g00", "")}{ifelse(GET_GDX_OUTPUT, ",gdx/output.gdx", "")}',
+  'transfer_output_remaps = "{scenario_prefix}.lst=Condor/{EXPERIMENT}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";a6_out.g00=t/a6_{EXPERIMENT}-$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";output.gdx=gdx/output_{EXPERIMENT}_$(Cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete. And Error does not seem to catch many execution errors.
   "",
@@ -522,14 +529,14 @@ job_template <- c(
 )
 
 # Apply settings to job template and write the .job file to use for submission
-job_file <- file.path(experiment_dir, str_glue("_globiom_{EXPERIMENT}_{predicted_cluster}.job"))
+job_file <- file.path(experiment_dir, str_glue("submit_{EXPERIMENT}_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(job_template, str_glue)), job_conn)
 close(job_conn)
 
 # ---- Submit the run and clean up temp files ----
 
-outerr <- system2("condor_submit", args=str_glue("Condor{fsep}{EXPERIMENT}{fsep}_globiom_{EXPERIMENT}_{predicted_cluster}.job"), stdout=TRUE, stderr=TRUE)
+outerr <- system2("condor_submit", args=str_glue("Condor{fsep}{EXPERIMENT}{fsep}submit_{EXPERIMENT}_{predicted_cluster}.job"), stdout=TRUE, stderr=TRUE)
 cat(outerr, sep="\n")
 if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
   invisible(file.remove(bundle_path))
@@ -561,12 +568,12 @@ for (bat_path in list.files(path=temp_dir_parent, pattern=str_glue("job_.*_\\d+.
 if (WAIT_FOR_RUN_COMPLETION) {
   cat(str_glue('Waiting for experiment "{EXPERIMENT}" to complete...'), sep="\n")
   monitor(cluster)
-  return_values <- get_return_values(experiment_dir, lapply(JOBS, function(job) return(str_glue("_globiom_{EXPERIMENT}_{cluster}.{job}.log"))))
+  return_values <- get_return_values(experiment_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log"))))
   if (any(is.na(return_values))) {
-    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS)}! For details, see the _globiom_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
+    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
   }
   if (any(return_values != 0)) {
-    stop(str_glue("Job(s) {summarize_jobs(JOBS)} returned a non-zero return value! For details, see the _globiom_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
+    stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
   }
   cat("All jobs are done.\n")
 
@@ -575,28 +582,12 @@ if (WAIT_FOR_RUN_COMPLETION) {
   # there are more jobs in the run than available slot partitions.
   invisible(file.remove(job_bat))
 
-  # Merge returned GDX files (implies GET_GDX_OUTPUT and WAIT_FOR_RUN_COMPLETION)
-  if (MERGE_GDX_OUTPUT) {
-    cat("Merging the returned GDX files...\n")
-    setwd(file.path(model_dir, "gdx"))
-    error_code <- system2("gdxmerge", args=c(str_glue("output_{EXPERIMENT}_{cluster}.*.gdx"), str_glue("output=output_{EXPERIMENT}_{cluster}_merged.gdx")))
-    setwd(model_dir)
-    if (error_code > 0) stop("Merging failed!")
-    if (REMOVE_MERGED_GDX_FILES) {
-      setwd(file.path(model_dir, "gdx"))
-      for (job in JOBS) {
-        file.remove(str_glue('output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx'))
-      }
-      setwd(model_dir)
-    }
-  }
-
-  # Warn when REQUEST_MEMORY turns out to be set too low or significantly too high
+  # Warn when REQUEST_MEMORY turns out to have been set too low or significantly too high
   max_memory_use <- -1
   max_memory_job <- -1
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
   for (job in JOBS) {
-    job_lines <- readLines(file.path("Condor", EXPERIMENT, str_glue("_globiom_{EXPERIMENT}_{cluster}.{job}.log")))
+    job_lines <- readLines(file.path("Condor", EXPERIMENT, str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log")))
     memory_use <- as.integer(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
@@ -608,6 +599,69 @@ if (WAIT_FOR_RUN_COMPLETION) {
   }
   if (max_memory_job >= 0 && max_memory_use/REQUEST_MEMORY < 0.75 && max_memory_use > 1000) {
     warning(str_glue("REQUEST_MEMORY ({REQUEST_MEMORY} Mib) is significantly larger than the memory use ({max_memory_use} MiB) of the job ({max_memory_job}) using the most memory, you can request less."))
+  }
+
+  # Warn when jobs did not return a .lst file or if the .lst file was empty
+  no_lst <- c()
+  empty_lst <- c()
+  for (job in JOBS) {
+    lst <- file.path(experiment_dir, str_glue('{PREFIX}_{EXPERIMENT}_{cluster}.{job}.lst'))
+    lst_exists <- file.exists(lst)
+    no_lst <- c(no_lst, !lst_exists)
+    if (lst_exists) {
+      empty_lst <- c(empty_lst, file.info(lst)$size == 0)
+    } else {
+      empty_lst <- c(empty_lst, FALSE)
+    }
+  } 
+  if (any(no_lst)) {
+    warning(str_glue("No .lst files returned for job(s) {summarize_jobs(JOBS[no_lst])}! An error must have occurred. Investigate the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
+  }
+  if (any(empty_lst)) {
+    warning(str_glue("Empty .lst files resulting from job(s) {summarize_jobs(JOBS[empty_lst])}! An error must have occurred. Investigate the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
+  }
+  
+  # Warn when GET_GDX_OUTPUT but jobs did not return a GDX file or a GDX file was empty
+  if (GET_GDX_OUTPUT) {
+    no_gdx <- c()
+    empty_gdx <- c()
+    for (job in JOBS) {
+      gdx <- file.path("gdx", str_glue('output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx'))
+      gdx_exists <- file.exists(gdx)
+      no_gdx <- c(no_gdx, !gdx_exists)
+      if (gdx_exists) {
+        empty_gdx <- c(empty_gdx, file.info(gdx)$size == 0)
+      } else {
+        empty_gdx <- c(empty_gdx, FALSE)
+      }
+    } 
+    if (any(no_gdx)) {
+      warning(str_glue("No GDX files returned for job(s) {summarize_jobs(JOBS[no_gdx])}! An error must have occurred. Investigate the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
+    }
+    if (any(empty_gdx)) {
+      warning(str_glue("Empty GDX files resulting from job(s) {summarize_jobs(JOBS[empty_gdx])}! An error must have occurred. Investigate the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
+    }
+  }
+
+  # Merge returned GDX files (implies GET_GDX_OUTPUT and WAIT_FOR_RUN_COMPLETION)
+  if (MERGE_GDX_OUTPUT) {
+    if (any(no_gdx)) {
+      warning("MERGE_GDX_OUTPUT was set but not honored: no merging performed because some GDX files were not returned.")
+    } else if (any(empty_gdx)) {
+      warning("MERGE_GDX_OUTPUT was set but not honored: no merging performed because some GDX files were empty.")
+    } else {
+      cat("Merging the returned GDX files...\n")
+      setwd(file.path(model_dir, "gdx"))
+      error_code <- system2("gdxmerge", args=c(str_glue("output_{EXPERIMENT}_{cluster}.*.gdx"), str_glue("output=output_{EXPERIMENT}_{cluster}_merged.gdx")))
+      setwd(model_dir)
+      if (error_code > 0) stop("Merging failed!")
+      # Remove merged GDX files if so requested
+      if (REMOVE_MERGED_GDX_FILES) {
+        for (job in JOBS) {
+          file.remove(file.path("gdx", str_glue('output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx')))
+        }
+      }
+    }
   }
 } else {
   cat("Query progress with: condor_q.\n")
