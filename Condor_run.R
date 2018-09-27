@@ -24,11 +24,16 @@
 # Todo:
 # W Clean up cached bundles (WIP Helmut)
 # - Make include and exclude patterns configurable
+# - Make output directory names experiment and cluster specific, remove cluster and maybe experiment from filenames.
 # - Check that restart file is compatible with GAMS_VERSION
 # - Test submitting from Linux
 # - Cache and merge gdx files on the execute hosts?
 #  * not if low-memory merge has a slow fallback
 #  * complication: distributed over hosts after main run
+# - ADITIONAL_INPUT_FILES -> ADDITIONAL_TRANSFER_FILES?
+# - Clusterify .g00 filenames
+# - grep errors in lst to stderr for inclusion in .err?
+# - output reporting of non-zero GAMS return code to stderr
 
 rm(list=ls())
 
@@ -66,13 +71,18 @@ config_types <- lapply(lapply(config_names, get), typeof)
 # Required packages
 library(stringr)
 
-# Make sure that the working directory is the Model directory
-model_dir <- getwd()
-if (basename(model_dir) != 'Model') stop("Working directory should be the GLOBIOM Model subdirectory!")
+# Check that the working directory is as expected and holds the required subdirectories
+condor_dir <- "Condor" # where run reference files are stored in a per-experiment subdirectory (.err, .log, .lst, .out, and so on files)
+gdx_dir <- "gdx"
+g00_dir <- "t"
+if (tolower(basename(getwd())) != 'model') stop("Working directory should be the Model directory!")
+if (!dir.exists(condor_dir)) stop(str_glue("No {condor_dir} directory found!"))
+if (!dir.exists(gdx_dir)) stop(str_glue("No {gdx_dir} directory found!"))
+if (!dir.exists(g00_dir)) stop(str_glue("No {g00_dir} directory found!"))
 
 # Read config file if specified via an argument, check presence and types.
-args <- commandArgs(trailingOnly=TRUE)
-#args <- c("..\\R\\config")
+#args <- commandArgs(trailingOnly=TRUE)
+args <- c("..\\R\\config")
 if (length(args) == 0) {
   warning("No config file argument supplied, using default run settings.")
 } else if (length(args) == 1) {
@@ -100,12 +110,11 @@ if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
 if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
 if (str_sub(SCENARIO_GMS_FILE, -4) != ".gms") stop(str_glue("Configured SCENARIO_GMS_FILE has no .gms extension!"))
 if (str_detect(SCENARIO_GMS_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCENARIO_GMS_FILE has forbidden character(s)!"))
-scenario_gms_path <- file.path(model_dir, SCENARIO_GMS_FILE)
-if (!(file.exists(scenario_gms_path))) stop(str_glue('Configured SCENARIO_GMS_FILE "{SCENARIO_GMS_FILE}" does not exist relative to the Model directory!'))
+if (!(file.exists(SCENARIO_GMS_FILE))) stop(str_glue('Configured SCENARIO_GMS_FILE "{SCENARIO_GMS_FILE}" does not exist relative to working directory!'))
 if (str_sub(RESTART_G00_FILE, -4) != ".g00") stop(str_glue("Configured RESTART_G00_FILE has no .g00 extension!"))
 if (str_detect(RESTART_G00_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured RESTART_G00_FILE has forbidden character(s)!"))
-restart_g00_path <- file.path(model_dir, "t", RESTART_G00_FILE)
-if (!(file.exists(restart_g00_path))) stop(str_glue('Configured RESTART_G00_FILE "{RESTART_G00_FILE}" does not exist relative to the Model/t directory!'))
+restart_g00_path <- file.path(g00_dir, RESTART_G00_FILE)
+if (!(file.exists(restart_g00_path))) stop(str_glue('Configured RESTART_G00_FILE "{RESTART_G00_FILE}" does not exist in the {g00_dir} directory!'))
 version_match <- str_match(GAMS_VERSION, "^(\\d+)[.]\\d+$")
 if (is.na(version_match[1])) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
 if (as.integer(version_match[2]) < 24) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Version too old.'))
@@ -113,13 +122,13 @@ if (!str_detect(GAMS_ARGUMENTS, fixed("%3"))) stop("Configured GAMS_ARGUMENTS la
 if (ADDITIONAL_INPUT_FILES != "") {
   for (file in str_split(ADDITIONAL_INPUT_FILES, ",")[[1]]) {
     file <- str_trim(file)
-    if (!(file.exists(file.path(model_dir, file)))) stop(str_glue('Misconfigured ADDITIONAL_INPUT_FILES: "{file}" does not exist relative to the Model directory!'))
+    if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured ADDITIONAL_INPUT_FILES: "{file}" does not exist relative to working directory!'))
   }
 }
 if (str_sub(GDX_OUTPUT_FORMAT_DEF_GMS_FILE, -4) != ".gms") stop(str_glue("Configured GDX_OUTPUT_FORMAT_DEF_GMS_FILE has no .gms extension!"))
 if (str_detect(GDX_OUTPUT_FORMAT_DEF_GMS_FILE, fixed(" "))) stop(str_glue("Configured GDX_OUTPUT_FORMAT_DEF_GMS_FILE has forbidden space character(s)!"))
-gdx_output_format_def_gms_path <- file.path(model_dir, GDX_OUTPUT_FORMAT_DEF_GMS_FILE)
-if (!(file.exists(gdx_output_format_def_gms_path))) stop(str_glue('Configured GDX_OUTPUT_FORMAT_DEF_GMS_FILE "{GDX_OUTPUT_FORMAT_DEF_GMS_FILE}" does not exist relative to the Model directory!'))
+gdx_output_format_def_gms_path <- file.path(GDX_OUTPUT_FORMAT_DEF_GMS_FILE)
+if (!(file.exists(gdx_output_format_def_gms_path))) stop(str_glue('Configured GDX_OUTPUT_FORMAT_DEF_GMS_FILE "{GDX_OUTPUT_FORMAT_DEF_GMS_FILE}" does not exist relative to working directory!'))
 if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
 if (MERGE_GDX_OUTPUT && !GET_GDX_OUTPUT) stop("Cannot MERGE_GDX_OUTPUT without first doing GET_GDX_OUTPUT!")
 if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT without first doing WAIT_FOR_RUN_COMPLETION!")
@@ -130,13 +139,7 @@ username <- Sys.getenv("USERNAME")
 if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
-# Make sure that the Model/Condor directory exists
-condor_dir <- file.path(model_dir, "Condor")
-if (!dir.exists(condor_dir)) {
-  stop(str_glue("GLOBIOM Model/Condor directory not found!"))
-}
-
-# Ensure that the experiment directory to hold the results exists
+# Ensure that the experiment directory to hold the .out/.err/.log/.lst and so on results exists
 experiment_dir <- file.path(condor_dir, EXPERIMENT)
 if (!dir.exists(experiment_dir)) dir.create(experiment_dir)
 
@@ -218,7 +221,7 @@ monitor <- function(clusters) {
 # Get the return values of job log files, or NA when a job did not terminate normally.
 get_return_values <- function(log_directory, log_file_names) {
   return_values <- c()
-  return_value_regexp = "\\(1\\) Normal termination \\(return value (\\d+)\\)"
+  return_value_regexp <- "\\(1\\) Normal termination \\(return value (\\d+)\\)"
   for (name in log_file_names) {
     loglines <- readLines(file.path(log_directory, name))
     return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
@@ -251,6 +254,37 @@ summarize_jobs <- function(jobs) {
   return(str_c(summary, collapse=""))
 }
 
+# A function that for all given jobs tests if a file exists and is not empty.
+# The file_template is a template of the filename that is run through str_glue
+# and can make use of variables defined in the calling context. The dir parameter
+# indicates the directory containing the files.
+#
+# Warnings are generated when files are absent or empty.
+# The boolean return value is TRUE when all files exist and are not empty.
+all_exist_and_not_empty <- function(dir, file_template, file_type) {
+  absentees <- c()
+  empties <- c()
+  for (job in JOBS) {
+    path <- file.path(dir, str_glue(file_template))
+    absent <- !file.exists(path)
+    absentees <- c(absentees, absent)
+    if (absent) {
+      empties <- c(empties, FALSE)
+    } else {
+      empty <- file.info(path)$size == 0
+      if (empty) file.remove(path)
+      empties <- c(empties, empty)
+    }
+  }
+  if (any(absentees)) {
+    warning(str_glue("No {file_type} files returned for job(s) {summarize_jobs(JOBS[absentees])}! An error must have occurred. Investigate the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
+  }
+  if (any(empties)) {
+    warning(str_glue("Empty {file_type} files resulting from job(s) {summarize_jobs(JOBS[empties])}! The empty {file_type} files were removed. An error must have occurred. Investigate the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
+  }
+  return(!(any(absentees) || any(empties)))
+}
+
 # ---- Check status of execute hosts ----
 
 # Show status summary of selected execute hosts
@@ -280,39 +314,37 @@ if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is th
 
 cat("Compressing model files into job bundle...\n")
 model_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
-  args=c("a",
-    "-mx1",
-    "-bb0",
-    "-x!*.exe",
-    "-x!*.zip",
-    str_glue("-x!{SCENARIO_GMS_FILE}"),
+  args=unlist(lapply(c("a", "-mx1", "-bb0",
+    "-ir!finaldata",
     "-x!*.~*",
-    "-x!test*.gdx",
-    "-xr!225*",
-    "-x!*.lst",
+    "-x!*.exe",
     "-x!*.log",
     "-x!*.lxi",
-    "-xr!Condor",
+    "-x!*.lst",
+    "-x!*.zip",
+    "-x!test*.gdx",
+    "-x!{SCENARIO_GMS_FILE}",
+    "-xr!{condor_dir}",
+    "-xr!{g00_dir}",
+    "-xr!{gdx_dir}",
+    "-xr!225*",
     "-xr!Demand",
-    "-xr!gdx",
     "-xr!graphs",
     "-xr!output",
-    "-xr!t",
     "-xr!trade",
     "-xr!SIMBIOM",
-    "-ir!finaldata",
-    str_glue("{bundle_platform_path}"),
+    "{bundle_platform_path}",
     "*"
-  )
+  ), str_glue))
 ))
 cat("\n")
 
 cat("Adding restart file to job bundle...\n")
 restart_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
-  args=c("a",
-    str_glue("{bundle_platform_path}"),
-    str_glue("t{fsep}{RESTART_G00_FILE}") # t directory is excluded, make an exception
-  )
+  args=unlist(lapply(c("a",
+    "{bundle_platform_path}",
+    "{g00_dir}{fsep}{RESTART_G00_FILE}" # g00 directory was excluded above, make an exception
+  ), str_glue))
 ))
 cat("\n")
 
@@ -458,7 +490,7 @@ if (length(args) > 0) {
 
 # Copy the scenario GAMS script to the experiment directory
 scenario_prefix <- str_glue("{str_sub(SCENARIO_GMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}")
-if (!file.copy(file.path(model_dir, SCENARIO_GMS_FILE), file.path(experiment_dir, str_glue("{scenario_prefix}.gms")), overwrite=TRUE)) {
+if (!file.copy(file.path(SCENARIO_GMS_FILE), file.path(experiment_dir, str_glue("{scenario_prefix}.gms")), overwrite=TRUE)) {
   invisible(file.remove(bundle_path))
   stop(str_glue("Cannot copy the configured SCENARIO_GMS_FILE file to {experiment_dir}")) 
 }
@@ -471,7 +503,7 @@ bat_template <- c(
   "@echo off",
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
-  "mkdir gdx 2>NUL || exit /b %errorlevel%",
+  "mkdir {gdx_dir} 2>NUL || exit /b %errorlevel%",
   "@echo on",
   "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7za.exe x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
@@ -499,10 +531,10 @@ job_template <- c(
   "universe = vanilla",
   "",
   "# -- Job log, output, and error files",
-  "log = Condor/{EXPERIMENT}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
-  "output = Condor/{EXPERIMENT}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).out",
+  "log = {experiment_dir}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
+  "output = {experiment_dir}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).out",
   "stream_output = True",
-  "error = Condor/{EXPERIMENT}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).err",
+  "error = {experiment_dir}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).err",
   "stream_error = True",
   "",
   "requirements = \\",
@@ -519,9 +551,9 @@ job_template <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_input_files = 7za.exe, Condor/{EXPERIMENT}/{scenario_prefix}.gms{ifelse(ADDITIONAL_INPUT_FILES!="", ", ", "")}{ADDITIONAL_INPUT_FILES}',
-  'transfer_output_files = {scenario_prefix}.lst{ifelse(GET_G00_OUTPUT, ",t/a6_out.g00", "")}{ifelse(GET_GDX_OUTPUT, ",gdx/output.gdx", "")}',
-  'transfer_output_remaps = "{scenario_prefix}.lst=Condor/{EXPERIMENT}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";a6_out.g00=t/a6_{EXPERIMENT}-$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";output.gdx=gdx/output_{EXPERIMENT}_$(Cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_input_files = 7za.exe, {experiment_dir}/{scenario_prefix}.gms{ifelse(ADDITIONAL_INPUT_FILES!="", ", ", "")}{ADDITIONAL_INPUT_FILES}',
+  'transfer_output_files = {scenario_prefix}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{g00_dir}/a6_out.g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{gdx_dir}/output.gdx"), "")}',
+  'transfer_output_remaps = "{scenario_prefix}.lst={experiment_dir}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";a6_out.g00={g00_dir}/a6_{EXPERIMENT}-$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";output.gdx={gdx_dir}/output_{EXPERIMENT}_$(Cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete. And Error does not seem to catch many execution errors.
   "",
@@ -536,7 +568,7 @@ close(job_conn)
 
 # ---- Submit the run and clean up temp files ----
 
-outerr <- system2("condor_submit", args=str_glue("Condor{fsep}{EXPERIMENT}{fsep}submit_{EXPERIMENT}_{predicted_cluster}.job"), stdout=TRUE, stderr=TRUE)
+outerr <- system2("condor_submit", args=str_glue("{experiment_dir}/submit_{EXPERIMENT}_{predicted_cluster}.job"), stdout=TRUE, stderr=TRUE)
 cat(outerr, sep="\n")
 if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
   invisible(file.remove(bundle_path))
@@ -566,8 +598,24 @@ for (bat_path in list.files(path=temp_dir_parent, pattern=str_glue("job_.*_\\d+.
 # ---- Handle run results ----
 
 if (WAIT_FOR_RUN_COMPLETION) {
+  # Monitor the run until it completes
   cat(str_glue('Waiting for experiment "{EXPERIMENT}" to complete...'), sep="\n")
   monitor(cluster)
+
+  # Remove the job batch file. This is done after waiting for the run to complete
+  # because jobs can continue to be scheduled well after the initial submission when
+  # there are more jobs in the run than available slot partitions.
+  invisible(file.remove(job_bat))
+  
+  # Check that result files exist and are not empty, warn otherwise and remove empty files
+  lsts_complete <- all_exist_and_not_empty(experiment_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.lst", ".lst")
+  if (GET_G00_OUTPUT) {
+    g00s_complete <- all_exist_and_not_empty(g00_dir, "a6_{EXPERIMENT}-{job}.g00", ".g00")
+  }
+  if (GET_GDX_OUTPUT) {
+    gdxs_complete <- all_exist_and_not_empty(gdx_dir, 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx', "GDX")
+  }
+    
   return_values <- get_return_values(experiment_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log"))))
   if (any(is.na(return_values))) {
     stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
@@ -577,17 +625,12 @@ if (WAIT_FOR_RUN_COMPLETION) {
   }
   cat("All jobs are done.\n")
 
-  # Remove the job batch file. This is done after waiting for the run to complete
-  # because jobs can continue to be scheduled well after the initial submission when
-  # there are more jobs in the run than available slot partitions.
-  invisible(file.remove(job_bat))
-
   # Warn when REQUEST_MEMORY turns out to have been set too low or significantly too high
   max_memory_use <- -1
   max_memory_job <- -1
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
   for (job in JOBS) {
-    job_lines <- readLines(file.path("Condor", EXPERIMENT, str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log")))
+    job_lines <- readLines(file.path(experiment_dir, str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log")))
     memory_use <- as.integer(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
@@ -601,68 +644,29 @@ if (WAIT_FOR_RUN_COMPLETION) {
     warning(str_glue("REQUEST_MEMORY ({REQUEST_MEMORY} Mib) is significantly larger than the memory use ({max_memory_use} MiB) of the job ({max_memory_job}) using the most memory, you can request less."))
   }
 
-  # Warn when jobs did not return a .lst file or if the .lst file was empty
-  no_lst <- c()
-  empty_lst <- c()
-  for (job in JOBS) {
-    lst <- file.path(experiment_dir, str_glue('{PREFIX}_{EXPERIMENT}_{cluster}.{job}.lst'))
-    lst_exists <- file.exists(lst)
-    no_lst <- c(no_lst, !lst_exists)
-    if (lst_exists) {
-      empty_lst <- c(empty_lst, file.info(lst)$size == 0)
-    } else {
-      empty_lst <- c(empty_lst, FALSE)
-    }
-  } 
-  if (any(no_lst)) {
-    warning(str_glue("No .lst files returned for job(s) {summarize_jobs(JOBS[no_lst])}! An error must have occurred. Investigate the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
-  }
-  if (any(empty_lst)) {
-    warning(str_glue("Empty .lst files resulting from job(s) {summarize_jobs(JOBS[empty_lst])}! An error must have occurred. Investigate the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
-  }
-  
-  # Warn when GET_GDX_OUTPUT but jobs did not return a GDX file or a GDX file was empty
-  if (GET_GDX_OUTPUT) {
-    no_gdx <- c()
-    empty_gdx <- c()
-    for (job in JOBS) {
-      gdx <- file.path("gdx", str_glue('output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx'))
-      gdx_exists <- file.exists(gdx)
-      no_gdx <- c(no_gdx, !gdx_exists)
-      if (gdx_exists) {
-        empty_gdx <- c(empty_gdx, file.info(gdx)$size == 0)
-      } else {
-        empty_gdx <- c(empty_gdx, FALSE)
-      }
-    } 
-    if (any(no_gdx)) {
-      warning(str_glue("No GDX files returned for job(s) {summarize_jobs(JOBS[no_gdx])}! An error must have occurred. Investigate the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
-    }
-    if (any(empty_gdx)) {
-      warning(str_glue("Empty GDX files resulting from job(s) {summarize_jobs(JOBS[empty_gdx])}! An error must have occurred. Investigate the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
-    }
-  }
-
   # Merge returned GDX files (implies GET_GDX_OUTPUT and WAIT_FOR_RUN_COMPLETION)
   if (MERGE_GDX_OUTPUT) {
-    if (any(no_gdx)) {
-      warning("MERGE_GDX_OUTPUT was set but not honored: no merging performed because some GDX files were not returned.")
-    } else if (any(empty_gdx)) {
-      warning("MERGE_GDX_OUTPUT was set but not honored: no merging performed because some GDX files were empty.")
+    if (!gdxs_complete) {
+      warning("MERGE_GDX_OUTPUT was set but not honored: no complete set of GDX files was returned.")
     } else {
       cat("Merging the returned GDX files...\n")
-      setwd(file.path(model_dir, "gdx"))
+      prior_wd <- getwd()
+      setwd(gdx_dir)
       error_code <- system2("gdxmerge", args=c(str_glue("output_{EXPERIMENT}_{cluster}.*.gdx"), str_glue("output=output_{EXPERIMENT}_{cluster}_merged.gdx")))
-      setwd(model_dir)
+      setwd(prior_wd)
       if (error_code > 0) stop("Merging failed!")
       # Remove merged GDX files if so requested
       if (REMOVE_MERGED_GDX_FILES) {
         for (job in JOBS) {
-          file.remove(file.path("gdx", str_glue('output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx')))
+          file.remove(file.path(gdx_dir, str_glue('output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx')))
         }
       }
     }
   }
+  # Make a bit of noise to notify the user of completion (works from RScript but not RStudio)
+  alarm()
+  Sys.sleep(1)
+  alarm()
 } else {
   cat("Query progress with: condor_q.\n")
   cat(str_glue("Merge results with: gdxmerge output_{EXPERIMENT}_{cluster}.*.gdx output=output_{EXPERIMENT}_{cluster}_merged.gdx", sep="\n"))
