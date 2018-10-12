@@ -1,13 +1,17 @@
 #!/usr/bin/env Rscript
 # Submit a Condor run (a set of jobs). Can be configured to monitor
-# progress and merge output on completion.
+# progress and merge gdx output on completion.
 #
 # Usage: invoke this script via Rscript, or, on Linux/MacOS, you can
 # invoke the script directly if its execute flag is set. The working
-# directory must be the GLOBIOM Model subdirectory. To use non-default
-# config settings, pass a relative path to a configuration file as an
-# argument to this script. The format of the configuration file is
+# directory must contain the configured files and directories. To use
+# non-default config settings, pass a path to a configuration file as
+# an argument to this script. The format of the configuration file is
 # shown in the "Default run config settings section" below.
+#
+# The working directory (current directory) when invoking this script
+# must be the directory that contains the configured files and paths.
+# For GLOBIOM this will be the Model directory.
 #
 # To adapt this script to submit non-GLOBIOM jobs, change what is
 # bundled, revise the templates, and adapt the output checking and
@@ -24,18 +28,18 @@
 # Author: Albert Brouwer
 #
 # Todo:
+# - Condor is balky when transferring large (2GB) bundles
+# - limpopo1 has an issue with largish request_disk
 # - Make gdx output filename configurable
 # - Make include and exclude patterns configurable
 # - Make output directory names experiment and cluster specific, remove cluster and maybe experiment from filenames.
 #   * make output filename template configurablish?
-# - Check that restart file is compatible with GAMS_VERSION
 # - Test submitting from Linux
 # - Cache and merge gdx files on the execute hosts?
 #  * not if low-memory merge has a slow fallback
 #  * complication: distributed over hosts after main run
-# - ADITIONAL_INPUT_FILES -> ADDITIONAL_TRANSFER_FILES?
 # - grep errors in lst to stderr for inclusion in .err?
-# - Allow sub sub G00/GDX_OUTPUT_DIRs
+# - Additional input files as a vector?
 
 rm(list=ls())
 
@@ -44,7 +48,7 @@ rm(list=ls())
 # You can replace these via a run-config file passed as a first argument
 # to this script. Lines with settings like the ones just below can be used
 # in the config file. No settings may be omitted from the config file.
-# Use / as path separator.
+# Use paths relative to the working directory, with / as path separator.
 EXPERIMENT = "test" # label for your experiment, pick something without spaces and valid as part of a filename
 PREFIX = "_globiom" # prefix for per-job .err, log, .lst, and .out files
 JOBS = c(0:3,7,10)
@@ -55,12 +59,12 @@ SCENARIO_GMS_FILE = "6_scenarios_limpopo.gms"
 RESTART_FILE_PATH = "t/a4_limpopo.g00"
 GAMS_VERSION = "24.4" # must be installed on all execute hosts
 GAMS_ARGUMENTS = "//nsim='%2' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cerr=5 pw 100"
-ADDITIONAL_INPUT_FILES = "" # comma-separated, leave empty if none
+ADDITIONAL_INPUT_FILES = "" # comma-separated, leave empty if none, user / path separators, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
 GET_G00_OUTPUT = FALSE
-G00_OUTPUT_DIR = "t" # both host-side and locally
+G00_OUTPUT_DIR = "t" # both host-side and locally relative to working dir
 GET_GDX_OUTPUT = TRUE
-GDX_OUTPUT_DIR = "gdx" # both host-side and locally
+GDX_OUTPUT_DIR = "gdx" # both host-side and locally relative to working dir
 WAIT_FOR_RUN_COMPLETION = TRUE
 MERGE_GDX_OUTPUT = TRUE
 REMOVE_MERGED_GDX_FILES = TRUE
@@ -76,8 +80,7 @@ library(stringr)
 
 # Check that the working directory is as expected and holds the required subdirectories
 condor_dir <- "Condor" # where run reference files are stored in a per-experiment subdirectory (.err, .log, .lst, .out, and so on files)
-if (tolower(basename(getwd())) != 'model') stop("Working directory should be the Model directory!")
-if (!dir.exists(condor_dir)) stop(str_glue("No {condor_dir} directory found!"))
+if (!dir.exists(condor_dir)) stop(str_glue("No {condor_dir} directory found relative to working directory {getwd()}! Is your working directory correct?"))
 
 # Read config file if specified via an argument, check presence and types.
 args <- commandArgs(trailingOnly=TRUE)
@@ -117,12 +120,12 @@ if (str_detect(RESTART_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configure
 version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
 if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
 if (as.integer(version_match[2]) < 24 || (as.integer(version_match[2]) == 24 && as.integer(version_match[3]) < 2)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Version too old (< 24.2).'))
-dotless_version = str_glue(version_match[2], version_match[3])
+dotless_version <- str_glue(version_match[2], version_match[3])
 if (!str_detect(GAMS_ARGUMENTS, fixed("%2"))) stop("Configured GAMS_ARGUMENTS lack a %2 batch file argument expansion that must be used for passing the job number with which the scenario variant can be selected per-job.")
 if (ADDITIONAL_INPUT_FILES != "") {
   for (file in str_split(ADDITIONAL_INPUT_FILES, ",")[[1]]) {
     file <- str_trim(file)
-    if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured ADDITIONAL_INPUT_FILES: "{file}" does not exist relative to working directory!'))
+    if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured ADDITIONAL_INPUT_FILES: "{file}" does not exist!'))
   }
 }
 if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
@@ -139,7 +142,21 @@ if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT 
 if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX_FILES without first doing MERGE_GDX_OUTPUT!")
 
 # Determine GAMS version used to generate RESTART_FILE_PATH, verify that it is <= GAMS_VERSION
-#TODO
+conn <- file(RESTART_FILE_PATH, "rb")
+byte_count <- min(4000, file.info(RESTART_FILE_PATH)$size)
+seek(conn, where=-byte_count, origin="end")
+tail_bytes <- readBin(conn, what=integer(), size=1, n=byte_count)
+close(conn)
+tail_bytes[tail_bytes <= 0] <- 32
+tail <-  rawToChar(as.raw(tail_bytes))
+restart_version <- str_match(tail, "\x0AWEX(\\d\\d\\d)-\\d\\d\\d")[2]
+if (is.na(restart_version)) {
+  warning(str_glue("Cannot determine GAMS version that saved {RESTART_FILE_PATH}"))
+} else {
+  if (dotless_version < restart_version) {
+    stop("The configured host-side GAMS_VERSION is older than the GAMS version that saved the configured restart file (RESTART_FILE_PATH). GAMS will fail!")
+  }
+}
 
 # Get username in a way that works on MacOS, Linux, and Windows
 username <- Sys.getenv("USERNAME")
@@ -162,7 +179,7 @@ handle_7zip <- function(out) {
     cat(out[grep("^Scanning the drive:", out)+1], sep="\n")
     size_line <- grep("^Archive size:", out, value=TRUE)
     cat(size_line, sep="\n")
-    byte_size <- as.integer(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
+    byte_size <- as.double(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
     if (is.na(byte_size)) stop("7zip archive size extraction failed!") # 7zip output format has changed?
     return(byte_size)
   }
@@ -178,6 +195,7 @@ remove_if_exists <- function(dir_path, file_name) {
 monitor <- function(clusters) {
   warn <- FALSE
   regexp <- "^(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
+  reschedule_invocations <- 200 # limit the number of reschedules so it is only done early on to push out the jobs quickly
   prior_jobs      <- -1
   prior_completed <- -1
   prior_removed   <- -1
@@ -213,7 +231,15 @@ monitor <- function(clusters) {
       cat("Jobs are held! Likely an execution error occurred, investigate and remove with condor_rm.\n")
       warn <- TRUE
     }
-    Sys.sleep(1)
+    # Request rescheduling early on when the idle job count does not change
+    if (idle > 0 && idle == prior_idle && reschedule_invocations > 0 && running <= prior_running) {
+      outerr <- system2("condor_reschedule", args=c("reschedule"), stdout=TRUE, stderr=TRUE) # Windows issue?: the seemingly superflous args=c("reschedule") is needed because R seems to call some underlying generic exe that needs a parameter to resolve which command it should behave as
+      if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
+        cat(outerr, sep="\n")
+        stop("Invocation of condor_reschedule failed!")
+      }
+      reschedule_invocations <- reschedule_invocations-1
+    }
     # Remember for next iteration
     prior_jobs      <- jobs
     prior_completed <- completed
@@ -222,6 +248,8 @@ monitor <- function(clusters) {
     prior_running   <- running
     prior_held      <- held
     prior_suspended <- suspended
+    # Sleep before iterating
+    Sys.sleep(1)
   }
 }
 
@@ -360,7 +388,7 @@ cat("\n")
 request_disk <- ceiling((model_byte_size+restart_byte_size)/1024)+2*1024*1024
 
 # Determine the bundle size in KiB
-bundle_size <- as.integer(floor(file.info(bundle_path)$size/1024))
+bundle_size <- floor(file.info(bundle_path)$size/1024)
 
 # ---- Seed available execute hosts with the bundle ----
 
@@ -394,7 +422,7 @@ for (hostdom in hostdoms) {
     "executable = {seed_bat}",
     "universe = vanilla",
     "",
-    "# -- Job log, output, and error files",
+    "# -- Job log, stdout, and stderr files",
     "log = {experiment_dir}/_seed_{hostname}.log",
     "output = {experiment_dir}/_seed_{hostname}.out",
     "error = {experiment_dir}/_seed_{hostname}.err",
@@ -405,7 +433,6 @@ for (hostdom in hostdoms) {
     "  ( GLOBIOM =?= True ) && \\",
     '  ( TARGET.Machine == "{hostdom}" )',
     "",
-    "# -- We want to transfer even when all slots are taken",
     "request_memory = 0",
     "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
     "request_disk = {2*bundle_size+500}", # KiB, twice needed for move, add some for the extra files
@@ -510,8 +537,8 @@ bat_template <- c(
   "@echo off",
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
-  "mkdir {G00_OUTPUT_DIR} 2>NUL || exit /b %errorlevel%",
-  "mkdir {GDX_OUTPUT_DIR} 2>NUL || exit /b %errorlevel%",
+  'md "{G00_OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
+  'md "{GDX_OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
   "@echo on",
   "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7za.exe x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
@@ -559,7 +586,7 @@ job_template <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_input_files = 7za.exe, {experiment_dir}/{scenario_prefix}.gms{ifelse(ADDITIONAL_INPUT_FILES!="", ", ", "")}{ADDITIONAL_INPUT_FILES}',
+  'transfer_input_files = 7za.exe,{experiment_dir}/{scenario_prefix}.gms{ifelse(ADDITIONAL_INPUT_FILES!="", ", ", "")}{ADDITIONAL_INPUT_FILES}',
   'transfer_output_files = {scenario_prefix}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{G00_OUTPUT_DIR}/a6_out.g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{GDX_OUTPUT_DIR}/output.gdx"), "")}',
   'transfer_output_remaps = "{scenario_prefix}.lst={experiment_dir}/{PREFIX}_{EXPERIMENT}_$(Cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";a6_out.g00={G00_OUTPUT_DIR}/a6_{EXPERIMENT}-$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";output.gdx={GDX_OUTPUT_DIR}/output_{EXPERIMENT}_$(Cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
@@ -639,7 +666,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
   for (job in JOBS) {
     job_lines <- readLines(file.path(experiment_dir, str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log")))
-    memory_use <- as.integer(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
+    memory_use <- as.double(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
       max_memory_job <- job
