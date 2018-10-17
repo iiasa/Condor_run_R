@@ -1,8 +1,8 @@
 #!/usr/bin/env Rscript
 # Plot and summarize performance stats from output files of Condor runs
 #
-# Usage: run this script from RStudio by setting up an RStudio project in
-# <GLOBIOM>/R. This makes <GLOBIOM>/R the working directory, as required.
+# Usage: run/source this script from RStudio by setting up an RStudio project
+# in <GLOBIOM>/R. This makes <GLOBIOM>/R the working directory, as required.
 # This script reads the output files of the Condor runs to analyze from either
 # <GLOBIOM>/Model/Condor/<EXPERIMENTS[]>
 # or
@@ -14,14 +14,16 @@
 # Author: Albert Brouwer
 #
 # Todo:
-# Solver-independent extraction from "S O L V E      S U M M A R Y" sections
+# - Solver-independent extraction from "S O L V E      S U M M A R Y" sections
+# - Test running on Linux
 
 # Experiment names you gave to your Condor runs
 #EXPERIMENTS <- c("limpopo1_affinity_half", "limpopo1_affinity_f", "limpopo1_affinity_double")
 #EXPERIMENTS <- c("limpopo_nusw_5x8", "limpopo_nusw_5x16", "limpopo_nusw_5x24", "limpopo_nusw_4x32_30", "limpopo_nusw_500")
-EXPERIMENTS <- c("test")
+EXPERIMENTS <- c("10x55MB", "20x28MB", "30x18MB", "40x14MB", "60x9MB", "80x7MB", "100x7MB", "120x7MB", "140x7MB") #, "many")
+#EXPERIMENTS <- c("contention")
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
-#CLUSTER <- "191"
+#CLUSTER <- "134"
 CLUSTER <- "*"
 # Name of directory under Model/Condor with output files to analyze. Set to NULL to default to the experiment name.
 SUBDIRECTORY <- NULL
@@ -45,9 +47,9 @@ log_paths <- c()
 experiments <- list() # expanded to a per-job list
 for (experiment in EXPERIMENTS) {
   if (is.null(SUBDIRECTORY)) {
-    experiment_dir<-file.path(getwd(), "..", "Model", "Condor", experiment)
+    experiment_dir <- file.path(getwd(), "..", "Model", "Condor", experiment)
   } else {
-    experiment_dir<-file.path(getwd(), "..", "Model", "Condor", SUBDIRECTORY)
+    experiment_dir <- file.path(getwd(), "..", "Model", "Condor", SUBDIRECTORY)
   }
   if (!dir.exists(experiment_dir)) stop(str_glue("Experiment directory not found! Expected location: {experiment_dir}!"))
   outs <- list.files(path=experiment_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.out"), full.names=TRUE, recursive=FALSE)
@@ -68,7 +70,7 @@ if (!all(out_paths==log_paths)) stop("The .out and .log files for CLUSTER {CLUST
 roots <- as.list(out_paths)
 
 # Remove aborted jobs
-indices_of_aborted_jobs = c()
+indices_of_aborted_jobs <- c()
 for (i in seq_along(roots)) {
   hits <- grep("\\) \\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d Job was aborted", readLines(str_glue("{roots[[i]]}.log")))
   if (length(hits) > 0) {
@@ -86,7 +88,7 @@ if (length(roots) == 0) stop("No jobs left to analyze!")
 log_files <- list()
 out_files <- list()
 cat("Preloading...\n")
-pb <- txtProgressBar(min = 0, max = length(roots), style = 3)
+pb <- txtProgressBar(min=0, max=length(roots), style=3)
 for (i in seq_along(roots)) {
   setTxtProgressBar(pb, i)
   log_files[[i]] <- readLines(str_glue("{roots[[i]]}.log"))
@@ -96,18 +98,18 @@ close(pb)
 
 # ---- Extract lists of jobs data from the loaded output ----
 
-# Extract the experiment cluster strings and process numbers
-clusters = c()
-runs = c() # {experiment}_{cluster} labels for plotting
-processes = c()
+# Extract the experiment cluster strings and job numbers
+clusters <- c()
+runs <- c() # {experiment}_{cluster} labels for plotting
+job_numbers <- c()
 for (i in seq_along(roots)) {
   mat <- str_match(roots[[i]], ".*_([0-9]+)[.]([0-9]+)$")
   clstr <- mat[2]
   prstr <- mat[3]
-  if (is.na(clstr) | is.na(prstr)) stop(str_glue("Cannot extract cluster and process numbers from path {r}! Format should be *_<cluster number>.<process number>.[log|out]"))
+  if (is.na(clstr) | is.na(prstr)) stop(str_glue("Cannot extract cluster and job numbers from path {r}! Format should be *_<cluster number>.<job number>.[log|out]"))
   clusters  <- c(clusters , clstr)
   runs <- c(runs, str_glue("{experiments[i]}_{clstr}"))
-  processes <- c(processes, as.integer(prstr))
+  job_numbers <- c(job_numbers, as.integer(prstr))
 }
 
 # Determine the current year to help compensate for the absense of year numbers in the .log file
@@ -139,16 +141,16 @@ for (i in seq_along(roots)) {
   if (length(lines) > 1) warning(str_glue("Execution started multiple times for job. Probably the initial execution host disconnected. See {roots[[i]]}.log!"))
   # Pick the last execution start time since that's on the host that can be assumed to have made it to the end.
   mat <- str_match(lines[length(lines)], "\\) (\\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d) Job executing on host: <(\\d+\\.\\d+\\.\\d+\\.\\d+):")
-  dtstr = mat[2]
-  ipstr = mat[3]
+  dtstr <- mat[2]
+  ipstr <- mat[3]
   if (is.na(dtstr)) stop(str_glue("Cannot decode execution start time from {roots[[i]]}.log"))
   if (is.na(ipstr)) stop(str_glue("Cannot decode execution host IP from {roots[[i]]}.log"))
   # Use guessed year (can fail for leap days)
-  start_times = c(start_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
-  start_times_minus_1y = c(start_times_minus_1y, list(strptime(str_glue("{current_year-1}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
+  start_times <- c(start_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
+  start_times_minus_1y <- c(start_times_minus_1y, list(strptime(str_glue("{current_year-1}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
   if (is.na(hostname_map[ipstr])) host <- ipstr
   else host <- hostname_map[ipstr]
-  hosts = c(hosts, host)
+  hosts <- c(hosts, host)
 }
 
 # Extract the job terminate times (with uncertain year) from the .log files
@@ -159,7 +161,7 @@ for (i in seq_along(roots)) {
   dtstr <- str_match(lines[1], "\\) (\\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d) Job terminated.$")[2]
   if (is.na(dtstr)) stop(str_glue("Cannot decode termination time from {roots[[i]]}.log"))
   # Use guessed year (can fail for leap days)
-  terminate_times = c(terminate_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
+  terminate_times <- c(terminate_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
 }
 
 # Calculate the execution latencies in seconds (difference between submit and execute times)
@@ -190,8 +192,8 @@ for (i in seq_along(roots)) {
 # To make it available, execute the following command in the batch file of your jobs:
 # grep "^Machine = " .machine.ad
 for (i in seq_along(roots)) {
-  machine_line = grep('^Machine = ".*"', out_files[[i]], value=TRUE)
-  host = str_match(machine_line, '^Machine = "([^.]+)[.].*"')[2]
+  machine_line <- grep('^Machine = ".*"', out_files[[i]], value=TRUE)
+  host <- str_match(machine_line, '^Machine = "([^.]+)[.].*"')[2]
   if (!is.na(host)) hosts[i] = host
 }
 
@@ -200,8 +202,8 @@ for (i in seq_along(roots)) {
 # echo _CONDOR_SLOT = %_CONDOR_SLOT%
 slots <- list()
 for (i in seq_along(roots)) {
-  slot_line = grep("^_CONDOR_SLOT ?= ?.*$", out_files[[i]], value=TRUE)
-  slot = str_match(slot_line, "^_CONDOR_SLOT ?= ?(.*)_\\d+$")[2] # clip off the dynamic slot number
+  slot_line <- grep("^_CONDOR_SLOT ?= ?.*$", out_files[[i]], value=TRUE)
+  slot <- str_match(slot_line, "^_CONDOR_SLOT ?= ?(.*)_\\d+$")[2] # clip off the dynamic slot number
   if (is.na(slot)) {
     slots[[i]] = NA
   } else {
@@ -217,7 +219,7 @@ for (i in seq_along(roots)) {
   for (line in grep("^EXECUTION TIME\\s+=\\s+[0-9]+[.][0-9]+ SECONDS", out_files[[i]], value=TRUE)) {
     seconds <- c(seconds, as.double(str_match(line, "^EXECUTION TIME\\s+=\\s+([0-9]+[.][0-9]+) SECONDS")[2]))
   }
-  max_matches = max(max_matches, length(seconds))
+  max_matches <- max(max_matches, length(seconds))
   execution_times <- c(execution_times, list(seconds))
 }
 # Set any missing occurrences (early abort of job presumably) to NA
@@ -242,7 +244,7 @@ for (i in seq_along(roots)) {
   for (line in grep("^Cplex Time: [0-9]+[.][0-9]+sec", out_files[[i]], value=TRUE)) {
     seconds <- c(seconds, as.double(str_match(line, "^Cplex Time: ([0-9]+[.][0-9]+)sec")[2]))
   }
-  max_matches = max(max_matches, length(seconds))
+  max_matches <- max(max_matches, length(seconds))
   cplex_times <- c(cplex_times, list(seconds))
 }
 # Set any missing occurrences (early abort of job presumably) to NA
@@ -269,7 +271,7 @@ rm(out_files)
 jobs <- tibble(experiment=unlist(experiments),
                cluster=clusters,
                run=runs,
-               process=processes,
+               job=job_numbers,
                submitted=submit_dtstrs,
                host=hosts,
                slot=unlist(slots),
@@ -278,54 +280,56 @@ jobs <- tibble(experiment=unlist(experiments),
                `duration [s]`=durations)
 
 # Add a combined host_slot column
-jobs = add_column(jobs, host_slot=paste(jobs$host, jobs$slot))
+jobs <- add_column(jobs, host_slot=paste(jobs$host, jobs$slot))
 
 # Add the extracted EXECUTION TIMEs to the jobs data
 for (i in seq_along(execution_times)) {
-  jobs = add_column(jobs, !!(str_glue("EXECUTION TIME {i} [s]")) := unlist(execution_times[[i]]))
+  jobs <- add_column(jobs, !!(str_glue("EXECUTION TIME {i} [s]")) := unlist(execution_times[[i]]))
 }
 
 # Add the extracted Cplex Times to the jobs data
 for (i in seq_along(cplex_times)) {
-  jobs = add_column(jobs, !!(str_glue("Cplex Time {i} [s]")) := unlist(cplex_times[[i]]))
+  jobs <- add_column(jobs, !!(str_glue("Cplex Time {i} [s]")) := unlist(cplex_times[[i]]))
 }
 
 # Before every column with [s] units, add derived columns with [min] and [h] units 
 for (name in names(jobs)) {
   if (str_sub(name, -3, -1) == "[s]") {
-    name_head = str_sub(name, 1, -4)
-    jobs = add_column(jobs, !!(str_glue("{name_head}[h]")) := jobs[[name]]/3600, .before=name)
-    jobs = add_column(jobs, !!(str_glue("{name_head}[min]")) := jobs[[name]]/60, .before=name)
+    name_head <- str_sub(name, 1, -4)
+    jobs <- add_column(jobs, !!(str_glue("{name_head}[h]")) := jobs[[name]]/3600, .before=name)
+    jobs <- add_column(jobs, !!(str_glue("{name_head}[min]")) := jobs[[name]]/60, .before=name)
   }
 }
 
 # ---- Analyse jobs data ----
 
 # Plot, print() needed for sourcing because of https://yihui.name/en/2017/06/top-level-r-expressions/
-print(ggplot(jobs, aes(x=process, y=host_slot, color=run)) + geom_point() + ggtitle("slot allocation"))
-print(ggplot(jobs, aes(x=process, y=`latency [min]`, color=run)) + geom_point(alpha=1/2) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1/2) + geom_segment(aes(xend=process, yend=`latency [min]`+`duration [min]`), alpha=1/5) + ylab("job start-stop time after submission [min]"))
-print(ggplot(jobs, aes(x=process, y=`latency [min]`, color=slot)) + geom_point(alpha=1) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1) + geom_segment(aes(xend=process, yend=`latency [min]`+`duration [min]`), alpha=1) + ylab("job start-stop time after submission [min]"))
-print(ggplot(jobs, aes(x=process, y=`duration [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point())
+print(ggplot(jobs, aes(x=job, y=host_slot, color=slot)) + geom_point(size=3) + ggtitle("slot allocation") + theme_grey(base_size=20))
+print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=run)) + geom_point(alpha=1/2) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1/2) + geom_segment(aes(xend=job, yend=`latency [min]`+`duration [min]`), alpha=1/5) + ylab("job start-stop time after submission [min]") + theme_grey(base_size=20))
+print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=slot)) + geom_point(alpha=1) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1) + geom_segment(aes(xend=job, yend=`latency [min]`+`duration [min]`), alpha=1) + ylab("job start-stop time after submission [min]"))
+print(ggplot(jobs, aes(x=job, y=`duration [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point())
 print(ggplot(jobs, aes(x=host, y=`duration [min]`, color=run)) + geom_point())
-if ("EXECUTION TIME 1 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=process, y=`EXECUTION TIME 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point())
-if ("EXECUTION TIME 2 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=process, y=`EXECUTION TIME 2 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point())
-if ("Cplex Time 1 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=process, y=`Cplex Time 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point())
+if ("EXECUTION TIME 1 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=job, y=`EXECUTION TIME 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point())
+if ("EXECUTION TIME 2 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=job, y=`EXECUTION TIME 2 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point())
+if ("Cplex Time 1 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=job, y=`Cplex Time 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point())
 if ("Cplex Time 1 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=host, y=`Cplex Time 1 [min]`, color=run)) + geom_point())
 
-# Print summary
-print(jobs %>%
-      select(experiment, cluster, submitted, `duration [min]`, `latency [h]`, `duration [h]`) %>%
-      group_by(cluster) %>%
-      summarize(experiment=dplyr::first(experiment),
-                submitted=min(submitted),
-                `processes`=n(),
-                `mean [min]`=mean(`duration [min]`),
-                `stdev [min]`=sd(`duration [min]`),
-                `min [min]`=min(`duration [min]`),
-                `max [min]`=max(`duration [min]`),
-                `throughput [jobs/h]`=n()/max(`latency [h]`+`duration [h]`)) %>%
-      arrange(cluster)
-)
+# Summarize
+jobs %>%
+select(experiment, cluster, submitted, `duration [min]`, `latency [h]`, `duration [h]`) %>%
+group_by(cluster) %>%
+summarize(experiment=dplyr::first(experiment),
+          submitted=min(submitted),
+          `jobs`=n(),
+          `mean [min]`=mean(`duration [min]`),
+          `stdev [min]`=sd(`duration [min]`),
+          `min [min]`=min(`duration [min]`),
+          `max [min]`=max(`duration [min]`),
+          `throughput [jobs/h]`=n()/max(`latency [h]`+`duration [h]`)) %>%
+arrange(cluster) -> summary
+print(summary)
+print(ggplot(summary, aes(x=jobs/5, y=`mean [min]`, color=experiment)) + geom_errorbar(aes(ymin=`mean [min]`-`stdev [min]`, ymax=`mean [min]`+`stdev [min]`), width=1) + geom_point(size=3) + xlab("jobs/limpopo") + ylab("mean job time [min]") + ggtitle("contention") + theme_grey(base_size=20))
+print(ggplot(summary, aes(x=jobs, y=`throughput [jobs/h]`, color=experiment)) + geom_point(size=3) + scale_x_continuous(trans='log10') + xlab("jobs/run") + ylab("jobs/h") + ggtitle("throughput") + theme_grey(base_size=20))
 
 options(tibble.print_max = Inf)
 
@@ -335,7 +339,7 @@ print(jobs %>%
       group_by(cluster,host) %>%
       summarize(experiment=dplyr::first(experiment),
                 submitted=min(submitted),
-                `processes`=n(),
+                `jobs`=n(),
                 `mean [min]`=mean(`duration [min]`),
                 `stdev [min]`=sd(`duration [min]`),
                 `min [min]`=min(`duration [min]`),
