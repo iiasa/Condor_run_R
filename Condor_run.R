@@ -28,7 +28,6 @@
 # Author: Albert Brouwer
 #
 # Todo:
-# - Make bundling include and exclude patterns configurable
 # - Condor is balky when transferring large (>= 2GB) bundles
 # - limpopo1 has an issue with largish request_disk
 # - Sometimes, limpopo1 partitionable slots are not filled whereas for the other limpopos they are.
@@ -56,6 +55,9 @@ RESTART_FILE_PATH = "t/a4_limpopo.g00"
 GAMS_VERSION = "24.4" # must be installed on all execute hosts
 GAMS_ARGUMENTS = "//nsim='%2' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cerr=5 pw 100"
 ADDITIONAL_INPUT_FILES = "" # comma-separated, leave empty if none, user / path separators, can also use an absolute path for these
+BUNDLE_INCLUDE_DIRS = c("finaldata") # recursive, supports wildcards
+BUNDLE_EXCLUDE_DIRS = c("225*", "Demand", "graphs", "output", "trade", "SIMBIOM") # recursive, supports wildcards
+BUNDLE_EXCLUDE_FILES = c("*.~*",  "*.exe", "*.log", "*.lxi", "*.lst", "*.zip", "test*.gdx") # supports wildcardss
 RETAIN_BUNDLE = FALSE
 GET_G00_OUTPUT = FALSE
 G00_OUTPUT_DIR = "t" # relative to working dir both host-side and on the submit machine
@@ -378,24 +380,13 @@ if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is th
 cat("Compressing model files into job bundle...\n")
 model_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
   args=unlist(lapply(c("a", "-mx1", "-bb0",
-    "-ir!finaldata",
-    "-x!*.~*",
-    "-x!*.exe",
-    "-x!*.log",
-    "-x!*.lxi",
-    "-x!*.lst",
-    "-x!*.zip",
-    "-x!test*.gdx",
+    unlist(lapply(BUNDLE_INCLUDE_DIRS, function(p) return(str_glue("-ir!", p)))),
+    unlist(lapply(BUNDLE_EXCLUDE_DIRS, function(p) return(str_glue("-xr!", p)))),
+    unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!", p)))),
     "-x!{GAMS_FILE}",
     "-xr!{condor_dir}",
     "-xr!{G00_OUTPUT_DIR}",
     "-xr!{GDX_OUTPUT_DIR}",
-    "-xr!225*",
-    "-xr!Demand",
-    "-xr!graphs",
-    "-xr!output",
-    "-xr!trade",
-    "-xr!SIMBIOM",
     "{bundle_platform_path}",
     "*"
   ), str_glue))
@@ -670,7 +661,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   # because jobs can continue to be scheduled well after the initial submission when
   # there are more jobs in the run than available slot partitions.
   invisible(file.remove(job_bat))
-  
+
   # Check that result files exist and are not empty, warn otherwise and remove empty files
   lsts_complete <- all_exist_and_not_empty(experiment_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.lst", ".lst")
   if (GET_G00_OUTPUT) {
@@ -679,7 +670,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   if (GET_GDX_OUTPUT) {
     gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR, 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx', "GDX")
   }
-    
+
   return_values <- get_return_values(experiment_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log"))))
   if (any(is.na(return_values))) {
     stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
