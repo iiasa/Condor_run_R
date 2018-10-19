@@ -94,7 +94,11 @@ if (length(args) == 0) {
     name <- config_names[i]
     if (!exists(name)) stop(str_glue("{name} not set in {args[1]}!"))
     type <- typeof(get(name))
-    if (type != config_types[[i]] && name != "JOBS") stop(str_glue("{name} set to wrong type in {args[1]}, type should be {config_types[[i]]}"))
+    if (type != config_types[[i]] &&
+        name != "JOBS" && # R has no stable numerical type
+        type != "NULL" && # allow for configured vector being empty
+        config_types[[i]] != "NULL" # allow for default vector being empty
+    ) stop(str_glue("{name} set to wrong type in {args[1]}, type should be {config_types[[i]]}"))
   }
 } else {
   stop("Multiple arguments provided! Expecting at most a single config file argument.")
@@ -603,7 +607,7 @@ job_template <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_input_files = 7za.exe,{experiment_dir}/{scenario_prefix}.gms{ifelse(length(ADDITIONAL_INPUT_FILES)>0, ", ", "")}{paste(ADDITIONAL_INPUT_FILES,collapse=",")}',
+  'transfer_input_files = 7za.exe,{experiment_dir}/{scenario_prefix}.gms{ifelse(length(ADDITIONAL_INPUT_FILES)>0, ",", "")}{paste(ADDITIONAL_INPUT_FILES,collapse=",")}',
   'transfer_output_files = {scenario_prefix}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{G00_OUTPUT_DIR}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE}"), "")}',
   'transfer_output_remaps = "{scenario_prefix}.lst={experiment_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR}/{g00_prefix}_{EXPERIMENT}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
