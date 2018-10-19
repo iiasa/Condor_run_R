@@ -59,10 +59,10 @@ REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 GAMS_FILE = "6_scenarios_limpopo.gms" # the GAMS file to run for each job
 RESTART_FILE_PATH = "t/a4_limpopo.g00"
 GAMS_VERSION = "24.4" # must be installed on all execute hosts
-GAMS_ARGUMENTS = "//nsim='%2' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cerr=5 pw 100"
+GAMS_ARGUMENTS = "//nsim='%1' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cerr=5 pw 100"
 BUNDLE_INCLUDE_DIRS = c("finaldata") # recursive, supports wildcards
 BUNDLE_EXCLUDE_DIRS = c("225*", "Demand", "graphs", "output", "trade", "SIMBIOM") # recursive, supports wildcards
-BUNDLE_EXCLUDE_FILES = c("*.~*",  "*.exe", "*.log", "*.lxi", "*.lst", "*.zip", "test*.gdx") # supports wildcardss
+BUNDLE_EXCLUDE_FILES = c("*.~*", "*.exe", "*.log", "*.lxi", "*.lst", "*.zip", "test*.gdx") # supports wildcardss
 BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
 GET_G00_OUTPUT = FALSE
@@ -131,7 +131,7 @@ version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
 if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
 if (as.integer(version_match[2]) < 24 || (as.integer(version_match[2]) == 24 && as.integer(version_match[3]) < 2)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Version too old (< 24.2).'))
 dotless_version <- str_glue(version_match[2], version_match[3])
-if (!str_detect(GAMS_ARGUMENTS, fixed("%2"))) stop("Configured GAMS_ARGUMENTS lack a %2 batch file argument expansion that must be used for passing the job number with which the scenario variant can be selected per-job.")
+if (!str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion that must be used for passing the job number with which the job-specific (e.g. scenario) can be selected.")
 for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
@@ -390,7 +390,6 @@ model_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
     unlist(lapply(BUNDLE_INCLUDE_DIRS, function(p) return(str_glue("-ir!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_DIRS, function(p) return(str_glue("-xr!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!", p)))),
-    "-x!{GAMS_FILE}",
     "-xr!{condor_dir}",
     "-xr!{G00_OUTPUT_DIR}",
     "-xr!{GDX_OUTPUT_DIR}",
@@ -549,9 +548,8 @@ if (length(args) > 0) {
   close(config_conn)
 }
 
-# Copy the GAMS file to the experiment directory
-scenario_prefix <- str_glue("{str_sub(GAMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}")
-if (!file.copy(file.path(GAMS_FILE), file.path(experiment_dir, str_glue("{scenario_prefix}.gms")), overwrite=TRUE)) {
+# Copy the GAMS file to the experiment directory for reference
+if (!file.copy(file.path(GAMS_FILE), file.path(experiment_dir, str_glue("{str_sub(GAMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}.gms")), overwrite=TRUE)) {
   invisible(file.remove(bundle_path))
   stop(str_glue("Cannot copy the configured GAMS_FILE file to {experiment_dir}")) 
 }
@@ -570,7 +568,7 @@ bat_template <- c(
   "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7za.exe x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
-  "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe %1.gms -logOption=3 restart={RESTART_FILE_PATH} save={G00_OUTPUT_DIR}/{g00_prefix} {GAMS_ARGUMENTS}",
+  "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe {GAMS_FILE} -logOption=3 restart={RESTART_FILE_PATH} save={G00_OUTPUT_DIR}/{g00_prefix} {GAMS_ARGUMENTS}",
   "set gams_errorlevel=%errorlevel%",
   "@echo off",
   "if %gams_errorlevel% neq 0 (",
@@ -590,7 +588,7 @@ close(bat_conn)
 # Define the Condor .job file template for the run
 job_template <- c(
   "executable = {job_bat}",
-  "arguments = {scenario_prefix} $(job)",
+  "arguments = $(job)",
   "universe = vanilla",
   "",
   "# -- Job log, output, and error files",
@@ -614,9 +612,9 @@ job_template <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_input_files = 7za.exe,{experiment_dir}/{scenario_prefix}.gms',
-  'transfer_output_files = {scenario_prefix}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{G00_OUTPUT_DIR}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{scenario_prefix}.lst={experiment_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR}/{g00_prefix}_{EXPERIMENT}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  "transfer_input_files = 7za.exe",
+  'transfer_output_files = {str_sub(GAMS_FILE, 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{G00_OUTPUT_DIR}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE}"), "")}',
+  'transfer_output_remaps = "{str_sub(GAMS_FILE, 1, -5)}.lst={experiment_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR}/{g00_prefix}_{EXPERIMENT}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete. And Error does not seem to catch many execution errors.
   "",
