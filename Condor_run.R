@@ -9,9 +9,14 @@
 # an argument to this script. The format of the configuration file is
 # shown in the "Default run config settings section" below.
 #
+# If you cannot invoke Rscript, you will need to add where the R binaries
+# reside to your PATH environment variable. On Windows, this is typically
+# C:\Program Files\R\R-x.y.z\bin\x64 (where x.y.z is the R version).
+#
 # The working directory (current directory) when invoking this script
 # must be the directory that contains the configured files and paths.
-# For GLOBIOM this will be the Model directory.
+# For GLOBIOM this will be the Model directory. This same directory
+# should contain 7za.exe.
 #
 # To adapt this script to submit non-GLOBIOM jobs, change what is
 # bundled, revise the templates, and adapt the output checking and
@@ -28,6 +33,7 @@
 # Author: Albert Brouwer
 #
 # Todo:
+# - Drop transfer of 7za.exe once 7zip is on-path on Limpopo
 # - Condor is balky when transferring large (>= 2GB) bundles
 # - limpopo1 has an issue with largish request_disk
 # - Sometimes, limpopo1 partitionable slots are not filled whereas for the other limpopos they are.
@@ -54,10 +60,10 @@ GAMS_FILE = "6_scenarios_limpopo.gms" # the GAMS file to run for each job
 RESTART_FILE_PATH = "t/a4_limpopo.g00"
 GAMS_VERSION = "24.4" # must be installed on all execute hosts
 GAMS_ARGUMENTS = "//nsim='%2' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cerr=5 pw 100"
-ADDITIONAL_INPUT_FILES = c() # leave empty if none, use / path separators, can also use an absolute path for these
 BUNDLE_INCLUDE_DIRS = c("finaldata") # recursive, supports wildcards
 BUNDLE_EXCLUDE_DIRS = c("225*", "Demand", "graphs", "output", "trade", "SIMBIOM") # recursive, supports wildcards
 BUNDLE_EXCLUDE_FILES = c("*.~*",  "*.exe", "*.log", "*.lxi", "*.lst", "*.zip", "test*.gdx") # supports wildcardss
+BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
 GET_G00_OUTPUT = FALSE
 G00_OUTPUT_DIR = "t" # relative to working dir both host-side and on the submit machine
@@ -126,8 +132,8 @@ if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSIO
 if (as.integer(version_match[2]) < 24 || (as.integer(version_match[2]) == 24 && as.integer(version_match[3]) < 2)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Version too old (< 24.2).'))
 dotless_version <- str_glue(version_match[2], version_match[3])
 if (!str_detect(GAMS_ARGUMENTS, fixed("%2"))) stop("Configured GAMS_ARGUMENTS lack a %2 batch file argument expansion that must be used for passing the job number with which the scenario variant can be selected per-job.")
-for (file in ADDITIONAL_INPUT_FILES) {
-  if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured ADDITIONAL_INPUT_FILES: "{file}" does not exist!'))
+for (file in BUNDLE_ADDITIONAL_FILES) {
+  if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
 if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
 if (!(file.exists(G00_OUTPUT_DIR))) stop(str_glue('Configured G00_OUTPUT_DIR "{G00_OUTPUT_DIR}" does not exist!'))
@@ -394,11 +400,12 @@ model_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
 ))
 cat("\n")
 
-cat("Adding restart file to job bundle...\n")
+cat("Bundle restart file and any additional files...\n")
 restart_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
   args=unlist(lapply(c("a",
     "{bundle_platform_path}",
-    "{RESTART_FILE_PATH}"
+    "{RESTART_FILE_PATH}",
+    BUNDLE_ADDITIONAL_FILES
   ), str_glue))
 ))
 cat("\n")
@@ -607,7 +614,7 @@ job_template <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_input_files = 7za.exe,{experiment_dir}/{scenario_prefix}.gms{ifelse(length(ADDITIONAL_INPUT_FILES)>0, ",", "")}{paste(ADDITIONAL_INPUT_FILES,collapse=",")}',
+  'transfer_input_files = 7za.exe,{experiment_dir}/{scenario_prefix}.gms',
   'transfer_output_files = {scenario_prefix}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{G00_OUTPUT_DIR}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE}"), "")}',
   'transfer_output_remaps = "{scenario_prefix}.lst={experiment_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR}/{g00_prefix}_{EXPERIMENT}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
