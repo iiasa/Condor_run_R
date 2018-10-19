@@ -32,7 +32,7 @@
 # - Condor is balky when transferring large (>= 2GB) bundles
 # - limpopo1 has an issue with largish request_disk
 # - Sometimes, limpopo1 partitionable slots are not filled whereas for the other limpopos they are.
-# - Test on Liunx (condor_reschedule is probably going to be an issue)
+# - Test on Linux (condor_reschedule is probably going to be an issue)
 # - Cache and merge gdx files on the execute hosts?
 #  * not if low-memory merge has a slow fallback
 #  * complication: distributed over hosts after main run
@@ -82,7 +82,7 @@ if (!dir.exists(condor_dir)) stop(str_glue("No {condor_dir} directory found rela
 
 # Read config file if specified via an argument, check presence and types.
 args <- commandArgs(trailingOnly=TRUE)
-#args <- c("..\\R\\config")
+#args <- c("..\\R\\config.R")
 if (length(args) == 0) {
   warning("No config file argument supplied, using default run settings.")
 } else if (length(args) == 1) {
@@ -570,6 +570,7 @@ bat_template <- c(
   "@echo on",
   "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7za.exe x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
+  "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
   "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe %1.gms -logOption=3 restart={RESTART_FILE_PATH} save={G00_OUTPUT_DIR}/{g00_prefix} {GAMS_ARGUMENTS}",
   "set gams_errorlevel=%errorlevel%",
   "@echo off",
@@ -715,6 +716,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
       cat("Merging the returned GDX files...\n")
       prior_wd <- getwd()
       setwd(GDX_OUTPUT_DIR)
+      Sys.setenv(GDXCOMPRESS=1) # Causes the merged GDX file to be compressed, it will be usable as a regular GDX,
       error_code <- system2("gdxmerge", args=c(str_glue("{gdx_prefix}_{EXPERIMENT}_{cluster}.*.gdx"), str_glue("output={gdx_prefix}_{EXPERIMENT}_{cluster}_merged.gdx")))
       setwd(prior_wd)
       if (error_code > 0) stop("Merging failed!")
