@@ -13,10 +13,15 @@
 # reside to your PATH environment variable. On Windows, this is typically
 # C:\Program Files\R\R-x.y.z\bin\x64 (where x.y.z is the R version).
 #
+# Also, 7z should be on-path. On Windows, this typically requires
+# C:\Program Files\7-Zip to be added to your PATH environment variable.
+# Preferably use a recent 7-Zip version that can compress in parallel.
+# The execute hosts that you submit to should also have 7-Zip on-path.
+# This is the case for the limpopo machines.
+#
 # The working directory (current directory) when invoking this script
 # must be the directory that contains the configured files and paths.
-# For GLOBIOM this will be the Model directory. This same directory
-# should contain 7za.exe.
+# For GLOBIOM this will be the Model directory.
 #
 # To adapt this script to submit non-GLOBIOM jobs, change what is
 # bundled, revise the templates, and adapt the output checking and
@@ -33,7 +38,7 @@
 # Author: Albert Brouwer
 #
 # Todo:
-# - Drop transfer of 7za.exe once 7zip is on-path on Limpopo
+# - Don't merge a single file?
 # - Condor is balky when transferring large (>= 2GB) bundles
 # - limpopo1 has an issue with largish request_disk
 # - Sometimes, limpopo1 partitionable slots are not filled whereas for the other limpopos they are.
@@ -385,7 +390,7 @@ bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), 
 if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing?"))
 
 cat("Compressing model files into job bundle...\n")
-model_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
+model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
   args=unlist(lapply(c("a", "-mx1", "-bb0",
     unlist(lapply(BUNDLE_INCLUDE_DIRS, function(p) return(str_glue("-ir!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_DIRS, function(p) return(str_glue("-xr!", p)))),
@@ -400,7 +405,7 @@ model_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
 cat("\n")
 
 cat("Bundle restart file and any additional files...\n")
-restart_byte_size <- handle_7zip(system2("7za.exe", stdout=TRUE, stderr=TRUE,
+restart_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
   args=unlist(lapply(c("a",
     "{bundle_platform_path}",
     "{RESTART_FILE_PATH}",
@@ -566,7 +571,7 @@ bat_template <- c(
   'md "{GDX_OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
   "@echo on",
   "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
-  '7za.exe x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
+  '7z x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
   "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe {GAMS_FILE} -logOption=3 restart={RESTART_FILE_PATH} save={G00_OUTPUT_DIR}/{g00_prefix} {GAMS_ARGUMENTS}",
   "set gams_errorlevel=%errorlevel%",
@@ -612,7 +617,6 @@ job_template <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  "transfer_input_files = 7za.exe",
   'transfer_output_files = {str_sub(GAMS_FILE, 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{G00_OUTPUT_DIR}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE}"), "")}',
   'transfer_output_remaps = "{str_sub(GAMS_FILE, 1, -5)}.lst={experiment_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR}/{g00_prefix}_{EXPERIMENT}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
