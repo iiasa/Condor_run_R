@@ -54,6 +54,9 @@ rm(list=ls())
 # You can replace these via a run-config file passed as a first argument
 # to this script. Lines with settings like the ones just below can be used
 # in the config file. No settings may be omitted from the config file.
+# To set up an initial config file, just copy-and-paste the below to a
+# file, give it a .R extension to get nice syntax highlighting.
+# -------><8----snippy-snappy---------------------------------------------
 # Use paths relative to the working directory, with / as path separator.
 EXPERIMENT = "test" # label for your experiment, pick something without spaces and valid as part of a filename
 PREFIX = "_globiom" # prefix for per-job .err, log, .lst, and .out files
@@ -79,6 +82,7 @@ GDX_OUTPUT_FILE = "output.gdx" # as produced by execute_unload on the host-side,
 WAIT_FOR_RUN_COMPLETION = TRUE
 MERGE_GDX_OUTPUT = TRUE
 REMOVE_MERGED_GDX_FILES = TRUE
+# -------><8----snippy-snappy---------------------------------------------
 
 # ---- Process environment and run config settings ----
 
