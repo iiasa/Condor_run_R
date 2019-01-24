@@ -366,12 +366,12 @@ all_exist_and_not_empty <- function(dir, file_template, file_type) {
 
 # Show status summary of selected execute hosts
 error_code <- system2("condor_status", args=c("-compact", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
-if (error_code > 0) stop("Cannot show Condor pool status!")
+if (error_code > 0) stop("Cannot show Condor pool status! You may have an old Condor installed for which condor_status does not support the -compact option yet. If so, install a new Condor or remove -compact from the parameter list.")
 cat("\n")
 
 # Collect available execute hosts including domain
-hostdoms <- system2("condor_status", c("-compact", "-autoformat", "Machine", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE)
-if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot get Condor pool status!")
+hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machine", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE))
+if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot get Condor pool status! You may have an old Condor installed for which condor_status does not support the -compact option yet. If so, install a new Condor or remove -compact from the parameter list.")
 if (length(hostdoms) == 0) stop("No execute hosts matching HOST_REGEXP are available!")
 
 # ---- Bundle the model ----
