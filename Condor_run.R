@@ -27,11 +27,9 @@
 # bundled, revise the templates, and adapt the output checking and
 # handling.
 #
-# This script requires you to have Condor installed. On Windows, the
-# installer adds the Condor/bin directory to the PATH system environment
-# variable, thus making the Condor commands available.
-#
-# Tested with Condor version 8.6.
+# This script requires you to have a recent version of Condor installed.
+# On Windows, the installer adds the Condor/bin directory to the PATH
+# system environment variable, thus making the Condor commands available.
 #
 # Based on: GLOBIOM-limpopo scripts by David Leclere
 #
@@ -218,7 +216,7 @@ remove_if_exists <- function(dir_path, file_name) {
 # Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
 monitor <- function(clusters) {
   warn <- FALSE
-  regexp <- "^(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
+  regexp <- "(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
   reschedule_invocations <- 200 # limit the number of reschedules so it is only done early on to push out the jobs quickly
   changes_since_reschedule <- FALSE
   iterations_since_reschedule <- 0
