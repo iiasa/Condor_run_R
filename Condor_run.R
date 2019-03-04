@@ -118,6 +118,7 @@ if (length(args) == 0) {
 }
 
 # Check and massage specific config settings
+EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "25.1")
 if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT name has forbidden character(s)!"))
 if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
 if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
@@ -136,7 +137,7 @@ if (str_detect(RESTART_FILE_PATH, fixed("../"))) stop(str_glue("Configured RESTA
 if (str_detect(RESTART_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured RESTART_FILE_PATH has forbidden character(s)! Use / as path separator."))
 version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
 if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
-if (as.integer(version_match[2]) < 24 || (as.integer(version_match[2]) == 24 && as.integer(version_match[3]) < 2)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Version too old (< 24.2).'))
+if (!(GAMS_VERSION %in% EXECUTE_HOST_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The execute hosts have only these GAMS versions installed: {str_c(EXECUTE_HOST_GAMS_VERSIONS, collapse=" ")}')) # {cat(EXECUTE_HOST_GAMS_VERSIONS)}
 dotless_version <- str_glue(version_match[2], version_match[3])
 if (!str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion that must be used for passing the job number with which the job-specific (e.g. scenario) can be selected.")
 for (file in BUNDLE_ADDITIONAL_FILES) {
