@@ -19,6 +19,10 @@
 # The execute hosts that you submit to should also have 7-Zip on-path.
 # This is the case for the limpopo machines.
 #
+# When using MERGE_GDX_OUTPUT=TRUE, the gdxmerge executable shoud be
+# on-path. This can be done by adding your local GAMS installation
+# directory to PATH.
+#
 # The working directory (current directory) when invoking this script
 # must be the directory that contains the configured files and paths.
 # For GLOBIOM this will be the Model directory.
