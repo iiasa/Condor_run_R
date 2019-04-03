@@ -13,11 +13,15 @@
 # reside to your PATH environment variable. On Windows, this is typically
 # C:\Program Files\R\R-x.y.z\bin\x64 (where x.y.z is the R version).
 #
+# A fairly recent version of Condor is required to be installed on your
+# submit machine. Version 8.2 is definitely too old.
+#
 # Also, 7z should be on-path. On Windows, this typically requires
 # C:\Program Files\7-Zip to be added to your PATH environment variable.
-# Preferably use a recent 7-Zip version that can compress in parallel.
-# The execute hosts that you submit to should also have 7-Zip on-path.
-# This is the case for the limpopo machines.
+# Use a recent 7-Zip version that can compress in parallel and supports
+# the latest command line parameters. The execute hosts that you submit
+# to should also have 7-Zip on-path. This is the case for the limpopo
+# machines.
 #
 # When using MERGE_GDX_OUTPUT=TRUE, the gdxmerge executable shoud be
 # on-path. This can be done by adding your local GAMS installation
@@ -237,7 +241,7 @@ monitor <- function(clusters) {
     outerr <- system2("condor_q", args=c("-totals", "-wide", clusters), stdout=TRUE, stderr=TRUE)
     if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
       cat(outerr, sep="\n")
-      stop("Invocation of condor_q failed!")
+      stop("Invocation of condor_q failed! Are you running an old Condor version? Old versions of Condor do not support condor_q -totals.")
     }
     # Extract the totals line and parse it out
     match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
