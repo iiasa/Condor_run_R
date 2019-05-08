@@ -23,7 +23,7 @@
 # to should also have 7-Zip on-path. This is the case for the limpopo
 # machines.
 #
-# When using MERGE_GDX_OUTPUT=TRUE, the gdxmerge executable shoud be
+# When using MERGE_GDX_OUTPUT=TRUE, the gdxmerge executable should be
 # on-path. This can be done by adding your local GAMS installation
 # directory to PATH.
 #
