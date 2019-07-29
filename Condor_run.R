@@ -44,6 +44,7 @@
 # Author: Albert Brouwer
 #
 # Todo:
+# - Compile scenerio file locally first before submission.
 # - Don't merge a single file?
 # - Condor is balky when transferring large (>= 2GB) bundles
 # - limpopo1 has an issue with largish request_disk
@@ -205,7 +206,7 @@ handle_7zip <- function(out) {
   if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
     cat(out, sep="\n")
     stop("7zip compression failed!")
-  } 
+  }
   else {
     cat(out[grep("^Scanning the drive:", out)+1], sep="\n")
     size_line <- grep("^Archive size:", out, value=TRUE)
@@ -483,13 +484,13 @@ for (hostdom in hostdoms) {
     "",
     "queue 1"
   )
-  
+
   # Apply settings to job template and write the .job file to use for submission
   job_file <- file.path(temp_dir, str_glue("_seed_{hostname}.job"))
   job_conn<-file(job_file, open="wt")
   writeLines(unlist(lapply(job_template, str_glue)), job_conn)
   close(job_conn)
-  
+
   # Remove any job output left over from an aborted prior run
   remove_if_exists(experiment_dir, str_glue("_seed_{hostname}.log"))
   remove_if_exists(experiment_dir, str_glue("_seed_{hostname}.out"))
@@ -545,16 +546,16 @@ config_file <- file.path(experiment_dir, str_glue("_config_{EXPERIMENT}_{predict
 if (length(args) > 0) {
   if (!file.copy(args[1], config_file, overwrite=TRUE)) {
     invisible(file.remove(bundle_path))
-    stop(str_glue("Cannot copy the configuration file {args[1]} to {experiment_dir}")) 
+    stop(str_glue("Cannot copy the configuration file {args[1]} to {experiment_dir}"))
   }
 } else {
   # No configuration file provided, write default configuration defined above (definition order is lost)
   config_conn<-file(config_file, open="wt")
   for (i in seq_along(config_names)) {
     if (config_types[i] == "character") {
-      writeLines(str_glue('{config_names[i]} = "{get(config_names[i])}"'), job_conn) 
+      writeLines(str_glue('{config_names[i]} = "{get(config_names[i])}"'), job_conn)
     } else {
-      writeLines(str_glue('{config_names[i]} = {get(config_names[i])}'), job_conn) 
+      writeLines(str_glue('{config_names[i]} = {get(config_names[i])}'), job_conn)
     }
   }
   close(config_conn)
@@ -563,7 +564,7 @@ if (length(args) > 0) {
 # Copy the GAMS file to the experiment directory for reference
 if (!file.copy(file.path(GAMS_FILE), file.path(experiment_dir, str_glue("{str_sub(GAMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}.gms")), overwrite=TRUE)) {
   invisible(file.remove(bundle_path))
-  stop(str_glue("Cannot copy the configured GAMS_FILE file to {experiment_dir}")) 
+  stop(str_glue("Cannot copy the configured GAMS_FILE file to {experiment_dir}"))
 }
 
 # Define the template for the .bat file that specifies what should be run on the execute host side for each job.
@@ -657,7 +658,7 @@ if (cluster != predicted_cluster) warning(str_glue("Cluster {cluster} not equal 
 if (RETAIN_BUNDLE) {
   success <- file.copy(bundle_path, file.path(experiment_dir, str_glue("bundle_{EXPERIMENT}_{predicted_cluster}.7z")))
   if (!success) warning("Could not make a reference copy of bundle!")
-} 
+}
 invisible(file.remove(bundle_path)) # Removing the bundle unblocks this script for another submission
 
 # Remove dated job batch files that are almost certainly no longer in use (older than 10 days)
