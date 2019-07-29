@@ -652,11 +652,15 @@ if (is.na(cluster)) {
   invisible(file.remove(bundle_path))
   stop("Cannot extract cluster number from condor_submit output!")
 }
-if (cluster != predicted_cluster) warning(str_glue("Cluster {cluster} not equal to prediction {predicted_cluster}!"))
+if (cluster != predicted_cluster) {
+  # system2("condor_rm", args=str_glue("{cluster}")) # should do this, but it does not work due to some weird Condor/R/Windows bug.
+  invisible(file.remove(bundle_path))
+  stop(str_glue("Submission cluster number {cluster} not equal to prediction {predicted_cluster}! You probably submitted something else via Condor while this submission was ongoing, causing the cluster number (sequence count of your submissions) to increment. As a result, log files have been named with a wrong cluster number.\n\nPlease do not submit additional Condor jobs until after a submission has completed. Note that this does not mean that you have to wait for the run to complete before submitting further runs, just wait for the submission to make it to the point where the execute hosts have been handed the jobs. Please try again.\n\nYou should first remove the run's jobs with: condor_rm {cluster}."))
+}
 
 # Retain the bundle if so requested, then remove it from temp
 if (RETAIN_BUNDLE) {
-  success <- file.copy(bundle_path, file.path(run_dir, str_glue("bundle_{EXPERIMENT}_{predicted_cluster}.7z")))
+  success <- file.copy(bundle_path, file.path(run_dir, str_glue("bundle_{EXPERIMENT}_{cluster}.7z")))
   if (!success) warning("Could not make a reference copy of bundle!")
 }
 invisible(file.remove(bundle_path)) # Removing the bundle unblocks this script for another submission
