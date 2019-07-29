@@ -65,7 +65,7 @@ rm(list=ls())
 # file, give it a .R extension to get nice syntax highlighting.
 # -------><8----snippy-snappy---------------------------------------------
 # Use paths relative to the working directory, with / as path separator.
-EXPERIMENT = "test" # label for your experiment, pick something without spaces and valid as part of a filename
+EXPERIMENT = "test" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
 PREFIX = "_globiom" # prefix for per-job .err, log, .lst, and .out files
 JOBS = c(0:3,7,10)
 HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
@@ -77,7 +77,7 @@ GAMS_VERSION = "24.4" # must be installed on all execute hosts
 GAMS_ARGUMENTS = "//nsim='%1' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cErr=5 pageWidth=100"
 BUNDLE_INCLUDE_DIRS = c("finaldata") # recursive, supports wildcards
 BUNDLE_EXCLUDE_DIRS = c("225*", "Demand", "graphs", "output", "trade", "SIMBIOM") # recursive, supports wildcards
-BUNDLE_EXCLUDE_FILES = c("*.~*", "*.exe", "*.log", "*.lxi", "*.lst", "*.zip", "test*.gdx") # supports wildcardss
+BUNDLE_EXCLUDE_FILES = c("*.~*", "*.exe", "*.log", "*.lxi", "*.lst", "*.zip", "test*.gdx") # supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
 GET_G00_OUTPUT = FALSE
@@ -101,7 +101,7 @@ config_types <- lapply(lapply(config_names, get), typeof)
 library(stringr)
 
 # Check that the working directory is as expected and holds the required subdirectories
-condor_dir <- "Condor" # where run reference files are stored in a per-experiment subdirectory (.err, .log, .lst, .out, and so on files)
+condor_dir <- "Condor" # where run reference files are stored in a per-run subdirectory (.err, .log, .lst, .out, and so on files)
 if (!dir.exists(condor_dir)) stop(str_glue("No {condor_dir} directory found relative to working directory {getwd()}! Is your working directory correct?"))
 
 # Read config file if specified via an argument, check presence and types.
@@ -128,7 +128,7 @@ if (length(args) == 0) {
 
 # Check and massage specific config settings
 EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "25.1")
-if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT name has forbidden character(s)!"))
+if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT label for run has forbidden character(s)!"))
 if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
 if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
 if (length(JOBS) < 1) stop("There should be at least one job in JOBS!")
@@ -195,9 +195,9 @@ username <- Sys.getenv("USERNAME")
 if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
-# Ensure that the experiment directory to hold the .out/.err/.log/.lst and so on results exists
-experiment_dir <- file.path(condor_dir, EXPERIMENT)
-if (!dir.exists(experiment_dir)) dir.create(experiment_dir)
+# Ensure that the run directory to hold the .out/.err/.log/.lst and so on results exists
+run_dir <- file.path(condor_dir, EXPERIMENT)
+if (!dir.exists(run_dir)) dir.create(run_dir)
 
 # ---- Define some helper functions ----
 
@@ -390,14 +390,14 @@ fsep <- ifelse(str_detect(temp_dir, fixed("\\") ), "\\", ".Platform$file.sep") #
 temp_dir <- str_replace_all(temp_dir, fixed(fsep), .Platform$file.sep)
 temp_dir_parent <- dirname(temp_dir) # Remove the R-session-specific random subdirectory: identical between sessions
 
-# Set R-default and platform-specific paths to the job bundle
+# Set R-default and platform-specific paths to the bundle
 bundle <- "job_bundle.7z"
 unique_bundle <- str_glue('bundle_{str_replace_all(Sys.time(), "[- :]", "")}.7z') # To keep multiple cached bundles separate
 bundle_path <- file.path(temp_dir_parent, bundle) # Identical between sessions
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
-if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing?"))
+if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing? If so, let that submission end first. If not, remove the file and try again."))
 
-cat("Compressing model files into job bundle...\n")
+cat("Compressing model files into bundle...\n")
 model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
   args=unlist(lapply(c("a", "-mx1", "-bb0",
     unlist(lapply(BUNDLE_INCLUDE_DIRS, function(p) return(str_glue("-ir!", p)))),
@@ -462,9 +462,9 @@ for (hostdom in hostdoms) {
     "universe = vanilla",
     "",
     "# -- Job log, stdout, and stderr files",
-    "log = {experiment_dir}/_seed_{hostname}.log",
-    "output = {experiment_dir}/_seed_{hostname}.out",
-    "error = {experiment_dir}/_seed_{hostname}.err",
+    "log = {run_dir}/_seed_{hostname}.log",
+    "output = {run_dir}/_seed_{hostname}.out",
+    "error = {run_dir}/_seed_{hostname}.err",
     "",
     "requirements = \\",
     '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
@@ -492,9 +492,9 @@ for (hostdom in hostdoms) {
   close(job_conn)
 
   # Remove any job output left over from an aborted prior run
-  remove_if_exists(experiment_dir, str_glue("_seed_{hostname}.log"))
-  remove_if_exists(experiment_dir, str_glue("_seed_{hostname}.out"))
-  remove_if_exists(experiment_dir, str_glue("_seed_{hostname}.err"))
+  remove_if_exists(run_dir, str_glue("_seed_{hostname}.log"))
+  remove_if_exists(run_dir, str_glue("_seed_{hostname}.out"))
+  remove_if_exists(run_dir, str_glue("_seed_{hostname}.err"))
 
   outerr <- system2("condor_submit", args=str_glue("{job_file}"), stdout=TRUE, stderr=TRUE)
   if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
@@ -516,14 +516,14 @@ predicted_cluster <- cluster+1
 # Wait until all execute hosts are seeded with a bundle
 cat("Waiting for bundle seeding to complete...\n")
 monitor(clusters)
-return_values <- get_return_values(experiment_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
+return_values <- get_return_values(run_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
 if (any(is.na(return_values))) {
   invisible(file.remove(bundle_path))
-  stop(str_glue("Abnormal termination of seeding job(s) for {str_c(hostnames[is.na(return_values)], collapse=', ')}! For details, see the _seed_* files in {experiment_dir}"))
+  stop(str_glue("Abnormal termination of seeding job(s) for {str_c(hostnames[is.na(return_values)], collapse=', ')}! For details, see the _seed_* files in {run_dir}"))
 }
 if (any(return_values != 0)) {
   invisible(file.remove(bundle_path))
-  stop(str_glue("Seeding job(s) for {str_c(hostnames[return_values != 0], collapse=', ')} returned a non-zero return value! For details, see the _seed_* files in {experiment_dir}"))
+  stop(str_glue("Seeding job(s) for {str_c(hostnames[return_values != 0], collapse=', ')} returned a non-zero return value! For details, see the _seed_* files in {run_dir}"))
 }
 cat("Seeding done: execute hosts have received and cached the bundle.\n")
 cat("\n")
@@ -534,19 +534,19 @@ invisible(file.remove(seed_bat))
 for (hostdom in hostdoms) {
   hostname <- str_extract(hostdom, "^[^.]*")
   file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.job")))
-  file.remove(file.path(experiment_dir, str_glue("_seed_{hostname}.log")))
-  file.remove(file.path(experiment_dir, str_glue("_seed_{hostname}.out")))
-  file.remove(file.path(experiment_dir, str_glue("_seed_{hostname}.err")))
+  file.remove(file.path(run_dir, str_glue("_seed_{hostname}.log")))
+  file.remove(file.path(run_dir, str_glue("_seed_{hostname}.out")))
+  file.remove(file.path(run_dir, str_glue("_seed_{hostname}.err")))
 }
 
 # ---- Prepare files for run ----
 
-# Copy the configuration to the experiment directory for reference
-config_file <- file.path(experiment_dir, str_glue("_config_{EXPERIMENT}_{predicted_cluster}.txt"))
+# Copy the configuration to the run directory for reference
+config_file <- file.path(run_dir, str_glue("_config_{EXPERIMENT}_{predicted_cluster}.txt"))
 if (length(args) > 0) {
   if (!file.copy(args[1], config_file, overwrite=TRUE)) {
     invisible(file.remove(bundle_path))
-    stop(str_glue("Cannot copy the configuration file {args[1]} to {experiment_dir}"))
+    stop(str_glue("Cannot copy the configuration file {args[1]} to {run_dir}"))
   }
 } else {
   # No configuration file provided, write default configuration defined above (definition order is lost)
@@ -561,10 +561,10 @@ if (length(args) > 0) {
   close(config_conn)
 }
 
-# Copy the GAMS file to the experiment directory for reference
-if (!file.copy(file.path(GAMS_FILE), file.path(experiment_dir, str_glue("{str_sub(GAMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}.gms")), overwrite=TRUE)) {
+# Copy the GAMS file to the run directory for reference
+if (!file.copy(file.path(GAMS_FILE), file.path(run_dir, str_glue("{str_sub(GAMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}.gms")), overwrite=TRUE)) {
   invisible(file.remove(bundle_path))
-  stop(str_glue("Cannot copy the configured GAMS_FILE file to {experiment_dir}"))
+  stop(str_glue("Cannot copy the configured GAMS_FILE file to {run_dir}"))
 }
 
 # Define the template for the .bat file that specifies what should be run on the execute host side for each job.
@@ -605,10 +605,10 @@ job_template <- c(
   "universe = vanilla",
   "",
   "# -- Job log, output, and error files",
-  "log = {experiment_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
-  "output = {experiment_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).out",
+  "log = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
+  "output = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).out",
   "stream_output = True",
-  "error = {experiment_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).err",
+  "error = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).err",
   "stream_error = True",
   "",
   "requirements = \\",
@@ -626,7 +626,7 @@ job_template <- c(
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
   'transfer_output_files = {str_sub(GAMS_FILE, 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{G00_OUTPUT_DIR}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{str_sub(GAMS_FILE, 1, -5)}.lst={experiment_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR}/{g00_prefix}_{EXPERIMENT}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_output_remaps = "{str_sub(GAMS_FILE, 1, -5)}.lst={run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR}/{g00_prefix}_{EXPERIMENT}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete. And Error does not seem to catch many execution errors.
   "",
@@ -634,14 +634,14 @@ job_template <- c(
 )
 
 # Apply settings to job template and write the .job file to use for submission
-job_file <- file.path(experiment_dir, str_glue("submit_{EXPERIMENT}_{predicted_cluster}.job"))
+job_file <- file.path(run_dir, str_glue("submit_{EXPERIMENT}_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(job_template, str_glue)), job_conn)
 close(job_conn)
 
 # ---- Submit the run and clean up temp files ----
 
-outerr <- system2("condor_submit", args=str_glue("{experiment_dir}/submit_{EXPERIMENT}_{predicted_cluster}.job"), stdout=TRUE, stderr=TRUE)
+outerr <- system2("condor_submit", args=str_glue("{run_dir}/submit_{EXPERIMENT}_{predicted_cluster}.job"), stdout=TRUE, stderr=TRUE)
 cat(outerr, sep="\n")
 if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
   invisible(file.remove(bundle_path))
@@ -656,10 +656,11 @@ if (cluster != predicted_cluster) warning(str_glue("Cluster {cluster} not equal 
 
 # Retain the bundle if so requested, then remove it from temp
 if (RETAIN_BUNDLE) {
-  success <- file.copy(bundle_path, file.path(experiment_dir, str_glue("bundle_{EXPERIMENT}_{predicted_cluster}.7z")))
+  success <- file.copy(bundle_path, file.path(run_dir, str_glue("bundle_{EXPERIMENT}_{predicted_cluster}.7z")))
   if (!success) warning("Could not make a reference copy of bundle!")
 }
 invisible(file.remove(bundle_path)) # Removing the bundle unblocks this script for another submission
+cat(str_glue('Run "{EXPERIMENT}" has been submitted, it is now possible to submit additional runs while waiting for it to complete.'), sep="\n")
 
 # Remove dated job batch files that are almost certainly no longer in use (older than 10 days)
 # Needed because Windows does not periodically clean up TEMP and because the current job batch
@@ -672,7 +673,7 @@ for (bat_path in list.files(path=temp_dir_parent, pattern=str_glue("job_.*_\\d+.
 
 if (WAIT_FOR_RUN_COMPLETION) {
   # Monitor the run until it completes
-  cat(str_glue('Waiting for experiment "{EXPERIMENT}" to complete...'), sep="\n")
+  cat(str_glue('Waiting for run "{EXPERIMENT}" to complete...'), sep="\n")
   monitor(cluster)
 
   # Remove the job batch file. This is done after waiting for the run to complete
@@ -681,7 +682,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   invisible(file.remove(job_bat))
 
   # Check that result files exist and are not empty, warn otherwise and remove empty files
-  lsts_complete <- all_exist_and_not_empty(experiment_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.lst", ".lst")
+  lsts_complete <- all_exist_and_not_empty(run_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.lst", ".lst")
   if (GET_G00_OUTPUT) {
     g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR, "{g00_prefix}_{EXPERIMENT}_{cluster}.{job}.g00", "work (.g00)")
   }
@@ -689,12 +690,12 @@ if (WAIT_FOR_RUN_COMPLETION) {
     gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR, 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx', "GDX")
   }
 
-  return_values <- get_return_values(experiment_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log"))))
+  return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log"))))
   if (any(is.na(return_values))) {
-    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
+    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {run_dir}"))
   }
   if (any(return_values != 0)) {
-    stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {experiment_dir}"))
+    stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {run_dir}"))
   }
   cat("All jobs are done.\n")
 
@@ -703,7 +704,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   max_memory_job <- -1
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
   for (job in JOBS) {
-    job_lines <- readLines(file.path(experiment_dir, str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log")))
+    job_lines <- readLines(file.path(run_dir, str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log")))
     memory_use <- as.double(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
@@ -742,6 +743,6 @@ if (WAIT_FOR_RUN_COMPLETION) {
   Sys.sleep(1)
   alarm()
 } else {
-  cat("Query progress with: condor_q.\n")
-  cat(str_glue("Merge results with: gdxmerge {gdx_prefix}_{EXPERIMENT}_{cluster}.*.gdx output={gdx_prefix}_{EXPERIMENT}_{cluster}_merged.gdx", sep="\n"))
+  cat(str_glue("You can monitor progress of the run with: condor_q {cluster}."), sep="\n")
+  cat(str_glue("After the run completes, you can find the GDX results at: {GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_{cluster}.*.gdx"), sep="\n")
 }
