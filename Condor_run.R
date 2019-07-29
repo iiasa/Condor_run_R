@@ -91,9 +91,9 @@ MERGE_GDX_OUTPUT = TRUE
 REMOVE_MERGED_GDX_FILES = TRUE
 # -------><8----snippy-snappy---------------------------------------------
 
-# ---- Process environment and run config settings ----
+# ---- Get set ----
 
-# Collect the names and types of the config settings
+# Collect the names and types of the config settings (must do this right after default config)
 config_names <- ls()
 config_types <- lapply(lapply(config_names, get), typeof)
 
@@ -103,6 +103,14 @@ library(stringr)
 # Check that the working directory is as expected and holds the required subdirectories
 condor_dir <- "Condor" # where run reference files are stored in a per-run subdirectory (.err, .log, .lst, .out, and so on files)
 if (!dir.exists(condor_dir)) stop(str_glue("No {condor_dir} directory found relative to working directory {getwd()}! Is your working directory correct?"))
+
+# Determine the platform file separator and the temp directory with R-default separators
+temp_dir <- tempdir()
+fsep <- ifelse(str_detect(temp_dir, fixed("\\") ), "\\", ".Platform$file.sep") # Get the platform file separator: .Platform$file.sep is set to / on Windows
+temp_dir <- str_replace_all(temp_dir, fixed(fsep), .Platform$file.sep)
+temp_dir_parent <- dirname(temp_dir) # Remove the R-session-specific random subdirectory: identical between sessions
+
+# ---- Process environment and run config settings ----
 
 # Read config file if specified via an argument, check presence and types.
 args <- commandArgs(trailingOnly=TRUE)
@@ -124,6 +132,26 @@ if (length(args) == 0) {
   }
 } else {
   stop("Multiple arguments provided! Expecting at most a single config file argument.")
+}
+
+# Copy/write configuration to a file in the temp directory for reference early to minimize the risk of it being edited in the mean time
+temp_config_file <- file.path(temp_dir, str_glue("config.R"))
+if (length(args) > 0) {
+  if (!file.copy(args[1], temp_config_file, overwrite=TRUE)) {
+    invisible(file.remove(bundle_path))
+    stop(str_glue("Cannot copy the configuration file {args[1]} to {run_dir}"))
+  }
+} else {
+  # No configuration file provided, write default configuration defined above (definition order is lost)
+  config_conn<-file(temp_config_file, open="wt")
+  for (i in seq_along(config_names)) {
+    if (config_types[i] == "character") {
+      writeLines(str_glue('{config_names[i]} = "{get(config_names[i])}"'), job_conn)
+    } else {
+      writeLines(str_glue('{config_names[i]} = {get(config_names[i])}'), job_conn)
+    }
+  }
+  close(config_conn)
 }
 
 # Check and massage specific config settings
@@ -384,12 +412,6 @@ if (length(hostdoms) == 0) stop("No execute hosts matching HOST_REGEXP are avail
 
 # ---- Bundle the model ----
 
-# Determine the platform file separator and the temp directory with R-default separators
-temp_dir <- tempdir()
-fsep <- ifelse(str_detect(temp_dir, fixed("\\") ), "\\", ".Platform$file.sep") # Get the platform file separator: .Platform$file.sep is set to / on Windows
-temp_dir <- str_replace_all(temp_dir, fixed(fsep), .Platform$file.sep)
-temp_dir_parent <- dirname(temp_dir) # Remove the R-session-specific random subdirectory: identical between sessions
-
 # Set R-default and platform-specific paths to the bundle
 bundle <- "job_bundle.7z"
 unique_bundle <- str_glue('bundle_{str_replace_all(Sys.time(), "[- :]", "")}.7z') # To keep multiple cached bundles separate
@@ -541,25 +563,13 @@ for (hostdom in hostdoms) {
 
 # ---- Prepare files for run ----
 
-# Copy the configuration to the run directory for reference
-config_file <- file.path(run_dir, str_glue("_config_{EXPERIMENT}_{predicted_cluster}.txt"))
-if (length(args) > 0) {
-  if (!file.copy(args[1], config_file, overwrite=TRUE)) {
-    invisible(file.remove(bundle_path))
-    stop(str_glue("Cannot copy the configuration file {args[1]} to {run_dir}"))
-  }
-} else {
-  # No configuration file provided, write default configuration defined above (definition order is lost)
-  config_conn<-file(config_file, open="wt")
-  for (i in seq_along(config_names)) {
-    if (config_types[i] == "character") {
-      writeLines(str_glue('{config_names[i]} = "{get(config_names[i])}"'), job_conn)
-    } else {
-      writeLines(str_glue('{config_names[i]} = {get(config_names[i])}'), job_conn)
-    }
-  }
-  close(config_conn)
+# Move the configuration from the temp to the run directory so as to have a persistent reference
+config_file <- file.path(run_dir, str_glue("_config_{EXPERIMENT}_{predicted_cluster}.R"))
+if (!file.copy(temp_config_file, config_file, overwrite=TRUE)) {
+  invisible(file.remove(bundle_path))
+  stop(str_glue("Cannot copy the configuration from {temp_config_file} to {run_dir}"))
 }
+file.remove(temp_config_file)
 
 # Copy the GAMS file to the run directory for reference
 if (!file.copy(file.path(GAMS_FILE), file.path(run_dir, str_glue("{str_sub(GAMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}.gms")), overwrite=TRUE)) {
@@ -628,7 +638,7 @@ job_template <- c(
   'transfer_output_files = {str_sub(GAMS_FILE, 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{G00_OUTPUT_DIR}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE}"), "")}',
   'transfer_output_remaps = "{str_sub(GAMS_FILE, 1, -5)}.lst={run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR}/{g00_prefix}_{EXPERIMENT}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
-  "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete. And Error does not seem to catch many execution errors.
+  "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete.
   "",
   "queue job in ({str_c(JOBS,collapse=',')})"
 )
