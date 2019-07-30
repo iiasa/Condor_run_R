@@ -54,16 +54,17 @@
 #  * not if low-memory merge has a slow fallback
 #  * complication: distributed over hosts after main run
 
-rm(list=ls())
-
 # ---- Default run config settings ----
+
+# Remove any objects from active environment so that below it will contain only the default config
+rm(list=ls())
 
 # You can replace these via a run-config file passed as a first argument
 # to this script. Lines with settings like the ones just below can be used
 # in the config file. No settings may be omitted from the config file.
 # To set up an initial config file, just copy-and-paste the below to a
 # file, give it a .R extension to get nice syntax highlighting.
-# -------><8----snippy-snappy---------------------------------------------
+# -------8><----snippy-snappy----8><-----------------------------------------
 # Use paths relative to the working directory, with / as path separator.
 EXPERIMENT = "test" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
 PREFIX = "_globiom" # prefix for per-job .err, log, .lst, and .out files
@@ -89,13 +90,13 @@ GDX_OUTPUT_FILE = "output.gdx" # as produced by execute_unload on the host-side,
 WAIT_FOR_RUN_COMPLETION = TRUE
 MERGE_GDX_OUTPUT = TRUE
 REMOVE_MERGED_GDX_FILES = TRUE
-# -------><8----snippy-snappy---------------------------------------------
+# -------8><----snippy-snappy----8><-----------------------------------------
 
-# ---- Get set ----
-
-# Collect the names and types of the config settings (must do this right after default config)
+# Collect the names and types of the default config settings
 config_names <- ls()
 config_types <- lapply(lapply(config_names, get), typeof)
+
+# ---- Get set ----
 
 # Required packages
 library(stringr)
@@ -390,10 +391,10 @@ all_exist_and_not_empty <- function(dir, file_template, file_type) {
     }
   }
   if (any(absentees)) {
-    warning(str_glue("No {file_type} files returned for job(s) {summarize_jobs(JOBS[absentees])}!"))
+    warning(str_glue("No {file_type} files returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
   }
   if (any(empties)) {
-    warning(str_glue("Empty {file_type} files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were removed."))
+    warning(str_glue("Empty {file_type} files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were removed."), call.=FALSE)
   }
   return(!(any(absentees) || any(empties)))
 }
@@ -569,7 +570,7 @@ if (!file.copy(temp_config_file, config_file, overwrite=TRUE)) {
   invisible(file.remove(bundle_path))
   stop(str_glue("Cannot copy the configuration from {temp_config_file} to {run_dir}"))
 }
-file.remove(temp_config_file)
+invisible(file.remove(temp_config_file))
 
 # Copy the GAMS file to the run directory for reference
 if (!file.copy(file.path(GAMS_FILE), file.path(run_dir, str_glue("{str_sub(GAMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}.gms")), overwrite=TRUE)) {
