@@ -58,11 +58,12 @@
 # Remove any objects from active environment so that below it will contain only the default config
 rm(list=ls())
 
-# You can replace these via a run-config file passed as a first argument
-# to this script. Lines with settings like the ones just below can be used
-# in the config file. No settings may be omitted from the config file.
-# To set up an initial config file, just copy-and-paste the below to a
-# file, give it a .R extension to get nice syntax highlighting.
+# Override the default config settings via a run-config file passed as a first
+# argument to this script. Lines with settings like the ones just below can be
+# used in the config file. No settings may be omitted from the config file.
+#
+# To set up an initial config file, just copy-and-paste (do not cut) the below
+# to a file, give it a .R extension to get nice syntax highlighting.
 # -------8><----snippy-snappy----8><-----------------------------------------
 # Use paths relative to the working directory, with / as path separator.
 EXPERIMENT = "test" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
@@ -93,6 +94,7 @@ REMOVE_MERGED_GDX_FILES = TRUE
 
 # Collect the names and types of the default config settings
 config_names <- ls()
+if (length(config_names) == 0) {stop("Default configuration is absent! Please restore the default configuration. It is required for configuration checking, also when providing a separate configuration file.")}
 config_types <- lapply(lapply(config_names, get), typeof)
 
 # ---- Get set ----
