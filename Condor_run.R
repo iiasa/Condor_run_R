@@ -9,6 +9,14 @@
 # an argument to this script. The format of the configuration file is
 # shown in the "Default run config settings section" below.
 #
+# The above means that you can invoke this script with something like
+#
+# Rscript ..\R\Condor_run.R my_config.R
+#
+# either from the command prompt, shell, via the GAMS $call or execute
+# facilities, or using whatever your language of choice supports for
+# command invocation.
+#
 # If you cannot invoke Rscript, you will need to add where the R binaries
 # reside to your PATH environment variable. On Windows, this is typically
 # C:\Program Files\R\R-x.y.z\bin\x64 (where x.y.z is the R version).
