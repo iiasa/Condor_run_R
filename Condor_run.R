@@ -47,6 +47,12 @@
 # On Windows, the installer adds the Condor/bin directory to the PATH
 # system environment variable, thus making the Condor commands available.
 #
+# BEWARE: gdxmerge is limited. It sometimes gives "Symbol is too large"
+# errors, and neither the big= (MERGE_BIG configuration setting) nore
+# running gdxmerge on a large-memory machine can avoid that. Moreover,
+# no non-zero errorlevel is returned in case of such errors. Hence,
+# this script will parse the output so as to stil spot these errors.
+#
 # Based on: GLOBIOM-limpopo scripts by David Leclere
 #
 # Author: Albert Brouwer
@@ -57,9 +63,7 @@
 # - limpopo1 has an issue with largish request_disk
 # - Sometimes, limpopo1 partitionable slots are not filled whereas for the other limpopos they are.
 # - Test on Linux (condor_reschedule is probably going to be an issue)
-# - Cache and merge gdx files on the execute hosts?
-#  * not if low-memory merge has a slow fallback
-#  * complication: distributed over hosts after main run
+# - Parse errors from gdxmerge output
 
 # ---- Default run config settings ----
 
@@ -96,14 +100,20 @@ GET_GDX_OUTPUT = TRUE
 GDX_OUTPUT_DIR = "gdx" # relative to working dir both host-side and on the submit machine
 GDX_OUTPUT_FILE = "output.gdx" # as produced by execute_unload on the host-side, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
-MERGE_GDX_OUTPUT = TRUE
-REMOVE_MERGED_GDX_FILES = TRUE
+MERGE_GDX_OUTPUT = FALSE
+MERGE_BIG = NULL # symbol size cutoff beyond which GDXMERGE writes symbols one by one to avoid running out of memory.
+MERGE_ID = NULL # comma-separated list of symbols to include in the merge, defaults to all
+MERGE_EXCLUDE = NULL # comma-separated list of symbols to exclude from the merge, defaults to none
+REMOVE_MERGED_GDX_FILES = FALSE
 # -------8><----snippy-snappy----8><-----------------------------------------
 
 # Collect the names and types of the default config settings
 config_names <- ls()
 if (length(config_names) == 0) {stop("Default configuration is absent! Please restore the default configuration. It is required for configuration checking, also when providing a separate configuration file.")}
 config_types <- lapply(lapply(config_names, get), typeof)
+
+# Presence of Config settings is obligatory in a config file other then for the settings listed here
+OPTIONAL_CONFIG_SETTINGS <- c("MERGE_GDX_OUTPUT", "MERGE_BIG", "MERGE_ID", "MERGE_EXCLUDE", "REMOVE_MERGED_GDX_FILES")
 
 # ---- Get set ----
 
@@ -128,7 +138,7 @@ args <- commandArgs(trailingOnly=TRUE)
 if (length(args) == 0) {
   warning("No config file argument supplied, using default run settings.")
 } else if (length(args) == 1) {
-  rm(list=config_names)
+  rm(list=config_names[!(config_names %in% OPTIONAL_CONFIG_SETTINGS)])
   source(args[1], local=TRUE, echo=FALSE)
   for (i in seq_along(config_names))  {
     name <- config_names[i]
@@ -243,14 +253,14 @@ if (!dir.exists(run_dir)) dir.create(run_dir)
 handle_7zip <- function(out) {
   if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
     cat(out, sep="\n")
-    stop("7zip compression failed!")
+    stop("7zip compression failed!", call.=FALSE)
   }
   else {
     cat(out[grep("^Scanning the drive:", out)+1], sep="\n")
     size_line <- grep("^Archive size:", out, value=TRUE)
     cat(size_line, sep="\n")
     byte_size <- as.double(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
-    if (is.na(byte_size)) stop("7zip archive size extraction failed!") # 7zip output format has changed?
+    if (is.na(byte_size)) stop("7zip archive size extraction failed!", call.=FALSE) # 7zip output format has changed?
     return(byte_size)
   }
 }
@@ -264,7 +274,8 @@ remove_if_exists <- function(dir_path, file_name) {
 # Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
 monitor <- function(clusters) {
   warn <- FALSE
-  regexp <- "(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
+  regexp <- "Total for query: (\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended"
+  #regexp <- "(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
   reschedule_invocations <- 200 # limit the number of reschedules so it is only done early on to push out the jobs quickly
   changes_since_reschedule <- FALSE
   iterations_since_reschedule <- 0
@@ -280,13 +291,13 @@ monitor <- function(clusters) {
     outerr <- system2("condor_q", args=c("-totals", "-wide", clusters), stdout=TRUE, stderr=TRUE)
     if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
       cat(outerr, sep="\n")
-      stop("Invocation of condor_q failed! Are you running a too old (< V8.5.4) Condor version?")
+      stop("Invocation of condor_q failed! Are you running a too old (< V8.5.4) Condor version?", call.=FALSE)
     }
     # Extract the totals line and parse it out
     match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
     if (is.na(match[1])) {
       cat(outerr, sep="\n")
-      stop("Monitoring Condor queue status with condor_q failed: unexpected output! Are you running a too old (< V8.5.4) Condor version?")
+      stop("Monitoring Condor queue status with condor_q failed: unexpected output! Are you running a too old (< V8.5.4) Condor version?", call.=FALSE)
     }
     jobs      <- as.integer(match[2])
     completed <- as.integer(match[3])
@@ -320,7 +331,7 @@ monitor <- function(clusters) {
       outerr <- system2("condor_reschedule", args=c("reschedule"), stdout=TRUE, stderr=TRUE) # R-on-Windows issue?: the seemingly superflous args=c("reschedule") is needed because R seems to call some underlying generic exe that needs a parameter to resolve which command it should behave as
       if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
         cat(outerr, sep="\n")
-        stop("Invocation of condor_reschedule failed!")
+        stop("Invocation of condor_reschedule failed!", call.=FALSE)
       }
       reschedule_invocations <- reschedule_invocations-1
       changes_since_reschedule <- FALSE
@@ -641,7 +652,7 @@ job_template <- c(
   "request_disk = {request_disk}",
   "",
   '+IIASAGroup = "ESM"', # Identifies you as part of the group allowed to use ESM cluster
-  "run_as_owner = True", # Jobs will run as you, so you'll have access to H: and your own temp space
+  "run_as_owner = True", # If True, jobs will run as you and have access to your account-specific configuration such as your H: drive. If False, jobs will run under a functional user account.
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
@@ -751,7 +762,21 @@ if (WAIT_FOR_RUN_COMPLETION) {
       prior_wd <- getwd()
       setwd(GDX_OUTPUT_DIR)
       Sys.setenv(GDXCOMPRESS=1) # Causes the merged GDX file to be compressed, it will be usable as a regular GDX,
-      error_code <- system2("gdxmerge", args=c(str_glue("{gdx_prefix}_{EXPERIMENT}_{cluster}.*.gdx"), str_glue("output={gdx_prefix}_{EXPERIMENT}_{cluster}_merged.gdx")))
+      # Compile arguments for gdxmerge
+      merge_args <- c()
+      if (exists("MERGE_BIG") && !is.null(MERGE_BIG) && (MERGE_BIG != "")) {
+        merge_args <- c(merge_args, str_glue("big={MERGE_BIG}"))
+      }
+      if (exists("MERGE_ID") && !is.null(MERGE_ID) && (MERGE_ID != "")) {
+        merge_args <- c(merge_args, str_glue("id={MERGE_ID}"))
+      }
+      if (exists("MERGE_EXCLUDE") && !is.null(MERGE_EXCLUDE) && (MERGE_EXCLUDE != "")) {
+        merge_args <- c(merge_args, str_glue("exclude={MERGE_EXCLUDE}"))
+      }
+      merge_args <- c(merge_args, str_glue("{gdx_prefix}_{EXPERIMENT}_{cluster}.*.gdx"))
+      merge_args <- c(merge_args, str_glue("output={gdx_prefix}_{EXPERIMENT}_{cluster}_merged.gdx"))
+      # Invoke GDX merge
+      error_code <- system2("gdxmerge", args=merge_args)
       setwd(prior_wd)
       if (error_code > 0) stop("Merging failed!")
       # Remove merged GDX files if so requested
