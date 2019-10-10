@@ -61,7 +61,6 @@ HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the
 REQUEST_MEMORY = 7800 # memory (MiB) to reserve for each job
 REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 GAMS_FILE = "6_scenarios_limpopo.gms" # the GAMS file to run for each job
-RESTART_FILE_PATH = "t/a4_limpopo.g00"
 GAMS_VERSION = "24.4" # must be installed on all execute hosts
 GAMS_ARGUMENTS = "//nsim='%1' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cErr=5 pageWidth=100"
 BUNDLE_INCLUDE_DIRS = c("finaldata") # recursive, supports wildcards
@@ -69,9 +68,6 @@ BUNDLE_EXCLUDE_DIRS = c("225*", "Demand", "graphs", "output", "trade", "SIMBIOM"
 BUNDLE_EXCLUDE_FILES = c("*.~*", "*.exe", "*.log", "*.lxi", "*.lst", "*.zip", "test*.gdx") # supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
-GET_G00_OUTPUT = FALSE
-G00_OUTPUT_DIR = "t" # relative to working dir both host-side and on the submit machine
-G00_OUTPUT_FILE = "a6_out.g00" # host-side, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 GET_GDX_OUTPUT = TRUE
 GDX_OUTPUT_DIR = "gdx" # relative to working dir both host-side and on the submit machine
 GDX_OUTPUT_FILE = "output.gdx" # as produced by execute_unload on the host-side, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
@@ -159,10 +155,6 @@ if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
 if (str_sub(GAMS_FILE, -4) != ".gms") stop(str_glue("Configured GAMS_FILE has no .gms extension!"))
 if (!(file.exists(GAMS_FILE))) stop(str_glue('Configured GAMS_FILE "{GAMS_FILE}" does not exist relative to working directory!'))
 if (str_detect(GAMS_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GAMS_FILE has forbidden character(s)!"))
-if (!(file.exists(RESTART_FILE_PATH))) stop(str_glue('Configured RESTART_FILE_PATH "{RESTART_FILE_PATH}" does not exist!'))
-if (str_detect(RESTART_FILE_PATH, "^/") || str_detect(RESTART_FILE_PATH, "^.:")) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: absolute paths not allowed!"))
-if (str_detect(RESTART_FILE_PATH, fixed("../"))) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: you may not go up to parent directories using ../"))
-if (str_detect(RESTART_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured RESTART_FILE_PATH has forbidden character(s)! Use / as path separator."))
 version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
 if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
 if (!(GAMS_VERSION %in% EXECUTE_HOST_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The execute hosts have only these GAMS versions installed: {str_c(EXECUTE_HOST_GAMS_VERSIONS, collapse=" ")}')) # {cat(EXECUTE_HOST_GAMS_VERSIONS)}
@@ -171,15 +163,6 @@ if (!str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS la
 for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
-if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
-if (!(file.exists(G00_OUTPUT_DIR))) stop(str_glue('Configured G00_OUTPUT_DIR "{G00_OUTPUT_DIR}" does not exist!'))
-if (str_detect(G00_OUTPUT_DIR, "^/") || str_detect(G00_OUTPUT_DIR, "^.:")) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
-if (str_detect(G00_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
-if (str_detect(G00_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
-if (str_sub(G00_OUTPUT_FILE, -4) != ".g00") stop(str_glue("Configured G00_OUTPUT_FILE has no .g00 extension!"))
-if (str_length(G00_OUTPUT_FILE) <= 4) stop(str_glue("Configured G00_OUTPUT_FILE needs more than an extension!"))
-if (str_detect(G00_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured G00_OUTPUT_FILE has forbidden character(s)!"))
-g00_prefix <- str_sub(G00_OUTPUT_FILE, 1, -5)
 if (!(file.exists(GDX_OUTPUT_DIR))) stop(str_glue('Configured GDX_OUTPUT_DIR "{GDX_OUTPUT_DIR}" does not exist!'))
 if (str_detect(GDX_OUTPUT_DIR, "^/") || str_detect(GDX_OUTPUT_DIR, "^.:")) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
 if (str_detect(GDX_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
@@ -188,23 +171,6 @@ if (str_sub(GDX_OUTPUT_FILE, -4) != ".gdx") stop(str_glue("Configured GDX_OUTPUT
 if (str_length(GDX_OUTPUT_FILE) <= 4) stop(str_glue("Configured GDX_OUTPUT_FILE needs more than an extension!"))
 if (str_detect(GDX_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GDX_OUTPUT_FILE has forbidden character(s)!"))
 gdx_prefix <- str_sub(GDX_OUTPUT_FILE, 1, -5)
-
-# Determine GAMS version used to generate RESTART_FILE_PATH, verify that it is <= GAMS_VERSION
-conn <- file(RESTART_FILE_PATH, "rb")
-byte_count <- min(4000, file.info(RESTART_FILE_PATH)$size)
-seek(conn, where=-byte_count, origin="end")
-tail_bytes <- readBin(conn, what=integer(), size=1, n=byte_count)
-close(conn)
-tail_bytes[tail_bytes <= 0] <- 32
-tail <-  rawToChar(as.raw(tail_bytes))
-restart_version <- str_match(tail, "\x0AWEX(\\d\\d\\d)-\\d\\d\\d")[2]
-if (is.na(restart_version)) {
-  warning(str_glue("Cannot determine GAMS version that saved {RESTART_FILE_PATH}"))
-} else {
-  if (dotless_version < restart_version) {
-    stop("The configured host-side GAMS_VERSION is older than the GAMS version that saved the configured restart file (RESTART_FILE_PATH). GAMS will fail!")
-  }
-}
 
 # Get username in a way that works on MacOS, Linux, and Windows
 username <- Sys.getenv("USERNAME")
@@ -415,7 +381,6 @@ model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
     unlist(lapply(BUNDLE_EXCLUDE_DIRS, function(p) return(str_glue("-xr!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!", p)))),
     "-xr!{condor_dir}",
-    "-xr!{G00_OUTPUT_DIR}",
     "-xr!{GDX_OUTPUT_DIR}",
     "{bundle_platform_path}",
     "*"
@@ -423,19 +388,18 @@ model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
 ))
 cat("\n")
 
-cat("Bundle restart file and any additional files...\n")
-restart_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
+cat("Bundle any additional files...\n")
+additional_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
   args=unlist(lapply(c("a",
     "{bundle_platform_path}",
-    "{RESTART_FILE_PATH}",
     BUNDLE_ADDITIONAL_FILES
   ), str_glue))
 ))
 cat("\n")
 
 # Estimate the amount of disk to request for run, in KiB
-# decompressed bundle content + 2GiB for output (.g00, .gdx, .lst, ...)
-request_disk <- ceiling((model_byte_size+restart_byte_size)/1024)+2*1024*1024
+# decompressed bundle content + 2GiB for output files
+request_disk <- ceiling((model_byte_size+additional_byte_size)/1024)+2*1024*1024
 
 # Determine the bundle size in KiB
 bundle_size <- floor(file.info(bundle_path)$size/1024)
@@ -574,13 +538,12 @@ bat_template <- c(
   "@echo off",
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
-  'md "{G00_OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
   'md "{GDX_OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
   "@echo on",
   "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7z x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
-  "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe {GAMS_FILE} -logOption=3 restart={RESTART_FILE_PATH} save={G00_OUTPUT_DIR}/{g00_prefix} {GAMS_ARGUMENTS}",
+  "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe {GAMS_FILE} -logOption=3 {GAMS_ARGUMENTS}",
   "set gams_errorlevel=%errorlevel%",
   "@echo off",
   "if %gams_errorlevel% neq 0 (",
@@ -624,8 +587,8 @@ job_template <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_output_files = {str_sub(GAMS_FILE, 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{G00_OUTPUT_DIR}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{str_sub(GAMS_FILE, 1, -5)}.lst={run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR}/{g00_prefix}_{EXPERIMENT}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_output_files = {str_sub(GAMS_FILE, 1, -5)}.lst{ifelse(GET_GDX_OUTPUT, str_glue(",{GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE}"), "")}',
+  'transfer_output_remaps = "{str_sub(GAMS_FILE, 1, -5)}.lst={run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete.
   "",
@@ -686,9 +649,6 @@ if (WAIT_FOR_RUN_COMPLETION) {
 
   # Check that result files exist and are not empty, warn otherwise and remove empty files
   lsts_complete <- all_exist_and_not_empty(run_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.lst", ".lst")
-  if (GET_G00_OUTPUT) {
-    g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR, "{g00_prefix}_{EXPERIMENT}_{cluster}.{job}.g00", "work (.g00)")
-  }
   if (GET_GDX_OUTPUT) {
     gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR, 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx', "GDX")
   }
