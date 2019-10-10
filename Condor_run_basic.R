@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Submit a Condor run (a set of jobs). Can be configured to monitor
-# progress and merge gdx output on completion.
+# progress.
 #
 # Usage: invoke this script via Rscript, or, on Linux/MacOS, you can
 # invoke the script directly if its execute flag is set. The working
@@ -13,9 +13,8 @@
 #
 # Rscript ..\R\Condor_run.R my_config.R
 #
-# either from the command prompt, shell, via the GAMS $call or execute
-# facilities, or using whatever your language of choice supports for
-# command invocation.
+# either from the command prompt, shell, or using whatever your language
+# of choice supports for command invocation.
 #
 # If you cannot invoke Rscript, you will need to add where the R binaries
 # reside to your PATH environment variable. On Windows, this is typically
@@ -31,39 +30,16 @@
 # to should also have 7-Zip on-path. This is the case for the limpopo
 # machines.
 #
-# When using MERGE_GDX_OUTPUT=TRUE, the gdxmerge executable should be
-# on-path. This can be done by adding your local GAMS installation
-# directory to PATH.
-#
 # The working directory (current directory) when invoking this script
 # must be the directory that contains the configured files and paths.
-# For GLOBIOM this will be the Model directory.
-#
-# To adapt this script to submit non-GLOBIOM jobs, change what is
-# bundled, revise the templates, and adapt the output checking and
-# handling.
 #
 # This script requires you to have a recent version of Condor installed.
 # On Windows, the installer adds the Condor/bin directory to the PATH
 # system environment variable, thus making the Condor commands available.
 #
-# BEWARE: gdxmerge is limited. It sometimes gives "Symbol is too large"
-# errors, and neither the big= (MERGE_BIG configuration setting) nore
-# running gdxmerge on a large-memory machine can avoid that. Moreover,
-# no non-zero errorlevel is returned in case of such errors. Hence,
-# this script will parse the output so as to stil spot these errors.
-#
 # Based on: GLOBIOM-limpopo scripts by David Leclere
 #
 # Author: Albert Brouwer
-#
-# Todo:
-# - Compile scenerio file locally first before submission.
-# - Don't merge a single file?
-# - limpopo1 has an issue with largish request_disk
-# - Sometimes, limpopo1 partitionable slots are not filled whereas for the other limpopos they are.
-# - Test on Linux (condor_reschedule is probably going to be an issue)
-# - Parse errors from gdxmerge output
 
 # ---- Default run config settings ----
 
@@ -100,11 +76,6 @@ GET_GDX_OUTPUT = TRUE
 GDX_OUTPUT_DIR = "gdx" # relative to working dir both host-side and on the submit machine
 GDX_OUTPUT_FILE = "output.gdx" # as produced by execute_unload on the host-side, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
-MERGE_GDX_OUTPUT = FALSE
-MERGE_BIG = NULL # symbol size cutoff beyond which GDXMERGE writes symbols one by one to avoid running out of memory.
-MERGE_ID = NULL # comma-separated list of symbols to include in the merge, defaults to all
-MERGE_EXCLUDE = NULL # comma-separated list of symbols to exclude from the merge, defaults to none
-REMOVE_MERGED_GDX_FILES = FALSE
 # -------8><----snippy-snappy----8><-----------------------------------------
 
 # Collect the names and types of the default config settings
@@ -113,7 +84,7 @@ if (length(config_names) == 0) {stop("Default configuration is absent! Please re
 config_types <- lapply(lapply(config_names, get), typeof)
 
 # Presence of Config settings is obligatory in a config file other then for the settings listed here
-OPTIONAL_CONFIG_SETTINGS <- c("MERGE_GDX_OUTPUT", "MERGE_BIG", "MERGE_ID", "MERGE_EXCLUDE", "REMOVE_MERGED_GDX_FILES")
+OPTIONAL_CONFIG_SETTINGS <- c()
 
 # ---- Get set ----
 
@@ -217,9 +188,6 @@ if (str_sub(GDX_OUTPUT_FILE, -4) != ".gdx") stop(str_glue("Configured GDX_OUTPUT
 if (str_length(GDX_OUTPUT_FILE) <= 4) stop(str_glue("Configured GDX_OUTPUT_FILE needs more than an extension!"))
 if (str_detect(GDX_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GDX_OUTPUT_FILE has forbidden character(s)!"))
 gdx_prefix <- str_sub(GDX_OUTPUT_FILE, 1, -5)
-if (MERGE_GDX_OUTPUT && !GET_GDX_OUTPUT) stop("Cannot MERGE_GDX_OUTPUT without first doing GET_GDX_OUTPUT!")
-if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT without first doing WAIT_FOR_RUN_COMPLETION!")
-if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX_FILES without first doing MERGE_GDX_OUTPUT!")
 
 # Determine GAMS version used to generate RESTART_FILE_PATH, verify that it is <= GAMS_VERSION
 conn <- file(RESTART_FILE_PATH, "rb")
@@ -753,40 +721,6 @@ if (WAIT_FOR_RUN_COMPLETION) {
     warning(str_glue("REQUEST_MEMORY ({REQUEST_MEMORY} MiB) is significantly larger than the memory use ({max_memory_use} MiB) of the job ({max_memory_job}) using the most memory, you can request less."))
   }
 
-  # Merge returned GDX files (implies GET_GDX_OUTPUT and WAIT_FOR_RUN_COMPLETION)
-  if (MERGE_GDX_OUTPUT) {
-    if (!gdxs_complete) {
-      warning("MERGE_GDX_OUTPUT was set but not honored: no complete set of GDX files was returned.")
-    } else {
-      cat("Merging the returned GDX files...\n")
-      prior_wd <- getwd()
-      setwd(GDX_OUTPUT_DIR)
-      Sys.setenv(GDXCOMPRESS=1) # Causes the merged GDX file to be compressed, it will be usable as a regular GDX,
-      # Compile arguments for gdxmerge
-      merge_args <- c()
-      if (exists("MERGE_BIG") && !is.null(MERGE_BIG) && (MERGE_BIG != "")) {
-        merge_args <- c(merge_args, str_glue("big={MERGE_BIG}"))
-      }
-      if (exists("MERGE_ID") && !is.null(MERGE_ID) && (MERGE_ID != "")) {
-        merge_args <- c(merge_args, str_glue("id={MERGE_ID}"))
-      }
-      if (exists("MERGE_EXCLUDE") && !is.null(MERGE_EXCLUDE) && (MERGE_EXCLUDE != "")) {
-        merge_args <- c(merge_args, str_glue("exclude={MERGE_EXCLUDE}"))
-      }
-      merge_args <- c(merge_args, str_glue("{gdx_prefix}_{EXPERIMENT}_{cluster}.*.gdx"))
-      merge_args <- c(merge_args, str_glue("output={gdx_prefix}_{EXPERIMENT}_{cluster}_merged.gdx"))
-      # Invoke GDX merge
-      error_code <- system2("gdxmerge", args=merge_args)
-      setwd(prior_wd)
-      if (error_code > 0) stop("Merging failed!")
-      # Remove merged GDX files if so requested
-      if (REMOVE_MERGED_GDX_FILES) {
-        for (job in JOBS) {
-          file.remove(file.path(GDX_OUTPUT_DIR, str_glue('{gdx_prefix}_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx')))
-        }
-      }
-    }
-  }
   # Make a bit of noise to notify the user of completion (works from RScript but not RStudio)
   alarm()
   Sys.sleep(1)
