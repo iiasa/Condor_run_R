@@ -63,14 +63,14 @@ REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 GAMS_FILE = "6_scenarios_limpopo.gms" # the GAMS file to run for each job
 GAMS_VERSION = "24.4" # must be installed on all execute hosts
 GAMS_ARGUMENTS = "//nsim='%1' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cErr=5 pageWidth=100"
-BUNDLE_INCLUDE_DIRS = c("finaldata") # recursive, supports wildcards
-BUNDLE_EXCLUDE_DIRS = c("225*", "Demand", "graphs", "output", "trade", "SIMBIOM") # recursive, supports wildcards
-BUNDLE_EXCLUDE_FILES = c("*.~*", "*.exe", "*.log", "*.lxi", "*.lst", "*.zip", "test*.gdx") # supports wildcards
+BUNDLE_INCLUDE_DIRS = c("input") # recursive, supports wildcards
+BUNDLE_EXCLUDE_DIRS = c("output") # recursive, supports wildcards
+BUNDLE_EXCLUDE_FILES = c("*.log") # supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
-GET_GDX_OUTPUT = TRUE
-GDX_OUTPUT_DIR = "gdx" # relative to working dir both host-side and on the submit machine
-GDX_OUTPUT_FILE = "output.gdx" # as produced by execute_unload on the host-side, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
+GET_OUTPUT = TRUE
+OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine
+OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
 # -------8><----snippy-snappy----8><-----------------------------------------
 
@@ -163,14 +163,13 @@ if (!str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS la
 for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
-if (!(file.exists(GDX_OUTPUT_DIR))) stop(str_glue('Configured GDX_OUTPUT_DIR "{GDX_OUTPUT_DIR}" does not exist!'))
-if (str_detect(GDX_OUTPUT_DIR, "^/") || str_detect(GDX_OUTPUT_DIR, "^.:")) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
-if (str_detect(GDX_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
-if (str_detect(GDX_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
-if (str_sub(GDX_OUTPUT_FILE, -4) != ".gdx") stop(str_glue("Configured GDX_OUTPUT_FILE has no .gdx extension!"))
-if (str_length(GDX_OUTPUT_FILE) <= 4) stop(str_glue("Configured GDX_OUTPUT_FILE needs more than an extension!"))
-if (str_detect(GDX_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GDX_OUTPUT_FILE has forbidden character(s)!"))
-gdx_prefix <- str_sub(GDX_OUTPUT_FILE, 1, -5)
+if (!(file.exists(OUTPUT_DIR))) stop(str_glue('Configured OUTPUT_DIR "{OUTPUT_DIR}" does not exist!'))
+if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
+if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
+if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
+if (str_detect(OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured OUTPUT_FILE has forbidden character(s)!"))
+output_prefix <- tools::file_path_sans_ext(OUTPUT_FILE)
+output_extension <- tools::file_ext(OUTPUT_FILE)
 
 # Get username in a way that works on MacOS, Linux, and Windows
 username <- Sys.getenv("USERNAME")
@@ -381,7 +380,7 @@ model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
     unlist(lapply(BUNDLE_EXCLUDE_DIRS, function(p) return(str_glue("-xr!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!", p)))),
     "-xr!{condor_dir}",
-    "-xr!{GDX_OUTPUT_DIR}",
+    "-xr!{OUTPUT_DIR}",
     "{bundle_platform_path}",
     "*"
   ), str_glue))
@@ -538,7 +537,7 @@ bat_template <- c(
   "@echo off",
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
-  'md "{GDX_OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
+  'md "{OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
   "@echo on",
   "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7z x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
@@ -587,8 +586,8 @@ job_template <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_output_files = {str_sub(GAMS_FILE, 1, -5)}.lst{ifelse(GET_GDX_OUTPUT, str_glue(",{GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{str_sub(GAMS_FILE, 1, -5)}.lst={run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_output_files = {str_sub(GAMS_FILE, 1, -5)}.lst{ifelse(GET_OUTPUT, str_glue(",{OUTPUT_DIR}/{OUTPUT_FILE}"), "")}',
+  'transfer_output_remaps = "{str_sub(GAMS_FILE, 1, -5)}.lst={run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_OUTPUT, str_glue(";{OUTPUT_FILE}={OUTPUT_DIR}/{output_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extension}"), "")}"',
   "",
   "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete.
   "",
@@ -649,8 +648,8 @@ if (WAIT_FOR_RUN_COMPLETION) {
 
   # Check that result files exist and are not empty, warn otherwise and remove empty files
   lsts_complete <- all_exist_and_not_empty(run_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.lst", ".lst")
-  if (GET_GDX_OUTPUT) {
-    gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR, 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx', "GDX")
+  if (GET_OUTPUT) {
+    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR, 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}{output_extension}', output_extension)
   }
 
   return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log"))))
@@ -687,5 +686,5 @@ if (WAIT_FOR_RUN_COMPLETION) {
   alarm()
 } else {
   cat(str_glue("You can monitor progress of the run with: condor_q {cluster}."), sep="\n")
-  cat(str_glue("After the run completes, you can find the GDX results at: {GDX_OUTPUT_DIR}/{gdx_prefix}_{EXPERIMENT}_{cluster}.*.gdx"), sep="\n")
+  cat(str_glue("After the run completes, you can find the output files at: {OUTPUT_DIR}/{output_prefix}_{EXPERIMENT}_{cluster}.*"), sep="\n")
 }
