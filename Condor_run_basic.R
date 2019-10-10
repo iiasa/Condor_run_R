@@ -60,9 +60,9 @@ JOBS = c(0:3,7,10)
 HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
 REQUEST_MEMORY = 7800 # memory (MiB) to reserve for each job
 REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
-GAMS_FILE = "6_scenarios_limpopo.gms" # the GAMS file to run for each job
-GAMS_VERSION = "24.4" # must be installed on all execute hosts
-GAMS_ARGUMENTS = "//nsim='%1' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cErr=5 pageWidth=100"
+LAUNCHER = "Rscript" # interpreter with which to launch the script
+SCRIPT = "my_script.R" # script that comprises your job
+ARGUMENTS = "%1" # arguments to the script
 BUNDLE_INCLUDE_DIRS = c("input") # recursive, supports wildcards
 BUNDLE_EXCLUDE_DIRS = c("output") # recursive, supports wildcards
 BUNDLE_EXCLUDE_FILES = c("*.log") # supports wildcards
@@ -142,7 +142,6 @@ if (length(args) > 0) {
 }
 
 # Check and massage specific config settings
-EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "25.1")
 if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT label for run has forbidden character(s)!"))
 if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
 if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
@@ -152,14 +151,10 @@ if (!all(JOBS < 1e6)) stop("Job numbers in JOBS must be less than 1000000 (one m
 if (!all(JOBS >= 0)) stop("Job numbers in JOBS may not be negative!")
 if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
 if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
-if (str_sub(GAMS_FILE, -4) != ".gms") stop(str_glue("Configured GAMS_FILE has no .gms extension!"))
-if (!(file.exists(GAMS_FILE))) stop(str_glue('Configured GAMS_FILE "{GAMS_FILE}" does not exist relative to working directory!'))
-if (str_detect(GAMS_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GAMS_FILE has forbidden character(s)!"))
-version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
-if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
-if (!(GAMS_VERSION %in% EXECUTE_HOST_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The execute hosts have only these GAMS versions installed: {str_c(EXECUTE_HOST_GAMS_VERSIONS, collapse=" ")}')) # {cat(EXECUTE_HOST_GAMS_VERSIONS)}
+if (!(file.exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
+if (str_detect(SCRIPT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCRIPT has forbidden character(s)!"))
 dotless_version <- str_glue(version_match[2], version_match[3])
-if (!str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion that must be used for passing the job number with which the job-specific (e.g. scenario) can be selected.")
+if (!str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion that must be used for passing the job number with which the job-specific (e.g. scenario) can be selected.")
 for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
@@ -170,6 +165,8 @@ if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPU
 if (str_detect(OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured OUTPUT_FILE has forbidden character(s)!"))
 output_prefix <- tools::file_path_sans_ext(OUTPUT_FILE)
 output_extension <- tools::file_ext(OUTPUT_FILE)
+script_prefix <- tools::file_path_sans_ext(SCRIPT)
+script_extension <- tools::file_ext(SCRIPT)
 
 # Get username in a way that works on MacOS, Linux, and Windows
 username <- Sys.getenv("USERNAME")
@@ -523,10 +520,10 @@ if (!file.copy(temp_config_file, config_file, overwrite=TRUE)) {
 }
 invisible(file.remove(temp_config_file))
 
-# Copy the GAMS file to the run directory for reference
-if (!file.copy(file.path(GAMS_FILE), file.path(run_dir, str_glue("{str_sub(GAMS_FILE, 1, -5)}_{EXPERIMENT}_{predicted_cluster}.gms")), overwrite=TRUE)) {
+# Copy the SCRIPT to the run directory for reference
+if (!file.copy(file.path(SCRIPT), file.path(run_dir, str_glue("{script_prefix}_{EXPERIMENT}_{predicted_cluster}.{script_extension}")), overwrite=TRUE)) {
   invisible(file.remove(bundle_path))
-  stop(str_glue("Cannot copy the configured GAMS_FILE file to {run_dir}"))
+  stop(str_glue("Cannot copy the configured SCRIPT file to {run_dir}"))
 }
 
 # Define the template for the .bat file that specifies what should be run on the execute host side for each job.
@@ -541,16 +538,14 @@ bat_template <- c(
   "@echo on",
   "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7z x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
-  "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
-  "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe {GAMS_FILE} -logOption=3 {GAMS_ARGUMENTS}",
-  "set gams_errorlevel=%errorlevel%",
+  "{LAUNCHER} {SCRIPT} {ARGUMENTS}",
+  "set script_errorlevel=%errorlevel%",
   "@echo off",
-  "if %gams_errorlevel% neq 0 (",
-  "  echo ERROR: GAMS failed with error code %gams_errorlevel% 1>&2",
-  "  echo See https://www.gams.com/latest/docs/UG_GAMSReturnCodes.html#UG_GAMSReturnCodes_ListOfErrorCodes 1>&2",
+  "if %script_errorlevel% neq 0 (",
+  "  echo ERROR: script failed with error code %script_errorlevel% 1>&2",
   ")",
   "sleep 1", # Make it less likely that the .out file is truncated.
-  "exit /b %gams_errorlevel%"
+  "exit /b %script_errorlevel%"
 )
 
 # Apply settings to bat template and write the .bat file
@@ -586,8 +581,8 @@ job_template <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_output_files = {str_sub(GAMS_FILE, 1, -5)}.lst{ifelse(GET_OUTPUT, str_glue(",{OUTPUT_DIR}/{OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{str_sub(GAMS_FILE, 1, -5)}.lst={run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_OUTPUT, str_glue(";{OUTPUT_FILE}={OUTPUT_DIR}/{output_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extension}"), "")}"',
+  'transfer_output_files = {script_prefix}.lst{ifelse(GET_OUTPUT, str_glue(",{OUTPUT_DIR}/{OUTPUT_FILE}"), "")}',
+  'transfer_output_remaps = "{script_prefix}.lst={run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_OUTPUT, str_glue(";{OUTPUT_FILE}={OUTPUT_DIR}/{output_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extension}"), "")}"',
   "",
   "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete.
   "",
