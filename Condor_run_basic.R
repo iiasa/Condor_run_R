@@ -54,8 +54,8 @@ rm(list=ls())
 # to a file, give it a .R extension to get nice syntax highlighting.
 # -------8><----snippy-snappy----8><-----------------------------------------
 # Use paths relative to the working directory, with / as path separator.
-EXPERIMENT = "test" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
-PREFIX = "_globiom" # prefix for per-job .err, log, .lst, and .out files
+EXPERIMENT = "experiment1" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
+PREFIX = "_condor" # prefix for per-job .err, log, and .out files
 JOBS = c(0:3,7,10)
 HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
 REQUEST_MEMORY = 7800 # memory (MiB) to reserve for each job
@@ -64,7 +64,7 @@ LAUNCHER = "Rscript" # interpreter with which to launch the script
 SCRIPT = "my_script.R" # script that comprises your job
 ARGUMENTS = "%1" # arguments to the script
 BUNDLE_INCLUDE_DIRS = c("input") # recursive, supports wildcards
-BUNDLE_EXCLUDE_DIRS = c("output") # recursive, supports wildcards
+BUNDLE_EXCLUDE_DIRS = c("Condor", "output") # recursive, supports wildcards
 BUNDLE_EXCLUDE_FILES = c("*.log") # supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
@@ -88,7 +88,7 @@ OPTIONAL_CONFIG_SETTINGS <- c()
 library(stringr)
 
 # Check that the working directory is as expected and holds the required subdirectories
-condor_dir <- "Condor" # where run reference files are stored in a per-run subdirectory (.err, .log, .lst, .out, and so on files)
+condor_dir <- "Condor" # where run reference files are stored in a per-run subdirectory (.err, .log, .out, and so on files)
 if (!dir.exists(condor_dir)) stop(str_glue("No {condor_dir} directory found relative to working directory {getwd()}! Is your working directory correct?"))
 
 # Determine the platform file separator and the temp directory with R-default separators
@@ -153,7 +153,6 @@ if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
 if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
 if (!(file.exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
 if (str_detect(SCRIPT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCRIPT has forbidden character(s)!"))
-dotless_version <- str_glue(version_match[2], version_match[3])
 if (!str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion that must be used for passing the job number with which the job-specific (e.g. scenario) can be selected.")
 for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
@@ -173,7 +172,7 @@ username <- Sys.getenv("USERNAME")
 if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
-# Ensure that the run directory to hold the .out/.err/.log/.lst and so on results exists
+# Ensure that the run directory to hold the .out/.err/.log and so on results exists
 run_dir <- file.path(condor_dir, EXPERIMENT)
 if (!dir.exists(run_dir)) dir.create(run_dir)
 
@@ -581,8 +580,8 @@ job_template <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_output_files = {script_prefix}.lst{ifelse(GET_OUTPUT, str_glue(",{OUTPUT_DIR}/{OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{script_prefix}.lst={run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_OUTPUT, str_glue(";{OUTPUT_FILE}={OUTPUT_DIR}/{output_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extension}"), "")}"',
+  'transfer_output_files = {ifelse(GET_OUTPUT, str_glue("{OUTPUT_DIR}/{OUTPUT_FILE}"), "")}',
+  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_glue("{OUTPUT_FILE}={OUTPUT_DIR}/{output_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extension}"), "")}"',
   "",
   "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete.
   "",
@@ -642,9 +641,8 @@ if (WAIT_FOR_RUN_COMPLETION) {
   invisible(file.remove(job_bat))
 
   # Check that result files exist and are not empty, warn otherwise and remove empty files
-  lsts_complete <- all_exist_and_not_empty(run_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.lst", ".lst")
   if (GET_OUTPUT) {
-    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR, 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}{output_extension}', output_extension)
+    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR, 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.{output_extension}', output_extension)
   }
 
   return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log"))))
