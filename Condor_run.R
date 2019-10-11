@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-# Submit a Condor run (a set of jobs). Can be configured to monitor
-# progress and merge gdx output on completion.
+# Submit a Condor run (a set of jobs). Expanded version for GAMS jobs. Can
+# be configured to monitor progress and merge gdx output on completion.
 #
 # Usage: invoke this script via Rscript, or, on Linux/MacOS, you can
 # invoke the script directly if its execute flag is set. The working
@@ -105,6 +105,7 @@ MERGE_BIG = NULL # symbol size cutoff beyond which GDXMERGE writes symbols one b
 MERGE_ID = NULL # comma-separated list of symbols to include in the merge, defaults to all
 MERGE_EXCLUDE = NULL # comma-separated list of symbols to exclude from the merge, defaults to none
 REMOVE_MERGED_GDX_FILES = FALSE
+CONDOR_DIR = "Condor" # directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
 # -------8><----snippy-snappy----8><-----------------------------------------
 
 # Collect the names and types of the default config settings
@@ -113,7 +114,7 @@ if (length(config_names) == 0) {stop("Default configuration is absent! Please re
 config_types <- lapply(lapply(config_names, get), typeof)
 
 # Presence of Config settings is obligatory in a config file other then for the settings listed here
-OPTIONAL_CONFIG_SETTINGS <- c("MERGE_GDX_OUTPUT", "MERGE_BIG", "MERGE_ID", "MERGE_EXCLUDE", "REMOVE_MERGED_GDX_FILES")
+OPTIONAL_CONFIG_SETTINGS <- c("MERGE_GDX_OUTPUT", "MERGE_BIG", "MERGE_ID", "MERGE_EXCLUDE", "REMOVE_MERGED_GDX_FILES", "CONDOR_DIR")
 
 # ---- Get set ----
 
@@ -121,8 +122,7 @@ OPTIONAL_CONFIG_SETTINGS <- c("MERGE_GDX_OUTPUT", "MERGE_BIG", "MERGE_ID", "MERG
 library(stringr)
 
 # Check that the working directory is as expected and holds the required subdirectories
-condor_dir <- "Condor" # where run reference files are stored in a per-run subdirectory (.err, .log, .lst, .out, and so on files)
-if (!dir.exists(condor_dir)) stop(str_glue("No {condor_dir} directory found relative to working directory {getwd()}! Is your working directory correct?"))
+if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory found relative to working directory {getwd()}! Is your working directory correct?"))
 
 # Determine the platform file separator and the temp directory with R-default separators
 temp_dir <- tempdir()
@@ -243,8 +243,8 @@ username <- Sys.getenv("USERNAME")
 if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
-# Ensure that the run directory to hold the .out/.err/.log/.lst and so on results exists
-run_dir <- file.path(condor_dir, EXPERIMENT)
+# Ensure that the run directory to hold the .out/.err/.log and so on results exists
+run_dir <- file.path(CONDOR_DIR, EXPERIMENT)
 if (!dir.exists(run_dir)) dir.create(run_dir)
 
 # ---- Define some helper functions ----
@@ -446,7 +446,7 @@ model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
     unlist(lapply(BUNDLE_INCLUDE_DIRS, function(p) return(str_glue("-ir!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_DIRS, function(p) return(str_glue("-xr!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!", p)))),
-    "-xr!{condor_dir}",
+    "-xr!{CONDOR_DIR}",
     "-xr!{G00_OUTPUT_DIR}",
     "-xr!{GDX_OUTPUT_DIR}",
     "{bundle_platform_path}",
@@ -455,8 +455,8 @@ model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
 ))
 cat("\n")
 
-cat("Bundle restart file and any additional files...\n")
-restart_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
+cat("Bundle any additional files...\n")
+additional_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
   args=unlist(lapply(c("a",
     "{bundle_platform_path}",
     "{RESTART_FILE_PATH}",
@@ -466,8 +466,8 @@ restart_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
 cat("\n")
 
 # Estimate the amount of disk to request for run, in KiB
-# decompressed bundle content + 2GiB for output (.g00, .gdx, .lst, ...)
-request_disk <- ceiling((model_byte_size+restart_byte_size)/1024)+2*1024*1024
+# decompressed bundle content + 2GiB for output files
+request_disk <- ceiling((model_byte_size+additional_byte_size)/1024)+2*1024*1024
 
 # Determine the bundle size in KiB
 bundle_size <- floor(file.info(bundle_path)$size/1024)

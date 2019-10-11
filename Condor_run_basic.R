@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
-# Submit a Condor run (a set of jobs). Can be configured to monitor
-# progress.
+# Submit a Condor run (a set of jobs). Basic version. Can be configured
+# to monitor progress.
 #
 # Usage: invoke this script via Rscript, or, on Linux/MacOS, you can
 # invoke the script directly if its execute flag is set. The working
@@ -72,6 +72,7 @@ GET_OUTPUT = TRUE
 OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine
 OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
+CONDOR_DIR = "Condor" # directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
 # -------8><----snippy-snappy----8><-----------------------------------------
 
 # Collect the names and types of the default config settings
@@ -80,7 +81,7 @@ if (length(config_names) == 0) {stop("Default configuration is absent! Please re
 config_types <- lapply(lapply(config_names, get), typeof)
 
 # Presence of Config settings is obligatory in a config file other then for the settings listed here
-OPTIONAL_CONFIG_SETTINGS <- c()
+OPTIONAL_CONFIG_SETTINGS <- c("CONDOR_DIR")
 
 # ---- Get set ----
 
@@ -88,8 +89,7 @@ OPTIONAL_CONFIG_SETTINGS <- c()
 library(stringr)
 
 # Check that the working directory is as expected and holds the required subdirectories
-condor_dir <- "Condor" # where run reference files are stored in a per-run subdirectory (.err, .log, .out, and so on files)
-if (!dir.exists(condor_dir)) stop(str_glue("No {condor_dir} directory found relative to working directory {getwd()}! Is your working directory correct?"))
+if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory found relative to working directory {getwd()}! Is your working directory correct?"))
 
 # Determine the platform file separator and the temp directory with R-default separators
 temp_dir <- tempdir()
@@ -173,7 +173,7 @@ if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
 # Ensure that the run directory to hold the .out/.err/.log and so on results exists
-run_dir <- file.path(condor_dir, EXPERIMENT)
+run_dir <- file.path(CONDOR_DIR, EXPERIMENT)
 if (!dir.exists(run_dir)) dir.create(run_dir)
 
 # ---- Define some helper functions ----
@@ -375,7 +375,7 @@ model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
     unlist(lapply(BUNDLE_INCLUDE_DIRS, function(p) return(str_glue("-ir!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_DIRS, function(p) return(str_glue("-xr!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!", p)))),
-    "-xr!{condor_dir}",
+    "-xr!{CONDOR_DIR}",
     "-xr!{OUTPUT_DIR}",
     "{bundle_platform_path}",
     "*"
