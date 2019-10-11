@@ -455,15 +455,18 @@ model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
 ))
 cat("\n")
 
-cat("Bundle any additional files...\n")
-additional_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
-  args=unlist(lapply(c("a",
-    "{bundle_platform_path}",
-    "{RESTART_FILE_PATH}",
-    BUNDLE_ADDITIONAL_FILES
-  ), str_glue))
-))
-cat("\n")
+additional_byte_size <- 0
+if (RESTART_FILE_PATH != "" || length(BUNDLE_ADDITIONAL_FILES) != 0) {
+  cat("Bundle any additional files...\n")
+  additional_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
+    args=unlist(lapply(c("a",
+      "{bundle_platform_path}",
+      "{RESTART_FILE_PATH}",
+      BUNDLE_ADDITIONAL_FILES
+    ), str_glue))
+  ))
+  cat("\n")
+}
 
 # Estimate the amount of disk to request for run, in KiB
 # decompressed bundle content + 2GiB for output files
