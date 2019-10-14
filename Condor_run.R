@@ -39,10 +39,6 @@
 # must be the directory that contains the configured files and paths.
 # For GLOBIOM this will be the Model directory.
 #
-# To adapt this script to submit non-GLOBIOM jobs, change what is
-# bundled, revise the templates, and adapt the output checking and
-# handling.
-#
 # This script requires you to have a recent version of Condor installed.
 # On Windows, the installer adds the Condor/bin directory to the PATH
 # system environment variable, thus making the Condor commands available.
