@@ -2,6 +2,7 @@
 @echo off
 pushd %~dp0
 Rscript ..\Condor_run_basic.R config.R
+Rscript ..\Condor_run_stats.R
 popd
 exit /b :: end batch script processing
 BATCH
@@ -12,4 +13,5 @@ BATCH
 # Must be run with the bash shell.
 pushd "$(dirname "$0")" #
 Rscript ../Condor_run_basic.R config.R #
+Rscript ../Condor_run_stats.R #
 popd #
