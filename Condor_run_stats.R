@@ -1,15 +1,23 @@
 #!/usr/bin/env Rscript
-# Plot and summarize performance stats from output files of Condor runs
+# Plot and summarize performance stats extracted from log files of Condor runs
+# performed with Condor_run_basic.R or Condor_run.R. For assessing job run
+# times and cluster performance behaviour.
 #
-# Usage: run/source this script from RStudio by setting up an RStudio project
-# in <GLOBIOM>/R. This makes <GLOBIOM>/R the working directory, as required.
-# This script reads the output files of the Condor runs to analyze from either
-# <GLOBIOM>/Model/Condor/<EXPERIMENTS[]>
-# or
-# <GLOBIOM>/Model/Condor/<SUBDIRECTORY>
+# Usage: run/source this script from RStudio, invoke the script using Rscript,
+# or, on Linux/MacOS you can invoke the script directly (this works provided
+# that the execute flags is set and carriage returns have been remove using
+# e.g. dos2unix).
 #
-# Beware that if you run this script from the command line via Rscript, the
-# plots are output to a PDF file. 
+# Before running the script, set EXPERIMENTS, CLUSTER, JOB_RELATIVE_PATH,
+# CONDOR_DIR, and SUBDIRECTORY as required.
+#
+# When run from RStudio, this script looks for log files in
+# <Location of this script>/<RELATIVE_PATH>/<CONDOR_DIR>/<EXPERIMENT[]|SUBDIRECTORY>
+#
+# When run from the command line, this script looks for log files in
+# <Current Directory>/<CONDOR_DIR>/<EXPERIMENT[]|SUBDIRECTORY>
+#
+# Invoking this script from the command line causes plots to be output to a PDF.
 #
 # Author: Albert Brouwer
 #
@@ -17,14 +25,17 @@
 # - Solver-independent extraction from "S O L V E      S U M M A R Y" sections
 # - Test running on Linux
 
-# Experiment names you gave to your Condor runs
+# Names of experiments to analyse, as set via the EXPERIMENT config setting of your runs.
+EXPERIMENTS <- c("experiment1")
 #EXPERIMENTS <- c("limpopo1_affinity_half", "limpopo1_affinity_f", "limpopo1_affinity_double")
-#EXPERIMENTS <- c("limpopo_nusw_5x8", "limpopo_nusw_5x16", "limpopo_nusw_5x24", "limpopo_nusw_4x32_30", "limpopo_nusw_500")
-EXPERIMENTS <- c("10x55MB", "20x28MB", "30x18MB", "40x14MB", "60x9MB", "80x7MB", "100x7MB", "120x7MB", "140x7MB") #, "many")
-#EXPERIMENTS <- c("contention")
+#EXPERIMENTS <- c("10x55MB", "20x28MB", "30x18MB", "40x14MB", "60x9MB", "80x7MB", "100x7MB", "120x7MB", "140x7MB") #, "many")
+
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
-#CLUSTER <- "134"
 CLUSTER <- "*"
+
+RELATIVE_PATH <- c("test_basic") # for running from RStudio, relative to where this script is located
+CONDOR_DIR <- "Condor" # Set the same as identically named config setting used with Condor_run[_basic].R
+
 # Name of directory under Model/Condor with output files to analyze. Set to NULL to default to the experiment name.
 SUBDIRECTORY <- NULL
 
@@ -36,20 +47,28 @@ hostname_map <- c("147.125.199.211"="limpopo1",
                   "147.125.199.220"="limpopo5")
 
 # Required packages
+options(tidyverse.quiet=TRUE)
 library(tidyverse)
 
 # ---- Load the output files of the specified Condor run(s) ----
 
 # Alphabetically list the .out and .log files resulting from the Condor run and check that they match up
-if (basename(getwd()) != "R") stop("Directory R at the GLOBIOM root must be the working directory! When running this script using RScript from the command line, CD into the R directory first. When running this script from RStudio, make sure R is the project directory.")
 out_paths <- c()
 log_paths <- c()
 experiments <- list() # expanded to a per-job list
 for (experiment in EXPERIMENTS) {
-  if (is.null(SUBDIRECTORY)) {
-    experiment_dir <- file.path(getwd(), "..", "Model", "Condor", experiment)
+  if (Sys.getenv("RSTUDIO") == "1") {
+    if (is.null(SUBDIRECTORY)) {
+      experiment_dir <- file.path(dirname(rstudioapi::getActiveDocumentContext()$path), RELATIVE_PATH, CONDOR_DIR, experiment)
+    } else {
+      experiment_dir <- file.path(dirname(rstudioapi::getActiveDocumentContext()$path), RELATIVE_PATH, CONDOR_DIR, SUBDIRECTORY)
+    }
   } else {
-    experiment_dir <- file.path(getwd(), "..", "Model", "Condor", SUBDIRECTORY)
+    if (is.null(SUBDIRECTORY)) {
+      experiment_dir <- file.path(getwd(), CONDOR_DIR, experiment)
+    } else {
+      experiment_dir <- file.path(getwd(), CONDOR_DIR, SUBDIRECTORY)
+    }
   }
   if (!dir.exists(experiment_dir)) stop(str_glue("Experiment directory not found! Expected location: {experiment_dir}!"))
   outs <- list.files(path=experiment_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.out"), full.names=TRUE, recursive=FALSE)
