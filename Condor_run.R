@@ -44,22 +44,18 @@
 # system environment variable, thus making the Condor commands available.
 #
 # BEWARE: gdxmerge is limited. It sometimes gives "Symbol is too large"
-# errors, and neither the big= (MERGE_BIG configuration setting) nore
+# errors, and neither the big= (MERGE_BIG configuration setting) nor
 # running gdxmerge on a large-memory machine can avoid that. Moreover,
-# no non-zero errorlevel is returned in case of such errors. Hence,
-# this script will parse the output so as to stil spot these errors.
-#
-# Based on: GLOBIOM-limpopo scripts by David Leclere
+# no non-zero return code results in case of such errors.
 #
 # Author: Albert Brouwer
+# Based on: GLOBIOM-limpopo scripts by David Leclere
+# Repository: https://github.com/iiasa/Condor_run_R
 #
 # Todo:
-# - Compile scenerio file locally first before submission.
+# - Parse errors from gdxmerge output to work around 0 return code.
+# - Compile scenario file locally first before submission.
 # - Don't merge a single file?
-# - limpopo1 has an issue with largish request_disk
-# - Sometimes, limpopo1 partitionable slots are not filled whereas for the other limpopos they are.
-# - Test on Linux (condor_reschedule is probably going to be an issue)
-# - Parse errors from gdxmerge output
 
 # ---- Default run config settings ----
 

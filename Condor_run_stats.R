@@ -5,25 +5,22 @@
 #
 # Usage: run/source this script from RStudio, invoke the script using Rscript,
 # or, on Linux/MacOS you can invoke the script directly (this works provided
-# that the execute flags is set and carriage returns have been remove using
+# that the execute flag is set and carriage returns have been removed using
 # e.g. dos2unix).
 #
 # Before running the script, set EXPERIMENTS, CLUSTER, JOB_RELATIVE_PATH,
 # CONDOR_DIR, and SUBDIRECTORY as required.
 #
 # When run from RStudio, this script looks for log files in
-# <Location of this script>/<RELATIVE_PATH>/<CONDOR_DIR>/<EXPERIMENT[]|SUBDIRECTORY>
+# <Location of this script>/<RELATIVE_PATH>/<CONDOR_DIR>/<EXPERIMENTS[]|SUBDIRECTORY>
 #
 # When run from the command line, this script looks for log files in
-# <Current Directory>/<CONDOR_DIR>/<EXPERIMENT[]|SUBDIRECTORY>
+# <Current Directory>/<CONDOR_DIR>/<EXPERIMENTS[]|SUBDIRECTORY>
 #
 # Invoking this script from the command line causes plots to be output to a PDF.
 #
 # Author: Albert Brouwer
-#
-# Todo:
-# - Solver-independent extraction from "S O L V E      S U M M A R Y" sections
-# - Test running on Linux
+# Repository: https://github.com/iiasa/Condor_run_R
 
 # Names of experiments to analyse, as set via the EXPERIMENT config setting of your runs.
 EXPERIMENTS <- c("experiment1")

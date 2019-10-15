@@ -37,9 +37,9 @@
 # On Windows, the installer adds the Condor/bin directory to the PATH
 # system environment variable, thus making the Condor commands available.
 #
-# Based on: GLOBIOM-limpopo scripts by David Leclere
-#
 # Author: Albert Brouwer
+# Based on: GLOBIOM-limpopo scripts by David Leclere
+# Repository: https://github.com/iiasa/Condor_run_R
 
 # ---- Default run config settings ----
 
