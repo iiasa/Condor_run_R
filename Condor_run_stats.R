@@ -138,9 +138,9 @@ submit_times_minus_1y <- list()
 for (i in seq_along(roots)) {
   
   lines <- grep("\\) \\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d Job submitted from host:", log_files[[i]], value=TRUE)
-  if (length(lines) != 1) stop(str_glue("Cannot extract termination time from {roots[[i]]}.log!"))
+  if (length(lines) != 1) stop(str_glue("Cannot extract submit time from {roots[[i]]}.log!"))
   dtstr <- str_match(lines[1], "\\) (\\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d) Job submitted from host:")[2]
-  if (is.na(dtstr)) stop(str_glue("Cannot decode termination time from {roots[[i]]}.log"))
+  if (is.na(dtstr)) stop(str_glue("Cannot decode submit time from {roots[[i]]}.log"))
   submit_dtstrs <- c(submit_dtstrs, dtstr)
   # Use guessed year (can fail for leap days)
   submit_times <- c(submit_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
