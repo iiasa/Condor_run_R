@@ -259,8 +259,7 @@ monitor <- function(clusters) {
     ) {
       outerr <- system2("condor_reschedule", args=c("reschedule"), stdout=TRUE, stderr=TRUE) # R-on-Windows issue?: the seemingly superflous args=c("reschedule") is needed because R seems to call some underlying generic exe that needs a parameter to resolve which command it should behave as
       if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-        cat(outerr, sep="\n")
-        stop("Invocation of condor_reschedule failed!", call.=FALSE)
+        warning(str_c(c("Invocation of condor_reschedule failed with the following output:", outerr), collapse='\n'), call.=FALSE)
       }
       reschedule_invocations <- reschedule_invocations-1
       changes_since_reschedule <- FALSE
