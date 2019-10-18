@@ -43,3 +43,17 @@ To set up a configuration file, copy the code block between *snippy snappy* line
 By transferring the bundle once for each execute host instead of once for each job in the run, a lot of network bandwidth is avoided when the job files being bundled include a lot of data.
 
 By passing the job number to the main script of the job, each job in the run can customize the calculation, e.g. by selecting one out of a collection of scenarios.
+
+## Troubleshooting
+When you cannot submit jobs, ensure that:
+- You have obtained access to the Condor cluster from the cluster administrator.
+- You stored the necessary credentials via `condor_store_cred` (ask your administrator).
+- Issuing the command `condor_submit` tabulates the cluster status.
+- Issuing the command `condor_q` results in a summary of queued jobs.
+- You set the HOST_REGEXP configuration option to select the right subset of execute hosts from the cluster.
+
+### Jobs do not run but instead go on hold.
+Are you running the submit script with as working directory a network drive or some directory with special permissions? The Condor service on your submit machine may not have access rights to write its logging output, causing the jobs to go on hold. Try submitting the job from a local disk or change the permissions on the directory.
+
+### Jobs are idle and do not run, or only some do.
+The cluster may be busy. To see who else has submitted jobs, issue `condor_status -submitters`. In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue `condor_userprio`. Large numbers mean low priority. Your cluster administrator can set your priority.
