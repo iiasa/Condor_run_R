@@ -135,16 +135,26 @@ current_year <- as.integer(format(Sys.Date(),"%Y"))
 submit_dtstrs <- c()
 submit_times <- list()
 submit_times_minus_1y <- list()
+submit_time_warning <- FALSE
 for (i in seq_along(roots)) {
   
   lines <- grep("\\) \\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d Job submitted from host:", log_files[[i]], value=TRUE)
-  if (length(lines) != 1) stop(str_glue("Cannot extract submit time from {roots[[i]]}.log!"))
-  dtstr <- str_match(lines[1], "\\) (\\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d) Job submitted from host:")[2]
-  if (is.na(dtstr)) stop(str_glue("Cannot decode submit time from {roots[[i]]}.log"))
-  submit_dtstrs <- c(submit_dtstrs, dtstr)
-  # Use guessed year (can fail for leap days)
-  submit_times <- c(submit_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
-  submit_times_minus_1y <- c(submit_times_minus_1y, list(strptime(str_glue("{current_year-1}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
+  if (length(lines) != 1) {
+    if (!submit_time_warning) {
+      warning(str_glue("Cannot extract submit time from Condor event log (e.g. {roots[[i]]}.log). Unable to determine latency between job submission and start time. Latency results and plots will be partially or fully unavailable."))
+      submit_time_warning <- TRUE
+    }
+    submit_dtstrs <- c(submit_dtstrs, "")
+    submit_times <- c(submit_times, NA)
+    submit_times_minus_1y <- c(submit_times_minus_1y, NA)
+  } else {
+    dtstr <- str_match(lines[1], "\\) (\\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d) Job submitted from host:")[2]
+    if (is.na(dtstr)) stop(str_glue("Cannot decode submit time from {roots[[i]]}.log"))
+    submit_dtstrs <- c(submit_dtstrs, dtstr)
+    # Use guessed year (can fail for leap days)
+    submit_times <- c(submit_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
+    submit_times_minus_1y <- c(submit_times_minus_1y, list(strptime(str_glue("{current_year-1}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
+  }
 }
 
 # Extract the job execution start times (with uncertain year) and hosts from the .log files
@@ -183,13 +193,17 @@ for (i in seq_along(roots)) {
 # Calculate the execution latencies in seconds (difference between submit and execute times)
 latencies <- c()
 for (i in seq_along(roots)) {
-  if (start_times[[i]] >= submit_times[[i]]) {
-    latency <- difftime(start_times[[i]], submit_times[[i]], units="secs")
+  if (is.na(submit_times[[i]])) {
+    latencies <- c(latencies, NA)
   } else {
-    # Submission must have happened in the prior year relative to execution start
-    latency <- difftime(start_times[[i]], submit_times_minus_1y[[i]], units="secs")
+    if (start_times[[i]] >= submit_times[[i]]) {
+      latency <- difftime(start_times[[i]], submit_times[[i]], units="secs")
+    } else {
+      # Submission must have happened in the prior year relative to execution start
+      latency <- difftime(start_times[[i]], submit_times_minus_1y[[i]], units="secs")
+    }
+    latencies <- c(latencies, latency)
   }
-  latencies <- c(latencies, latency)
 }
 
 # Calculate the execution duration in seconds (difference between execution start and termination times)
@@ -321,8 +335,11 @@ for (name in names(jobs)) {
 
 # Plot, print() needed for sourcing because of https://yihui.name/en/2017/06/top-level-r-expressions/
 print(ggplot(jobs, aes(x=job, y=host_slot, color=slot)) + geom_point(size=3) + ggtitle("slot allocation") + theme_grey(base_size=20))
-print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=run)) + geom_point(alpha=1/2) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1/2) + geom_segment(aes(xend=job, yend=`latency [min]`+`duration [min]`), alpha=1/5) + ylab("job start-stop time after submission [min]") + theme_grey(base_size=20))
-print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=slot)) + geom_point(alpha=1) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1) + geom_segment(aes(xend=job, yend=`latency [min]`+`duration [min]`), alpha=1) + ylab("job start-stop time after submission [min]"))
+if (any(!is.na(jobs["latency [min]"]))) {
+  print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=run)) + geom_point(alpha=1/2) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1/2) + geom_segment(aes(xend=job, yend=`latency [min]`+`duration [min]`), alpha=1/5) + ylab("job start-stop time after submission [min]") + theme_grey(base_size=20))
+  print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=slot)) + geom_point(alpha=1) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1) + geom_segment(aes(xend=job, yend=`latency [min]`+`duration [min]`), alpha=1) + ylab("job start-stop time after submission [min]"))
+
+}
 print(ggplot(jobs, aes(x=job, y=`duration [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point())
 print(ggplot(jobs, aes(x=host, y=`duration [min]`, color=run)) + geom_point())
 if ("EXECUTION TIME 1 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=job, y=`EXECUTION TIME 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point())
@@ -341,7 +358,7 @@ summarize(experiment=dplyr::first(experiment),
           `stdev [min]`=sd(`duration [min]`),
           `min [min]`=min(`duration [min]`),
           `max [min]`=max(`duration [min]`),
-          `throughput [jobs/h]`=n()/max(`latency [h]`+`duration [h]`)) %>%
+          `throughput [jobs/h]`=n()/max(`duration [h]`)) %>%
 arrange(cluster) -> summary
 print(summary)
 print(ggplot(summary, aes(x=jobs/5, y=`mean [min]`, color=experiment)) + geom_errorbar(aes(ymin=`mean [min]`-`stdev [min]`, ymax=`mean [min]`+`stdev [min]`), width=1) + geom_point(size=3) + xlab("jobs/limpopo") + ylab("mean job time [min]") + ggtitle("contention") + theme_grey(base_size=20))
