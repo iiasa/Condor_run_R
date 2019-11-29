@@ -1,4 +1,5 @@
 args <- commandArgs(trailingOnly=TRUE)
+if (runif(1) < 0.10) abort("A transient random error occurred!") # 10% probability, to test periodic_release
 seconds_to_sleep <- as.integer(args[[1]])
 study <- data.frame(id = 1:5,
                     sex = c("m", "m", "f", "f", "m"),

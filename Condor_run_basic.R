@@ -73,6 +73,8 @@ OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit
 OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
 CONDOR_DIR = "Condor" # directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
+SEED_JOB_RELEASES = 4 # number of times to auto-release held seed jobs before giving up
+JOB_RELEASES = 3 # number of times to auto-release held jobs before giving up
 # -------8><----snippy-snappy----8><-----------------------------------------
 
 # Collect the names and types of the default config settings
@@ -81,7 +83,7 @@ if (length(config_names) == 0) {stop("Default configuration is absent! Please re
 config_types <- lapply(lapply(config_names, get), typeof)
 
 # Presence of Config settings is obligatory in a config file other then for the settings listed here
-OPTIONAL_CONFIG_SETTINGS <- c("CONDOR_DIR")
+OPTIONAL_CONFIG_SETTINGS <- c("CONDOR_DIR", "SEED_JOB_RELEASES", "JOB_RELEASES")
 
 # ---- Get set ----
 
@@ -243,12 +245,12 @@ monitor <- function(clusters) {
         suspended != prior_suspended
     ) {
       # State changes occurred, report
-      cat(str_sub(str_glue('{jobs} jobs:{ifelse(completed==0, "", str_glue(" {completed} completed,"))}{ifelse(removed==0, "", str_glue(" {removed} removed;"))}{ifelse(idle==0, "", str_glue(" {idle} idle (queued),"))}{ifelse(running==0, "", str_glue(" {running} running,"))}{ifelse(held==0, "", str_glue(" {held} held (execution error?),"))}{ifelse(suspended==0, "", str_glue(" {suspended} suspended,"))}'), 1, -2), sep="\n")
+      cat(str_sub(str_glue('{jobs} jobs:{ifelse(completed==0, "", str_glue(" {completed} completed,"))}{ifelse(removed==0, "", str_glue(" {removed} removed;"))}{ifelse(idle==0, "", str_glue(" {idle} idle (queued),"))}{ifelse(running==0, "", str_glue(" {running} running,"))}{ifelse(held==0, "", str_glue(" {held} held,"))}{ifelse(suspended==0, "", str_glue(" {suspended} suspended,"))}'), 1, -2), sep="\n")
       changes_since_reschedule <- TRUE
     }
     # Warn when there are held jobs for the first time
     if (held > 0 && !warn) {
-      cat("Jobs are held! Likely an execution error occurred, investigate and remove with condor_rm.\n")
+      cat("Jobs are held! These may be automatically released (see SEED_JOB_RELEASES and JOB_RELEASES config settings) or released manually via condor_release. If released jobs keep on returning to the held state, there is a persistent error that should be investigated. You can remove the held jobs using condor_rm.\n")
       warn <- TRUE
     }
     # Request rescheduling early
@@ -433,10 +435,12 @@ for (hostdom in hostdoms) {
     "executable = {seed_bat}",
     "universe = vanilla",
     "",
-    "# -- Job log, stdout, and stderr files",
+    "# Job log, stdout, and stderr files",
     "log = {run_dir}/_seed_{hostname}.log",
     "output = {run_dir}/_seed_{hostname}.out",
     "error = {run_dir}/_seed_{hostname}.err",
+    "",
+    "periodic_release = (NumJobStarts < {SEED_JOB_RELEASES}) && ((CurrentTime - EnteredCurrentStatus) > 30)", # if seed job goes on hold, release up to 5 times after 30 seconds
     "",
     "requirements = \\",
     '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
@@ -561,12 +565,14 @@ job_template <- c(
   "arguments = $(job)",
   "universe = vanilla",
   "",
-  "# -- Job log, output, and error files",
+  "# Job log, output, and error files",
   "log = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
   "output = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).out",
   "stream_output = True",
   "error = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).err",
   "stream_error = True",
+  "",
+  "periodic_release =  (NumJobStarts < {JOB_RELEASES}) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if job goes on hold, release up to 5 times after 2 minutes
   "",
   "requirements = \\",
   '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
