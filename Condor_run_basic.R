@@ -48,9 +48,10 @@ rm(list=ls())
 
 # Override the default config settings via a run-config file passed as a first
 # argument to this script. Lines with settings like the ones just below can be
-# used in the config file. No settings may be omitted from the config file.
+# used in the config file. Only settings marked as optional can be omitted from
+# the config file.
 #
-# To set up an initial config file, just copy-and-paste (do not cut) the below
+# To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
 # to a file, give it a .R extension to get nice syntax highlighting.
 # -------8><----snippy-snappy----8><-----------------------------------------
 # Use paths relative to the working directory, with / as path separator.
@@ -72,9 +73,9 @@ GET_OUTPUT = TRUE
 OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine
 OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
-CONDOR_DIR = "Condor" # directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
-SEED_JOB_RELEASES = 4 # number of times to auto-release held seed jobs before giving up
-JOB_RELEASES = 3 # number of times to auto-release held jobs before giving up
+CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
+SEED_JOB_RELEASES = 4 # optional, number of times to auto-release held seed jobs before giving up
+JOB_RELEASES = 3 # optional, number of times to auto-release held jobs before giving up
 # -------8><----snippy-snappy----8><-----------------------------------------
 
 # Collect the names and types of the default config settings
@@ -386,13 +387,9 @@ cat("\n")
 
 additional_byte_size <- 0
 if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
-  cat("Bundle any additional files...\n")
-  additional_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
-    args=unlist(lapply(c("a",
-      "{bundle_platform_path}",
-      BUNDLE_ADDITIONAL_FILES
-    ), str_glue))
-  ))
+  cat("Bundling additional files...\n")
+  args <- c("a", bundle_platform_path, BUNDLE_ADDITIONAL_FILES)
+  additional_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE, args=args))
   cat("\n")
 }
 

@@ -53,7 +53,6 @@
 # Repository: https://github.com/iiasa/Condor_run_R
 #
 # Todo:
-# - Make RESTART_FILE_PATH optional
 # - Parse errors from gdxmerge output to work around 0 return code.
 # - Compile scenario file locally first before submission.
 # - Don't merge a single file?
@@ -65,9 +64,10 @@ rm(list=ls())
 
 # Override the default config settings via a run-config file passed as a first
 # argument to this script. Lines with settings like the ones just below can be
-# used in the config file. No settings may be omitted from the config file.
+# used in the config file. Only settings marked as optional can be omitted from
+# the config file.
 #
-# To set up an initial config file, just copy-and-paste (do not cut) the below
+# To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
 # to a file, give it a .R extension to get nice syntax highlighting.
 # -------8><----snippy-snappy----8><-----------------------------------------
 # Use paths relative to the working directory, with / as path separator.
@@ -78,7 +78,7 @@ HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the
 REQUEST_MEMORY = 7800 # memory (MiB) to reserve for each job
 REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 GAMS_FILE = "6_scenarios_limpopo.gms" # the GAMS file to run for each job
-RESTART_FILE_PATH = "t/a4_limpopo.g00"
+RESTART_FILE_PATH = "" # optional
 GAMS_VERSION = "24.4" # must be installed on all execute hosts
 GAMS_ARGUMENTS = "//nsim='%1' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cErr=5 pageWidth=100"
 BUNDLE_INCLUDE_DIRS = c("finaldata") # recursive, supports wildcards
@@ -93,14 +93,14 @@ GET_GDX_OUTPUT = TRUE
 GDX_OUTPUT_DIR = "gdx" # relative to working dir both host-side and on the submit machine
 GDX_OUTPUT_FILE = "output.gdx" # as produced by execute_unload on the host-side, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
-MERGE_GDX_OUTPUT = FALSE
-MERGE_BIG = NULL # symbol size cutoff beyond which GDXMERGE writes symbols one by one to avoid running out of memory.
-MERGE_ID = NULL # comma-separated list of symbols to include in the merge, defaults to all
-MERGE_EXCLUDE = NULL # comma-separated list of symbols to exclude from the merge, defaults to none
-REMOVE_MERGED_GDX_FILES = FALSE
-CONDOR_DIR = "Condor" # directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
-SEED_JOB_RELEASES = 4 # number of times to auto-release held seed jobs before giving up
-JOB_RELEASES = 3 # number of times to auto-release held jobs before giving up
+MERGE_GDX_OUTPUT = FALSE # optional
+MERGE_BIG = NULL # optional, symbol size cutoff beyond which GDXMERGE writes symbols one-by-one to avoid running out of memory.
+MERGE_ID = NULL # optional, comma-separated list of symbols to include in the merge, defaults to all
+MERGE_EXCLUDE = NULL # optional, comma-separated list of symbols to exclude from the merge, defaults to none
+REMOVE_MERGED_GDX_FILES = FALSE # optional
+CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
+SEED_JOB_RELEASES = 4 # optional, number of times to auto-release held seed jobs before giving up
+JOB_RELEASES = 3 # optional, number of times to auto-release held jobs before giving up
 # -------8><----snippy-snappy----8><-----------------------------------------
 
 # Collect the names and types of the default config settings
@@ -109,7 +109,7 @@ if (length(config_names) == 0) {stop("Default configuration is absent! Please re
 config_types <- lapply(lapply(config_names, get), typeof)
 
 # Presence of Config settings is obligatory in a config file other then for the settings listed here
-OPTIONAL_CONFIG_SETTINGS <- c("MERGE_GDX_OUTPUT", "MERGE_BIG", "MERGE_ID", "MERGE_EXCLUDE", "REMOVE_MERGED_GDX_FILES", "CONDOR_DIR", "SEED_JOB_RELEASES", "JOB_RELEASES")
+OPTIONAL_CONFIG_SETTINGS <- c("RESTART_FILE_PATH", "MERGE_GDX_OUTPUT", "MERGE_BIG", "MERGE_ID", "MERGE_EXCLUDE", "REMOVE_MERGED_GDX_FILES", "CONDOR_DIR", "SEED_JOB_RELEASES", "JOB_RELEASES")
 
 # ---- Get set ----
 
@@ -183,10 +183,12 @@ if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
 if (str_sub(GAMS_FILE, -4) != ".gms") stop(str_glue("Configured GAMS_FILE has no .gms extension!"))
 if (!(file.exists(GAMS_FILE))) stop(str_glue('Configured GAMS_FILE "{GAMS_FILE}" does not exist relative to working directory!'))
 if (str_detect(GAMS_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GAMS_FILE has forbidden character(s)!"))
-if (!(file.exists(RESTART_FILE_PATH))) stop(str_glue('Configured RESTART_FILE_PATH "{RESTART_FILE_PATH}" does not exist!'))
-if (str_detect(RESTART_FILE_PATH, "^/") || str_detect(RESTART_FILE_PATH, "^.:")) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: absolute paths not allowed!"))
-if (str_detect(RESTART_FILE_PATH, fixed("../"))) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: you may not go up to parent directories using ../"))
-if (str_detect(RESTART_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured RESTART_FILE_PATH has forbidden character(s)! Use / as path separator."))
+if (RESTART_FILE_PATH != "") {
+  if (!(file.exists(RESTART_FILE_PATH))) stop(str_glue('Configured RESTART_FILE_PATH "{RESTART_FILE_PATH}" does not exist!'))
+  if (str_detect(RESTART_FILE_PATH, "^/") || str_detect(RESTART_FILE_PATH, "^.:")) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: absolute paths not allowed!"))
+  if (str_detect(RESTART_FILE_PATH, fixed("../"))) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: you may not go up to parent directories using ../"))
+  if (str_detect(RESTART_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured RESTART_FILE_PATH has forbidden character(s)! Use / as path separator."))
+}
 version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
 if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
 if (!(GAMS_VERSION %in% EXECUTE_HOST_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The execute hosts have only these GAMS versions installed: {str_c(EXECUTE_HOST_GAMS_VERSIONS, collapse=" ")}')) # {cat(EXECUTE_HOST_GAMS_VERSIONS)}
@@ -217,19 +219,21 @@ if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT 
 if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX_FILES without first doing MERGE_GDX_OUTPUT!")
 
 # Determine GAMS version used to generate RESTART_FILE_PATH, verify that it is <= GAMS_VERSION
-conn <- file(RESTART_FILE_PATH, "rb")
-byte_count <- min(4000, file.info(RESTART_FILE_PATH)$size)
-seek(conn, where=-byte_count, origin="end")
-tail_bytes <- readBin(conn, what=integer(), size=1, n=byte_count)
-close(conn)
-tail_bytes[tail_bytes <= 0] <- 32
-tail <-  rawToChar(as.raw(tail_bytes))
-restart_version <- str_match(tail, "\x0AWEX(\\d\\d\\d)-\\d\\d\\d")[2]
-if (is.na(restart_version)) {
-  warning(str_glue("Cannot determine GAMS version that saved {RESTART_FILE_PATH}"))
-} else {
-  if (dotless_version < restart_version) {
-    stop("The configured host-side GAMS_VERSION is older than the GAMS version that saved the configured restart file (RESTART_FILE_PATH). GAMS will fail!")
+if (RESTART_FILE_PATH != "") {
+  conn <- file(RESTART_FILE_PATH, "rb")
+  byte_count <- min(4000, file.info(RESTART_FILE_PATH)$size)
+  seek(conn, where=-byte_count, origin="end")
+  tail_bytes <- readBin(conn, what=integer(), size=1, n=byte_count)
+  close(conn)
+  tail_bytes[tail_bytes <= 0] <- 32
+  tail <-  rawToChar(as.raw(tail_bytes))
+  restart_version <- str_match(tail, "\x0AWEX(\\d\\d\\d)-\\d\\d\\d")[2]
+  if (is.na(restart_version)) {
+    warning(str_glue("Cannot determine GAMS version that saved {RESTART_FILE_PATH}"))
+  } else {
+    if (dotless_version < restart_version) {
+      stop("The configured host-side GAMS_VERSION is older than the GAMS version that saved the configured restart file (RESTART_FILE_PATH). GAMS will fail!")
+    }
   }
 }
 
@@ -451,14 +455,11 @@ cat("\n")
 
 additional_byte_size <- 0
 if (RESTART_FILE_PATH != "" || length(BUNDLE_ADDITIONAL_FILES) != 0) {
-  cat("Bundle any additional files...\n")
-  additional_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
-    args=unlist(lapply(c("a",
-      "{bundle_platform_path}",
-      "{RESTART_FILE_PATH}",
-      BUNDLE_ADDITIONAL_FILES
-    ), str_glue))
-  ))
+  cat("Bundling additional files...\n")
+  args <- c("a", bundle_platform_path)
+  if (RESTART_FILE_PATH != "") args <- c(args, RESTART_FILE_PATH)
+  if (length(BUNDLE_ADDITIONAL_FILES) != 0) args <- c(args, BUNDLE_ADDITIONAL_FILES)
+  additional_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE, args=args))
   cat("\n")
 }
 
@@ -611,7 +612,7 @@ bat_template <- c(
   "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7z x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
-  "C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe {GAMS_FILE} -logOption=3 restart={RESTART_FILE_PATH} save={G00_OUTPUT_DIR}/{g00_prefix} {GAMS_ARGUMENTS}",
+  'C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe "{GAMS_FILE}" -logOption=3 {ifelse(RESTART_FILE_PATH != "", str_glue("restart=\\"{RESTART_FILE_PATH}\\" "), "")}save="{G00_OUTPUT_DIR}/{g00_prefix}" {GAMS_ARGUMENTS}',
   "set gams_errorlevel=%errorlevel%",
   "@echo off",
   "if %gams_errorlevel% neq 0 (",
