@@ -69,6 +69,10 @@ rm(list=ls())
 #
 # To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
 # to a file, give it a .R extension to get nice syntax highlighting.
+#
+# Note that in the below defaults, an output GDX is produced via the gdx= GAMS
+# command line parameter. However, you may wish to limit what goes into the
+# GDX by instead using EXECUTE_UNLOAD from GAMS.
 # -------8><----snippy-snappy----8><-----------------------------------------
 # Use paths relative to the working directory, with / as path separator.
 EXPERIMENT = "test" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
@@ -80,9 +84,9 @@ REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 GAMS_FILE = "6_scenarios_limpopo.gms" # the GAMS file to run for each job
 RESTART_FILE_PATH = "" # optional
 GAMS_VERSION = "24.4" # must be installed on all execute hosts
-GAMS_ARGUMENTS = "//nsim='%1' //ssp=SSP2 //scen_type=feedback //price_exo=0 //dem_fix=0 //irri_dem=1 //water_bio=0 //yes_output=1 cErr=5 pageWidth=100"
+GAMS_ARGUMENTS = "gdx={GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE} //nsim='%1' cErr=5 pageWidth=100" # can use {<config>} expansion here
 BUNDLE_INCLUDE_DIRS = c("finaldata") # recursive, supports wildcards
-BUNDLE_EXCLUDE_DIRS = c("225*", "Demand", "graphs", "output", "trade", "SIMBIOM") # recursive, supports wildcards
+BUNDLE_EXCLUDE_DIRS = c("225*", "gdx", "output") # recursive, supports wildcards
 BUNDLE_EXCLUDE_FILES = c("*.~*", "*.exe", "*.log", "*.lxi", "*.lst", "*.zip", "test*.gdx") # supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
@@ -612,7 +616,7 @@ bat_template <- c(
   "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7z x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
-  'C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe "{GAMS_FILE}" -logOption=3 {ifelse(RESTART_FILE_PATH != "", str_glue("restart=\\"{RESTART_FILE_PATH}\\" "), "")}save="{G00_OUTPUT_DIR}/{g00_prefix}" {GAMS_ARGUMENTS}',
+  'C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe "{GAMS_FILE}" -logOption=3 {ifelse(RESTART_FILE_PATH != "", str_glue("restart=\\"{RESTART_FILE_PATH}\\" "), "")}save="{G00_OUTPUT_DIR}/{g00_prefix}" {str_glue(GAMS_ARGUMENTS)}',
   "set gams_errorlevel=%errorlevel%",
   "@echo off",
   "if %gams_errorlevel% neq 0 (",
