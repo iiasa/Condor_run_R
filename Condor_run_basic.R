@@ -211,6 +211,7 @@ monitor <- function(clusters) {
   reschedule_invocations <- 200 # limit the number of reschedules so it is only done early on to push out the jobs quickly
   changes_since_reschedule <- FALSE
   iterations_since_reschedule <- 0
+  q_errors        <- 0
   prior_jobs      <- -1
   prior_completed <- -1
   prior_removed   <- -1
@@ -219,12 +220,23 @@ monitor <- function(clusters) {
   prior_held      <- -1
   prior_suspended <- -1
   while (prior_jobs != 0) {
+    Sys.sleep(1)
+
     # Collect Condor queue information via condor_q
     outerr <- system2("condor_q", args=c("-totals", "-wide", clusters), stdout=TRUE, stderr=TRUE)
     if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-      cat(outerr, sep="\n")
-      stop("Invocation of condor_q failed! Are you running a too old (< V8.5.4) Condor version?", call.=FALSE)
+      q_errors <- q_errors+1
+      if (q_errors >= 10) {
+        # 10 consecutive condor_q errors, probably not transient, report and stop
+        cat(outerr, sep="\n")
+        stop("Invocation of condor_q failed! Are you running a too old (< V8.5.4) Condor version?", call.=FALSE)
+      } else {
+        # Fewer than 10 consecutive condor_q errors, retry
+        next
+      }
     }
+    q_errors <- 0
+
     # Extract the totals line and parse it out
     match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
     if (is.na(match[1])) {
@@ -278,8 +290,6 @@ monitor <- function(clusters) {
     prior_running   <- running
     prior_held      <- held
     prior_suspended <- suspended
-    # Sleep before iterating
-    Sys.sleep(1)
   }
 }
 
