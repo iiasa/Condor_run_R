@@ -105,6 +105,7 @@ REMOVE_MERGED_GDX_FILES = FALSE # optional
 CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
 SEED_JOB_RELEASES = 4 # optional, number of times to auto-release held seed jobs before giving up
 JOB_RELEASES = 3 # optional, number of times to auto-release held jobs before giving up
+RUN_AS_OWNER = TRUE # optional. If TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
 # -------8><----snippy-snappy----8><-----------------------------------------
 
 # Collect the names and types of the default config settings
@@ -113,7 +114,7 @@ if (length(config_names) == 0) {stop("Default configuration is absent! Please re
 config_types <- lapply(lapply(config_names, get), typeof)
 
 # Presence of Config settings is obligatory in a config file other then for the settings listed here
-OPTIONAL_CONFIG_SETTINGS <- c("RESTART_FILE_PATH", "MERGE_GDX_OUTPUT", "MERGE_BIG", "MERGE_ID", "MERGE_EXCLUDE", "REMOVE_MERGED_GDX_FILES", "CONDOR_DIR", "SEED_JOB_RELEASES", "JOB_RELEASES")
+OPTIONAL_CONFIG_SETTINGS <- c("RESTART_FILE_PATH", "MERGE_GDX_OUTPUT", "MERGE_BIG", "MERGE_ID", "MERGE_EXCLUDE", "REMOVE_MERGED_GDX_FILES", "CONDOR_DIR", "SEED_JOB_RELEASES", "JOB_RELEASES", "RUN_AS_OWNER")
 
 # ---- Get set ----
 
@@ -361,8 +362,6 @@ monitor <- function(clusters) {
     prior_running   <- running
     prior_held      <- held
     prior_suspended <- suspended
-    # Sleep before iterating
-    Sys.sleep(1)
   }
 }
 
@@ -536,7 +535,7 @@ for (hostdom in hostdoms) {
     "request_disk = {2*bundle_size+500}", # KiB, twice needed for move, add some for the extra files
     "",
     '+IIASAGroup = "ESM"',
-    "run_as_owner = True",
+    "run_as_owner = False",
     "",
     "should_transfer_files = YES",
     'transfer_input_files = {bundle_path}',
@@ -670,7 +669,7 @@ job_template <- c(
   "request_disk = {request_disk}",
   "",
   '+IIASAGroup = "ESM"', # Identifies you as part of the group allowed to use ESM cluster
-  "run_as_owner = True", # If True, jobs will run as you and have access to your account-specific configuration such as your H: drive. If False, jobs will run under a functional user account.
+  "run_as_owner = {ifelse(RUN_AS_OWNER, 'True', 'False')}",
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
