@@ -11,7 +11,7 @@
 #
 # The above means that you can invoke this script with something like
 #
-# Rscript ..\R\Condor_run.R my_config.R
+# Rscript Condor_run.R my_config.R
 #
 # either from the command prompt, shell, or using whatever your language
 # of choice supports for command invocation.
@@ -74,8 +74,8 @@ OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit
 OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
 CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
-SEED_JOB_RELEASES = 4 # optional, number of times to auto-release held seed jobs before giving up
-JOB_RELEASES = 3 # optional, number of times to auto-release held jobs before giving up
+SEED_JOB_RELEASES = 4 # optional, number of times to auto-release (retry) held seed jobs before giving up
+JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
 RUN_AS_OWNER = TRUE # optional. If TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
 # -------8><----snippy-snappy----8><-----------------------------------------
 
@@ -378,7 +378,7 @@ if (length(hostdoms) == 0) stop("No execute hosts matching HOST_REGEXP are avail
 # Set R-default and platform-specific paths to the bundle
 bundle <- "job_bundle.7z"
 unique_bundle <- str_glue('bundle_{str_replace_all(Sys.time(), "[- :]", "")}.7z') # To keep multiple cached bundles separate
-bundle_path <- file.path(temp_dir_parent, bundle) # Identical between sessions
+bundle_path <- file.path(temp_dir_parent, bundle) # Invariant so that it can double-duty as a lock file blocking interfering parallel submisisons
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
 if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing? If so, let that submission end first. If not, remove the file and try again."))
 
@@ -439,7 +439,7 @@ for (hostdom in hostdoms) {
   cat(str_glue("Starting transfer of bundle to {hostname}."), sep="\n")
 
   # Define the Condor .job file template for bundle seeding
-  job_template <- c(
+  seed_job_template <- c(
     "executable = {seed_bat}",
     "universe = vanilla",
     "",
@@ -448,13 +448,15 @@ for (hostdom in hostdoms) {
     "output = {run_dir}/_seed_{hostname}.out",
     "error = {run_dir}/_seed_{hostname}.err",
     "",
-    "periodic_release = (NumJobStarts < {SEED_JOB_RELEASES}) && ((CurrentTime - EnteredCurrentStatus) > 30)", # if seed job goes on hold, release up to 5 times after 30 seconds
+    "periodic_release = (NumJobStarts < {SEED_JOB_RELEASES}) && ((CurrentTime - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
     "",
     "requirements = \\",
     '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
     '  ( (OpSys == "WINDOWS")||(OpSys == "WINNT61") ) && \\',
     "  ( GLOBIOM =?= True ) && \\",
     '  ( TARGET.Machine == "{hostdom}" )',
+    "",
+    "periodic_remove = (JobStatus == 1) && (CurrentTime - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute host is not responding
     "",
     "request_memory = 0",
     "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
@@ -469,18 +471,19 @@ for (hostdom in hostdoms) {
     "queue 1"
   )
 
-  # Apply settings to job template and write the .job file to use for submission
-  job_file <- file.path(temp_dir, str_glue("_seed_{hostname}.job"))
-  job_conn<-file(job_file, open="wt")
-  writeLines(unlist(lapply(job_template, str_glue)), job_conn)
-  close(job_conn)
+  # Apply settings to seed job template and write the .job file to use for submission
+  seed_job_file <- file.path(temp_dir, str_glue("_seed_{hostname}.job"))
+  seed_job_conn<-file(seed_job_file, open="wt")
+  writeLines(unlist(lapply(seed_job_template, str_glue)), seed_job_conn)
+  close(seed_job_conn)
+  rm(seed_job_template, seed_job_conn)
 
   # Remove any job output left over from an aborted prior run
   remove_if_exists(run_dir, str_glue("_seed_{hostname}.log"))
   remove_if_exists(run_dir, str_glue("_seed_{hostname}.out"))
   remove_if_exists(run_dir, str_glue("_seed_{hostname}.err"))
 
-  outerr <- system2("condor_submit", args=str_glue("{job_file}"), stdout=TRUE, stderr=TRUE)
+  outerr <- system2("condor_submit", args=seed_job_file, stdout=TRUE, stderr=TRUE)
   if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
     cat(outerr, sep="\n")
     invisible(file.remove(bundle_path))
@@ -497,31 +500,52 @@ for (hostdom in hostdoms) {
 # Predict the cluster number for the actual run
 predicted_cluster <- cluster+1
 
-# Wait until all execute hosts are seeded with a bundle
+# Wait until seed jobs complete
 cat("Waiting for bundle seeding to complete...\n")
 monitor(clusters)
 return_values <- get_return_values(run_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
-if (any(is.na(return_values))) {
+rm(clusters)
+
+# Check whether seed jobs terminated abnormally
+if (all(is.na(return_values))) {
   invisible(file.remove(bundle_path))
-  stop(str_glue("Abnormal termination of seeding job(s) for {str_c(hostnames[is.na(return_values)], collapse=', ')}! For details, see the _seed_* files in {run_dir}"))
+  stop(str_glue("All seeding jobs terminated abnormally! For details, see the _seed_* files in {run_dir}"))
 }
+if (any(is.na(return_values))) {
+  if (length(return_values[is.na(return_values)]) == 1) {
+    warning(str_glue("A seed job terminated abnormally, will refrain from scheduling jobs on the affected execute host {hostnames[is.na(return_values)]}. Probably, this host is currently unavailable."))
+  } else {
+    warning(str_glue("Seed jobs terminated abnormally, will refrain from scheduling jobs on the affected execute hosts {str_c(hostnames[is.na(return_values)], collapse=', ')}. Probably, these hosts are currently unavailable."))
+  }
+  hostdoms <- hostdoms[!is.na(return_values)]
+  hostnames <- hostnames[!is.na(return_values)]
+  return_values <- return_values[!is.na(return_values)]
+}
+
+# Check whether seed jobs returned a non-zero return value
 if (any(return_values != 0)) {
   invisible(file.remove(bundle_path))
   stop(str_glue("Seeding job(s) for {str_c(hostnames[return_values != 0], collapse=', ')} returned a non-zero return value! For details, see the _seed_* files in {run_dir}"))
 }
-cat("Seeding done: execute hosts have received and cached the bundle.\n")
-cat("\n")
+rm(return_values)
 
-# Remove seeding temp files
-
+# Remove seeding log files of normally terminated seed jobs
 invisible(file.remove(seed_bat))
-for (hostdom in hostdoms) {
-  hostname <- str_extract(hostdom, "^[^.]*")
+for (hostname in hostnames) {
   file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.job")))
   file.remove(file.path(run_dir, str_glue("_seed_{hostname}.log")))
   file.remove(file.path(run_dir, str_glue("_seed_{hostname}.out")))
   file.remove(file.path(run_dir, str_glue("_seed_{hostname}.err")))
 }
+
+# Report that seeding is done
+if (length(hostnames) == 1) {
+  cat(str_glue("Seeding done: execute host {hostnames} has received and cached the bundle.\n"))
+} else {
+  cat(str_glue("Seeding done: execute hosts {str_c(hostnames, collapse=', ')} have received and cached the bundle.\n"))
+}
+cat("\n")
+rm(hostnames)
 
 # ---- Prepare files for run ----
 
@@ -566,6 +590,7 @@ job_bat <- file.path(temp_dir_parent, str_glue("job_{EXPERIMENT}_{predicted_clus
 bat_conn<-file(job_bat, open="wt")
 writeLines(unlist(lapply(bat_template, str_glue)), bat_conn)
 close(bat_conn)
+rm(bat_template, bat_conn)
 
 # Define the Condor .job file template for the run
 job_template <- c(
@@ -580,7 +605,7 @@ job_template <- c(
   "error = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).err",
   "stream_error = True",
   "",
-  "periodic_release =  (NumJobStarts < {JOB_RELEASES}) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if job goes on hold, release up to 5 times after 2 minutes
+  "periodic_release =  (NumJobStarts < {JOB_RELEASES}) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
   "",
   "requirements = \\",
   '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
@@ -609,10 +634,11 @@ job_file <- file.path(run_dir, str_glue("submit_{EXPERIMENT}_{predicted_cluster}
 job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(job_template, str_glue)), job_conn)
 close(job_conn)
+rm(job_template, job_conn)
 
 # ---- Submit the run and clean up temp files ----
 
-outerr <- system2("condor_submit", args=str_glue("{run_dir}/submit_{EXPERIMENT}_{predicted_cluster}.job"), stdout=TRUE, stderr=TRUE)
+outerr <- system2("condor_submit", args=job_file, stdout=TRUE, stderr=TRUE)
 cat(outerr, sep="\n")
 if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
   invisible(file.remove(bundle_path))
@@ -629,7 +655,7 @@ if (cluster != predicted_cluster) {
   stop(str_glue("Submission cluster number {cluster} not equal to prediction {predicted_cluster}! You probably submitted something else via Condor while this submission was ongoing, causing the cluster number (sequence count of your submissions) to increment. As a result, log files have been named with a wrong cluster number.\n\nPlease do not submit additional Condor jobs until after a submission has completed. Note that this does not mean that you have to wait for the run to complete before submitting further runs, just wait for the submission to make it to the point where the execute hosts have been handed the jobs. Please try again.\n\nYou should first remove the run's jobs with: condor_rm {cluster}."))
 }
 
-# Retain the bundle if so requested, then remove it from temp
+# Retain the bundle if so requested, then remove it from temp so that further submissions are no longer blocked
 if (RETAIN_BUNDLE) {
   success <- file.copy(bundle_path, file.path(run_dir, str_glue("bundle_{EXPERIMENT}_{cluster}.7z")))
   if (!success) warning("Could not make a reference copy of bundle!")
