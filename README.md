@@ -5,7 +5,7 @@ R scripts to submit and analyse [HT Condor](https://research.cs.wisc.edu/htcondo
 Albert Brouwer
 
 ## Introduction
-This repository provides R scripts for submitting a Condor run (a set of jobs) to a cluster of execute hosts and analysing performance statistics. Three scripts are provided:
+This repository provides R scripts for submitting a Condor *run* (a set of jobs) to a cluster of execute hosts and analysing performance statistics. Three scripts are provided:
 1. `Condor_run_basic.R`: generic submit script.
 2. `Condor_run.R`: submit script with enhanced functionality for [GAMS](https://www.gams.com/) jobs.
 3. `Condor_run_stats.R`: analyse and plot run performance statistics.
@@ -40,7 +40,7 @@ To set up a configuration file, copy the code block between *snippy snappy* line
 4. Optionally wait for the jobs to finish
 5. Optionally merge GAMS GDX results files (`Condor_run.R`)
 
-By transferring the bundle once for each execute host instead of once for each job in the run, a lot of network bandwidth is avoided when the job files being bundled include a lot of data.
+By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized.
 
 By passing the job number to the main script of the job, each job in the run can customize the calculation, e.g. by selecting one out of a collection of scenarios.
 
@@ -52,8 +52,30 @@ When you cannot submit jobs, ensure that:
 - Issuing the command `condor_q` results in a summary of queued jobs.
 - You set the HOST_REGEXP configuration option to select the right subset of execute hosts from the cluster.
 
-### Jobs do not run but instead go on hold.
-Are you running the submit script with as working directory a network drive or some directory with special permissions? The Condor service on your submit machine may not have access rights to write its logging output, causing the jobs to go on hold. Try submitting the job from a local disk or change the permissions on the directory.
+### The script does not progress
+Your command prompt or terminal may be blocked because you pressed a key. Give the window focus and try hitting backspace or CTRL-Q.
 
-### Jobs are idle and do not run, or only some do.
+### Jobs do not run but instead go on hold
+Likely, some error occurred. First look at the output of the ``Condor_run[_basic].R``
+script for clues. If that is not sufficient, have a look at the various log files
+located at ``<CONDOR_DIR>/<EXPERIMENT>``. In order of priority:
+1.  Check the ``.log`` files: is it a Condor scheduling problem?
+2.  Check the ``.err`` files: standard error stream of the remote job. When not empty,
+    likely some error occurred.
+3.  Check the ``.out`` files: standard output of the remote job. Look for errors/warnings
+    towards the end.
+4.  Check the ``.lst`` files: GAMS listing file, search for error details. For GAMS jobs
+    only.
+5.  If all else fails, execute ``condor_q –analyze``: it might be something that
+    happened after the job completed, e.g. result files not fitting because your
+    disk is full.
+
+### Jobs go on hold, but I see no log files
+When no log files are produced in the ``<CONDOR_DIR>/<EXPERIMENT>`` directory,
+the Condor service on your submit machine may not have access rights to write its
+logging output there. This causes jobs to go on hold. Check the permissions
+on the directory, or when it is on a network drive, try submitting the job from
+a local disk instead.
+
+### Jobs are idle and do not run, or only some do
 The cluster may be busy. To see who else has submitted jobs, issue `condor_status -submitters`. In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue `condor_userprio`. Large numbers mean low priority. Your cluster administrator can set your priority.
