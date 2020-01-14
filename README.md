@@ -53,7 +53,7 @@ When you cannot submit jobs, ensure that:
 - You set the HOST_REGEXP configuration option to select the right subset of execute hosts from the cluster.
 
 ### The script does not progress
-Your command prompt or terminal may be blocked because you pressed a key. Give the window focus and try hitting backspace or CTRL-Q.
+The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**.
 
 ### Jobs do not run but instead go on hold
 Likely, some error occurred. First look at the output of the ``Condor_run[_basic].R``
