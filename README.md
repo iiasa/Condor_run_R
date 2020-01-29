@@ -77,8 +77,30 @@ logging output there. This causes jobs to go on hold. Check the permissions
 on the directory, or when it is on a network drive, try submitting the job from
 a local disk instead.
 
+### All seeding jobs remain idle and then abort through the PeriodicRemove expression
+It may be that the entire cluster is unavailable, but that is somewhat unlikely.
+The machine you submit from announcing itself with a wrong domain is a more
+probable cause. It has been seen to happen that submit machines announce
+themselves with the ``local`` domain, which is not valid for remote access
+so that jobs cannot be collected.
+
+To check whether the submit machine has announced itself wrongly, issue the
+``condor_q`` command. The output should contain the hostname and domain of your
+machine. If the domain is ``local`` the issue is likely present and can be
+resolved by restarting the Condor background processes on the submit machine.
+
+The crude way to restart Condor is to reboot the submit machine. The better
+way is to restart the Condor service. This can be done via the Services
+application on Windows or via ``systemctl restart condor.service`` with
+root privileges on Linux.
+
 ### Jobs are idle and do not run, or only some do
-The cluster may be busy. To see who else has submitted jobs, issue `condor_status -submitters`. In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue `condor_userprio`. Large numbers mean low priority. Your cluster administrator can set your priority.
+The cluster may be busy. To see who else has submitted jobs, issue `condor_status -submitters`.
+In addition, you may have a low priority so that jobs of others are given priority,
+pushing your jobs to the back of the queue. To see your priority issue `condor_userprio`.
+Large numbers mean low priority. Your cluster administrator can set your priority.
 
 ### But why?
-For further information, see the [why is the job not running?](https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#why-is-the-job-not-running) section of the HTCondor manual.
+For further information, see the
+[why is the job not running?](https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#why-is-the-job-not-running)
+section of the HTCondor manual.
