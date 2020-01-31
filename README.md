@@ -4,6 +4,21 @@ R scripts to submit and analyse [HT Condor](https://research.cs.wisc.edu/htcondo
 ## Author
 Albert Brouwer
 
+## Index
+
+* [Introduction](#introduction)
+* [Installation](#installation)
+* [Test](#test)
+* [Use](#use)
+* [Function of submit scripts](#function-of-submit-scripts)
+* [Troubleshooting](#troubleshooting)
+  + [The script does not progress](#the-script-does-not-progress)
+  + [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
+  + [Jobs go on hold, but I see no log files](#jobs-go-on-hold-but-i-see-no-log-files)
+  + [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
+  + [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
+  + [But why?](#but-why)
+
 ## Introduction
 This repository provides R scripts for submitting a Condor *run* (a set of jobs) to a cluster of execute hosts and analysing performance statistics. Three scripts are provided:
 1. `Condor_run_basic.R`: generic submit script.
