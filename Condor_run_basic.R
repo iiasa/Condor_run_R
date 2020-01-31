@@ -53,7 +53,7 @@ rm(list=ls())
 #
 # To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
 # to a file, give it a .R extension to get nice syntax highlighting.
-# -------8><----snippy-snappy----8><-----------------------------------------
+# .......8><....snippy.snappy....8><.........................................
 # Use paths relative to the working directory, with / as path separator.
 EXPERIMENT = "experiment1" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
 PREFIX = "_condor" # prefix for per-job .err, log, and .out files
@@ -77,7 +77,7 @@ CONDOR_DIR = "Condor" # optional, directory where Condor reference files are sto
 SEED_JOB_RELEASES = 4 # optional, number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
 RUN_AS_OWNER = TRUE # optional. If TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
-# -------8><----snippy-snappy----8><-----------------------------------------
+# .......8><....snippy.snappy....8><.........................................
 
 # Collect the names and types of the default config settings
 config_names <- ls()
@@ -509,13 +509,13 @@ rm(clusters)
 # Check whether seed jobs terminated abnormally
 if (all(is.na(return_values))) {
   invisible(file.remove(bundle_path))
-  stop(str_glue("All seeding jobs terminated abnormally! For details, see the _seed_* files in {run_dir}"))
+  stop(str_glue("All seeding jobs terminated abnormally! For details, see the _seed_* files in {run_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/README.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
 }
 if (any(is.na(return_values))) {
   if (length(return_values[is.na(return_values)]) == 1) {
-    warning(str_glue("A seed job terminated abnormally, will refrain from scheduling jobs on the affected execute host {hostnames[is.na(return_values)]}. Probably, this host is currently unavailable."))
+    warning(str_glue("A seeding job terminated abnormally, will refrain from scheduling jobs on the affected execute host {hostnames[is.na(return_values)]}. Probably, this host is currently unavailable."))
   } else {
-    warning(str_glue("Seed jobs terminated abnormally, will refrain from scheduling jobs on the affected execute hosts {str_c(hostnames[is.na(return_values)], collapse=', ')}. Probably, these hosts are currently unavailable."))
+    warning(str_glue("Seeding jobs terminated abnormally, will refrain from scheduling jobs on the affected execute hosts {str_c(hostnames[is.na(return_values)], collapse=', ')}. Probably, these hosts are currently unavailable."))
   }
   hostdoms <- hostdoms[!is.na(return_values)]
   hostnames <- hostnames[!is.na(return_values)]
