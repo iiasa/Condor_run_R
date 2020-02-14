@@ -82,19 +82,19 @@ HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the
 REQUEST_MEMORY = 7800 # memory (MiB) to reserve for each job
 REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 GAMS_FILE = "6_scenarios_limpopo.gms" # the GAMS file to run for each job
-RESTART_FILE_PATH = "" # optional
+RESTART_FILE_PATH = "" # optional, included in bundle if set
 GAMS_VERSION = "24.4" # must be installed on all execute hosts
 GAMS_ARGUMENTS = "gdx={GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE} //nsim='%1' cErr=5 pageWidth=100" # can use {<config>} expansion here
 BUNDLE_INCLUDE_DIRS = c("finaldata") # recursive, supports wildcards
 BUNDLE_EXCLUDE_DIRS = c("225*", "gdx", "output") # recursive, supports wildcards
-BUNDLE_EXCLUDE_FILES = c("*.~*", "*.exe", "*.log", "*.lxi", "*.lst", "*.zip", "test*.gdx") # supports wildcards
+BUNDLE_EXCLUDE_FILES = c("*.~*", "*.log", "*.lxi", "*.lst", ) # supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
 GET_G00_OUTPUT = FALSE
-G00_OUTPUT_DIR = "t" # relative to working dir both host-side and on the submit machine
+G00_OUTPUT_DIR = "t" # relative to working dir both host-side and on the submit machine, excluded from bundle
 G00_OUTPUT_FILE = "a6_out.g00" # host-side, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 GET_GDX_OUTPUT = TRUE
-GDX_OUTPUT_DIR = "gdx" # relative to working dir both host-side and on the submit machine
+GDX_OUTPUT_DIR = "gdx" # relative to working dir both host-side and on the submit machine, excluded from bundle
 GDX_OUTPUT_FILE = "output.gdx" # as produced by execute_unload on the host-side, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
 MERGE_GDX_OUTPUT = FALSE # optional
@@ -102,7 +102,7 @@ MERGE_BIG = NULL # optional, symbol size cutoff beyond which GDXMERGE writes sym
 MERGE_ID = NULL # optional, comma-separated list of symbols to include in the merge, defaults to all
 MERGE_EXCLUDE = NULL # optional, comma-separated list of symbols to exclude from the merge, defaults to none
 REMOVE_MERGED_GDX_FILES = FALSE # optional
-CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
+CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle
 SEED_JOB_RELEASES = 4 # optional, number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
 RUN_AS_OWNER = TRUE # optional. If TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
@@ -120,9 +120,6 @@ OPTIONAL_CONFIG_SETTINGS <- c("RESTART_FILE_PATH", "MERGE_GDX_OUTPUT", "MERGE_BI
 
 # Required packages
 library(stringr)
-
-# Check that the working directory is as expected and holds the required subdirectories
-if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory found relative to working directory {getwd()}! Is your working directory correct?"))
 
 # Determine the platform file separator and the temp directory with R-default separators
 temp_dir <- tempdir()
@@ -176,6 +173,7 @@ if (length(args) > 0) {
 
 # Check and massage specific config settings
 EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "25.1")
+if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory as configured in CONDOR_DIR found relative to working directory {getwd()}!"))
 if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT label for run has forbidden character(s)!"))
 if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
 if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
@@ -583,7 +581,7 @@ rm(clusters)
 # Check whether seed jobs terminated abnormally
 if (all(is.na(return_values))) {
   invisible(file.remove(bundle_path))
-  stop(str_glue("All seeding jobs terminated abnormally! For details, see the _seed_* files in {run_dir}"))
+  stop(str_glue("All seeding jobs terminated abnormally! For details, see the _seed_* files in {run_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/README.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
 }
 if (any(is.na(return_values))) {
   if (length(return_values[is.na(return_values)]) == 1) {
@@ -645,8 +643,8 @@ bat_template <- c(
   "@echo off",
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
-  'md "{G00_OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
-  'md "{GDX_OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
+  'mkdir "{G00_OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
+  'mkdir "{GDX_OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
   "@echo on",
   "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7z x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',

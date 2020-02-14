@@ -92,9 +92,6 @@ OPTIONAL_CONFIG_SETTINGS <- c("CONDOR_DIR", "SEED_JOB_RELEASES", "JOB_RELEASES",
 # Required packages
 library(stringr)
 
-# Check that the working directory is as expected and holds the required subdirectories
-if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory found relative to working directory {getwd()}! Is your working directory correct?"))
-
 # Determine the platform file separator and the temp directory with R-default separators
 temp_dir <- tempdir()
 fsep <- ifelse(str_detect(temp_dir, fixed("\\") ), "\\", ".Platform$file.sep") # Get the platform file separator: .Platform$file.sep is set to / on Windows
@@ -146,6 +143,7 @@ if (length(args) > 0) {
 }
 
 # Check and massage specific config settings
+if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory as configured in CONDOR_DIR found relative to working directory {getwd()}!"))
 if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT label for run has forbidden character(s)!"))
 if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
 if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
