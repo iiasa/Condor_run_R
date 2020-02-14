@@ -87,7 +87,7 @@ GAMS_VERSION = "24.4" # must be installed on all execute hosts
 GAMS_ARGUMENTS = "gdx={GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE} //nsim='%1' cErr=5 pageWidth=100" # can use {<config>} expansion here
 BUNDLE_INCLUDE_DIRS = c("finaldata") # recursive, supports wildcards
 BUNDLE_EXCLUDE_DIRS = c("225*", "gdx", "output") # recursive, supports wildcards
-BUNDLE_EXCLUDE_FILES = c("*.~*", "*.log", "*.lxi", "*.lst", ) # supports wildcards
+BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst") # supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
 GET_G00_OUTPUT = FALSE
