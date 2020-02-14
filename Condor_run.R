@@ -54,8 +54,6 @@
 #
 # Todo:
 # - Parse errors from gdxmerge output to work around 0 return code.
-# - Compile scenario file locally first before submission.
-# - Don't merge a single file?
 
 # ---- Default run config settings ----
 
@@ -85,11 +83,12 @@ GAMS_FILE = "6_scenarios_limpopo.gms" # the GAMS file to run for each job
 RESTART_FILE_PATH = "" # optional, included in bundle if set
 GAMS_VERSION = "24.4" # must be installed on all execute hosts
 GAMS_ARGUMENTS = "gdx={GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE} //nsim='%1' cErr=5 pageWidth=100" # can use {<config>} expansion here
-BUNDLE_INCLUDE_DIRS = c("finaldata") # recursive, supports wildcards
-BUNDLE_EXCLUDE_DIRS = c("225*", "gdx", "output") # recursive, supports wildcards
-BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst") # supports wildcards
-BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
-RETAIN_BUNDLE = FALSE
+BUNDLE_INCLUDE = "*" # optional, recursive, what to include in bundle, can be a wildcard
+BUNDLE_INCLUDE_DIRS = c() # optional, further directories to include recursively, added to root of bundle, supports wildcards
+BUNDLE_EXCLUDE_DIRS = c(".git", ".svn", "225*") # optional, recursive, supports wildcards
+BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst") # optional, supports wildcards
+BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bundle, can also use an absolute path for these
+RETAIN_BUNDLE = FALSE # optional
 GET_G00_OUTPUT = FALSE
 G00_OUTPUT_DIR = "t" # relative to working dir both host-side and on the submit machine, excluded from bundle
 G00_OUTPUT_FILE = "a6_out.g00" # host-side, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
@@ -114,7 +113,24 @@ if (length(config_names) == 0) {stop("Default configuration is absent! Please re
 config_types <- lapply(lapply(config_names, get), typeof)
 
 # Presence of Config settings is obligatory in a config file other then for the settings listed here
-OPTIONAL_CONFIG_SETTINGS <- c("RESTART_FILE_PATH", "MERGE_GDX_OUTPUT", "MERGE_BIG", "MERGE_ID", "MERGE_EXCLUDE", "REMOVE_MERGED_GDX_FILES", "CONDOR_DIR", "SEED_JOB_RELEASES", "JOB_RELEASES", "RUN_AS_OWNER")
+OPTIONAL_CONFIG_SETTINGS <- c(
+  "BUNDLE_INCLUDE",
+  "BUNDLE_INCLUDE_DIRS",
+  "BUNDLE_EXCLUDE_DIRS",
+  "BUNDLE_EXCLUDE_FILES",
+  "BUNDLE_ADDITIONAL_FILES",
+  "RETAIN_BUNDLE",
+  "RESTART_FILE_PATH",
+  "MERGE_GDX_OUTPUT",
+  "MERGE_BIG",
+  "MERGE_ID",
+  "MERGE_EXCLUDE",
+  "REMOVE_MERGED_GDX_FILES",
+  "CONDOR_DIR",
+  "SEED_JOB_RELEASES",
+  "JOB_RELEASES",
+  "RUN_AS_OWNER"
+)
 
 # ---- Get set ----
 
@@ -461,7 +477,7 @@ model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
     "-xr!{G00_OUTPUT_DIR}",
     "-xr!{GDX_OUTPUT_DIR}",
     "{bundle_platform_path}",
-    "*"
+    "{BUNDLE_INCLUDE}"
   ), str_glue))
 ))
 cat("\n")

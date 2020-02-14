@@ -64,16 +64,17 @@ REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 LAUNCHER = "Rscript" # interpreter with which to launch the script
 SCRIPT = "my_script.R" # script that comprises your job
 ARGUMENTS = "%1" # arguments to the script
-BUNDLE_INCLUDE_DIRS = c("input") # recursive, supports wildcards
-BUNDLE_EXCLUDE_DIRS = c() # recursive, supports wildcards
-BUNDLE_EXCLUDE_FILES = c("**/*.log") # supports wildcards
-BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
+BUNDLE_INCLUDE = "*" # optional, recursive, what to include in bundle, can be a wildcard
+BUNDLE_INCLUDE_DIRS = c("input") # optional, further directories to include recursively, added to root of bundle, supports wildcards
+BUNDLE_EXCLUDE_DIRS = c(".git", ".svn") # optional, recursive, supports wildcards
+BUNDLE_EXCLUDE_FILES = c("**/*.log") # optional, supports wildcards
+BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
 GET_OUTPUT = TRUE
-OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine
+OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine, excluded from bundle
 OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
-CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
+CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle
 SEED_JOB_RELEASES = 4 # optional, number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
 RUN_AS_OWNER = TRUE # optional. If TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
@@ -85,7 +86,18 @@ if (length(config_names) == 0) {stop("Default configuration is absent! Please re
 config_types <- lapply(lapply(config_names, get), typeof)
 
 # Presence of Config settings is obligatory in a config file other then for the settings listed here
-OPTIONAL_CONFIG_SETTINGS <- c("CONDOR_DIR", "SEED_JOB_RELEASES", "JOB_RELEASES", "RUN_AS_OWNER")
+OPTIONAL_CONFIG_SETTINGS <- c(
+  "BUNDLE_INCLUDE",
+  "BUNDLE_INCLUDE_DIRS",
+  "BUNDLE_EXCLUDE_DIRS",
+  "BUNDLE_EXCLUDE_FILES",
+  "BUNDLE_ADDITIONAL_FILES",
+  "RETAIN_BUNDLE",
+  "CONDOR_DIR",
+  "SEED_JOB_RELEASES",
+  "JOB_RELEASES",
+  "RUN_AS_OWNER"
+)
 
 # ---- Get set ----
 
@@ -389,7 +401,7 @@ model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
     "-xr!{CONDOR_DIR}",
     "-xr!{OUTPUT_DIR}",
     "{bundle_platform_path}",
-    "*"
+    "{BUNDLE_INCLUDE}"
   ), str_glue))
 ))
 cat("\n")
