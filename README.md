@@ -65,15 +65,21 @@ When you cannot submit jobs, ensure that:
 - You stored the necessary credentials via `condor_store_cred` (ask your administrator).
 - Issuing the command `condor_submit` tabulates the cluster status.
 - Issuing the command `condor_q` results in a summary of queued jobs.
+- When jobs are held, issuing `condor_q -held` shows the reason why.
 - You set the HOST_REGEXP configuration option to select the right subset of execute hosts from the cluster.
 
 ### The script does not progress
 The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**.
 
 ### Jobs do not run but instead go on hold
-Likely, some error occurred. First look at the output of the ``Condor_run[_basic].R``
-script for clues. If that is not sufficient, have a look at the various log files
-located at ``<CONDOR_DIR>/<EXPERIMENT>``. In order of priority:
+Likely, some error occurred. First look at the output of the ``Condor_run[_basic].R`` script for
+clues. Next, issue `condor_q -held` to review the hold reason. If the hold reason  is `Failed to
+initialize use log to <some path on a network drive>`, try submitting the job from a local disk
+instead so that the log files go to a local disk, avoiding the potential flakyness of the network
+drive.
+
+To investigate further, look at the various log files located at ``<CONDOR_DIR>/<EXPERIMENT>``.
+In order of priority:
 1.  Check the ``.log`` files: is it a Condor scheduling problem?
 2.  Check the ``.err`` files: standard error stream of the remote job. When not empty,
     likely some error occurred.
@@ -89,8 +95,7 @@ located at ``<CONDOR_DIR>/<EXPERIMENT>``. In order of priority:
 When no log files are produced in the ``<CONDOR_DIR>/<EXPERIMENT>`` directory,
 the Condor service on your submit machine may not have access rights to write its
 logging output there. This causes jobs to go on hold. Check the permissions
-on the directory, or when it is on a network drive, try submitting the job from
-a local disk instead.
+on the directory.
 
 ### All seeding jobs remain idle and then abort through the PeriodicRemove expression
 It may be that the entire cluster is unavailable, but that is somewhat unlikely.
