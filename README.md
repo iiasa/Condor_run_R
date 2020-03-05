@@ -74,7 +74,7 @@ The output may be blocked. On Linux, this can happen on account of entering CTRL
 ### Jobs do not run but instead go on hold
 Likely, some error occurred. First look at the output of the ``Condor_run[_basic].R`` script for
 clues. Next, issue `condor_q -held` to review the hold reason. If the hold reason  is `Failed to
-initialize use log to <some path on a network drive>`, try submitting the job from a local disk
+initialize user log to <some path on a network drive>`, try submitting the job from a local disk
 instead so that the log files go to a local disk, avoiding the potential flakyness of the network
 drive.
 
