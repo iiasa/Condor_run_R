@@ -46,6 +46,7 @@ hostname_map <- c("147.125.199.211"="limpopo1",
 # Required packages
 options(tidyverse.quiet=TRUE)
 library(tidyverse)
+options(tibble.width = Inf)
 
 # ---- Load the output files of the specified Condor run(s) ----
 
@@ -137,7 +138,6 @@ submit_times <- list()
 submit_times_minus_1y <- list()
 submit_time_warning <- FALSE
 for (i in seq_along(roots)) {
-  
   lines <- grep("\\) \\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d Job submitted from host:", log_files[[i]], value=TRUE)
   if (length(lines) != 1) {
     if (!submit_time_warning) {
@@ -322,7 +322,7 @@ for (i in seq_along(cplex_times)) {
   jobs <- add_column(jobs, !!(str_glue("Cplex Time {i} [s]")) := unlist(cplex_times[[i]]))
 }
 
-# Before every column with [s] units, add derived columns with [min] and [h] units 
+# Before every column with [s] units, add derived columns with [min] and [h] units
 for (name in names(jobs)) {
   if (str_sub(name, -3, -1) == "[s]") {
     name_head <- str_sub(name, 1, -4)
@@ -355,6 +355,7 @@ summarize(experiment=dplyr::first(experiment),
           submitted=min(submitted),
           `jobs`=n(),
           `mean [min]`=mean(`duration [min]`),
+          `stderr [min]`=sd(`duration [min]`)/sqrt(jobs),
           `stdev [min]`=sd(`duration [min]`),
           `min [min]`=min(`duration [min]`),
           `max [min]`=max(`duration [min]`),
@@ -374,6 +375,7 @@ print(jobs %>%
                 submitted=min(submitted),
                 `jobs`=n(),
                 `mean [min]`=mean(`duration [min]`),
+                `stderr [min]`=sd(`duration [min]`)/sqrt(jobs),
                 `stdev [min]`=sd(`duration [min]`),
                 `min [min]`=min(`duration [min]`),
                 `max [min]`=max(`duration [min]`)) %>%
