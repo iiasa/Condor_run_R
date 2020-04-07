@@ -574,7 +574,7 @@ if (!file.copy(file.path(SCRIPT), file.path(run_dir, str_glue("{script_prefix}_{
 }
 
 # Define the template for the .bat file that specifies what should be run on the execute host side for each job.
-# Note that the use of POSIX commands: requires MKS Toolkit or GAMS gbin to be on-path on Windows execute hosts.
+# Note the use of POSIX commands: requires MKS Toolkit or GAMS gbin to be on-path on Windows execute hosts.
 # Execute-host-side automated bundle cleanup is assumed to be active:
 # https://mis.iiasa.ac.at/portal/page/portal/IIASA/Content/TicketS/Ticket?defpar=1%26pWFLType=24%26pItemKey=103034818402942720
 bat_template <- c(
