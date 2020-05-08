@@ -77,7 +77,9 @@ WAIT_FOR_RUN_COMPLETION = TRUE
 CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle
 SEED_JOB_RELEASES = 4 # optional, number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
-RUN_AS_OWNER = TRUE # optional. If TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
+RUN_AS_OWNER = TRUE # optional, if TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
+NOTIFICATION = "Never" # optional, when to send notification emails. Alternatives are "Complete": job completes; "Error": job errors or goes on hold; "Always": job completes or reaches checkpoint.
+EMAIL_ADDRESS= NULL # optional, set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
 # .......8><....snippy.snappy....8><.........................................
 
 # Collect the names and types of the default config settings
@@ -96,7 +98,9 @@ OPTIONAL_CONFIG_SETTINGS <- c(
   "CONDOR_DIR",
   "SEED_JOB_RELEASES",
   "JOB_RELEASES",
-  "RUN_AS_OWNER"
+  "RUN_AS_OWNER",
+  "NOTIFICATION",
+  "EMAIL_ADDRESS"
 )
 
 # ---- Get set ----
@@ -634,7 +638,8 @@ job_template <- c(
   'transfer_output_files = {ifelse(GET_OUTPUT, str_glue("{OUTPUT_DIR}/{OUTPUT_FILE}"), "")}',
   'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_glue("{OUTPUT_FILE}={OUTPUT_DIR}/{output_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extension}"), "")}"',
   "",
-  "notification = Error", # Per-job, so you'll get spammed setting it to Always or Complete.
+  "notification = {NOTIFICATION}",
+  '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
   "",
   "queue job in ({str_c(JOBS,collapse=',')})"
 )
