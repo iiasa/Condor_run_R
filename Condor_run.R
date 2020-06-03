@@ -272,7 +272,7 @@ if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX
 if (RESTART_FILE_PATH != "") {
   conn <- file(in_gams_curdir(RESTART_FILE_PATH), "rb")
   byte_count <- min(4000, file.info(in_gams_curdir(RESTART_FILE_PATH))$size)
-  seek(conn, where=-byte_count, origin="end")
+  invisible(seek(conn, where=-byte_count, origin="end"))
   tail_bytes <- readBin(conn, what=integer(), size=1, n=byte_count)
   close(conn)
   tail_bytes[tail_bytes <= 0] <- 32
