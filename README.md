@@ -24,6 +24,7 @@ This repository provides R scripts for submitting a Condor *run* (a set of jobs)
 1. `Condor_run_basic.R`: generic submit script.
 2. `Condor_run.R`: submit script with enhanced functionality for [GAMS](https://www.gams.com/) jobs.
 3. `Condor_run_stats.R`: analyse and plot run performance statistics.
+4. `restart_version.R`: displays the GAMS version with which a specified restart file was saved.
 
 ## Installation
 The scripts are self-contained and hence can be copied to a place conviently co-located with your model/project files. Of course, you need to have [R](https://www.r-project.org/) installed to be able to run the scripts. The only non-base R packages used are from the [tidyverse](https://www.tidyverse.org/) package collection. Please ensure that you have the tidyverse installed.
