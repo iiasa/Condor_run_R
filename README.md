@@ -20,7 +20,7 @@ Albert Brouwer
   + [But why?](#but-why)
 
 ## Introduction
-This repository provides R scripts for submitting a Condor *run* (a set of jobs) to a cluster of execute hosts and analysing performance statistics. Three scripts are provided:
+This repository provides R scripts for submitting a Condor *run* (a set of jobs) to a cluster of execute hosts and analysing performance statistics. Four scripts are provided:
 1. `Condor_run_basic.R`: generic submit script.
 2. `Condor_run.R`: submit script with enhanced functionality for [GAMS](https://www.gams.com/) jobs.
 3. `Condor_run_stats.R`: analyse and plot run performance statistics.
