@@ -218,7 +218,7 @@ in_gams_curdir <- function(path) {
 }
 
 # Check and massage specific config settings
-EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "25.1")
+EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "25.1", "29.1")
 if (GAMS_CURDIR != "" && !dir.exists(GAMS_CURDIR)) stop(str_glue("No {GAMS_CURDIR} directory as configured in GAMS_CURDIR found relative to working directory {getwd()}!"))
 if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory as configured in CONDOR_DIR found relative to working directory {getwd()}!"))
 if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT label for run has forbidden character(s)!"))
