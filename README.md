@@ -64,9 +64,9 @@ By passing the job number to the main script of the job, each job in the run can
 When you cannot submit jobs, ensure that:
 - You have obtained access to the Condor cluster from the cluster administrator.
 - You stored the necessary credentials via `condor_store_cred`:
-  * Type `condor_store_cred -c` on the command line and, when prompted, enter your login password to allow Condor to schedule jobs as you.
+  * Type `condor_store_cred` on the command line and, when prompted, enter your login password to allow Condor to schedule jobs as you.
     + **Note**: you will need to do this again after changing your password. 
-  * Type `condor_store_cred` and, when prompted, enter the cluster password (ask your administrator).
+  * Type `condor_store_cred -c` and, when prompted, enter the condor pool password (ask your administrator).
 - Issuing the command `condor_submit` tabulates the cluster status.
 - Issuing the command `condor_q` results in a summary of queued jobs.
 - When jobs are held, issuing `condor_q -held` shows the reason why.
