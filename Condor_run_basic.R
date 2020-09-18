@@ -20,7 +20,7 @@
 # reside to your PATH environment variable. On Windows, this is typically
 # C:\Program Files\R\R-x.y.z\bin\x64 (where x.y.z is the R version).
 #
-# A recent Condor version >= 8.5.4 is required to be installed on your
+# A recent Condor version >= 8.7.2 is required to be installed on your
 # submit machine.
 #
 # Also, 7z should be on-path. On Windows, this typically requires
@@ -244,7 +244,7 @@ monitor <- function(clusters) {
       if (q_errors >= 10) {
         # 10 consecutive condor_q errors, probably not transient, report and stop
         cat(outerr, sep="\n")
-        stop("Invocation of condor_q failed! Are you running a too old (< V8.5.4) Condor version?", call.=FALSE)
+        stop("Invocation of condor_q failed! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
       } else {
         # Fewer than 10 consecutive condor_q errors, retry
         next
@@ -256,7 +256,7 @@ monitor <- function(clusters) {
     match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
     if (is.na(match[1])) {
       cat(outerr, sep="\n")
-      stop("Monitoring Condor queue status with condor_q failed: unexpected output! Are you running a too old (< V8.5.4) Condor version?", call.=FALSE)
+      stop("Monitoring Condor queue status with condor_q failed: unexpected output! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
     }
     jobs      <- as.integer(match[2])
     completed <- as.integer(match[3])
@@ -379,12 +379,12 @@ all_exist_and_not_empty <- function(dir, file_template, file_type) {
 
 # Show status summary of selected execute hosts
 error_code <- system2("condor_status", args=c("-compact", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
-if (error_code > 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.5.4) Condor version?")
+if (error_code > 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
 cat("\n")
 
 # Collect available execute hosts including domain
 hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machine", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE))
-if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.5.4) Condor version?")
+if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
 if (length(hostdoms) == 0) stop("No execute hosts matching HOST_REGEXP are available!")
 
 # ---- Bundle the model ----
