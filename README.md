@@ -78,9 +78,10 @@ The output may be blocked. On Linux, this can happen on account of entering CTRL
 ### Jobs do not run but instead go on hold
 Likely, some error occurred. First look at the output of the ``Condor_run[_basic].R`` script for
 clues. Next, issue `condor_q -held` to review the hold reason. If the hold reason  is `Failed to
-initialize user log to <some path on a network drive>`, please see [[]]
+initialize user log to <some path on a network drive>`, see
+[the next section](#jobs-go-on-hold-without-producing-matching-log-files)
 
-To investigate further, look at the various log files located at ``<CONDOR_DIR>/<EXPERIMENT>``.
+Ohterwise investigate further. Look at the various log files located at ``<CONDOR_DIR>/<EXPERIMENT>``.
 In order of priority:
 1.  Check the ``.log`` files: is it a Condor scheduling problem?
 2.  Check the ``.err`` files: standard error stream of the remote job. When not empty,
