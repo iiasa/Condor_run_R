@@ -81,7 +81,7 @@ clues. Next, issue `condor_q -held` to review the hold reason. If the hold reaso
 initialize user log to <some path on a network drive>`, see
 [the next section](#jobs-go-on-hold-without-producing-matching-log-files)
 
-Ohterwise investigate further. Look at the various log files located at ``<CONDOR_DIR>/<EXPERIMENT>``.
+Otherwise investigate further. Look at the various log files located at ``<CONDOR_DIR>/<EXPERIMENT>``.
 In order of priority:
 1.  Check the ``.log`` files: is it a Condor scheduling problem?
 2.  Check the ``.err`` files: standard error stream of the remote job. When not empty,
