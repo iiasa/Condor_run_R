@@ -14,7 +14,7 @@ Albert Brouwer
 * [Troubleshooting](#troubleshooting)
   + [The script does not progress](#the-script-does-not-progress)
   + [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
-  + [Jobs go on hold, but I see no log files](#jobs-go-on-hold-but-i-see-no-log-files)
+  + [Jobs go on hold without producing matching `.log` files!](#jobs-go-on-hold-without-producing-matching-log-files)
   + [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
   + [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
   + [But why?](#but-why)
