@@ -63,10 +63,10 @@ By passing the job number to the main script of the job, each job in the run can
 ## Troubleshooting
 When you cannot submit jobs, ensure that:
 - You have obtained access to the Condor cluster from the cluster administrator.
-- You stored the necessary credentials via `condor_store_cred`:
-  * Type `condor_store_cred` on the command line and, when prompted, enter your login password to allow Condor to schedule jobs as you.
+- You stored the necessary credentials via `condor_store_cred add`:
+  * Type `condor_store_cred add` on the command line and, when prompted, enter your login password to allow Condor to schedule jobs as you.
     + **Note**: you will need to do this again after changing your password. 
-  * Type `condor_store_cred -c` and, when prompted, enter the condor pool password (ask your administrator).
+  * Type `condor_store_cred -c add` and, when prompted, enter the condor pool password (ask your administrator).
 - Issuing the command `condor_submit` tabulates the cluster status.
 - Issuing the command `condor_q` results in a summary of queued jobs.
 - When jobs are held, issuing `condor_q -held` shows the reason why.
@@ -78,9 +78,7 @@ The output may be blocked. On Linux, this can happen on account of entering CTRL
 ### Jobs do not run but instead go on hold
 Likely, some error occurred. First look at the output of the ``Condor_run[_basic].R`` script for
 clues. Next, issue `condor_q -held` to review the hold reason. If the hold reason  is `Failed to
-initialize user log to <some path on a network drive>`, try submitting the job from a local disk
-instead so that the log files go to a local disk, avoiding the potential flakyness of the network
-drive.
+initialize user log to <some path on a network drive>`, please see [[]]
 
 To investigate further, look at the various log files located at ``<CONDOR_DIR>/<EXPERIMENT>``.
 In order of priority:
@@ -95,11 +93,14 @@ In order of priority:
     happened after the job completed, e.g. result files not fitting because your
     disk is full.
 
-### Jobs go on hold, but I see no log files
-When no log files are produced in the ``<CONDOR_DIR>/<EXPERIMENT>`` directory,
-the Condor service on your submit machine may not have access rights to write its
-logging output there. This causes jobs to go on hold. Check the permissions
-on the directory.
+### Jobs go on hold without producing matching `.log` files!
+When your job produced no `.log` files in the ``<CONDOR_DIR>/<EXPERIMENT>`` directory,
+store the pool password again using `condor_store_cred -c add` and retry. Ask your cluster
+administrator for the pool password.
+
+If the above does not resolve the matter, the Condor service on your submit machine may not
+have the access rights to write its logging output to `<CONDOR_DIR>`. Try to set suitable
+access permissions on that directory.
 
 ### All seeding jobs remain idle and then abort through the PeriodicRemove expression
 It may be that the entire cluster is unavailable, but that is somewhat unlikely.
