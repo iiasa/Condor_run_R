@@ -13,6 +13,7 @@ Albert Brouwer
 * [Function of submit scripts](#function-of-submit-scripts)
 * [Troubleshooting](#troubleshooting)
   + [The script does not progress](#the-script-does-not-progress)
+  + [When transferring the bundle jobs keep on cycling between idle and running](#when-transferring-the-bundle-jobs-keep-on-cycling-between-idle-and-running)
   + [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
   + [Jobs go on hold without producing matching `.log` files!](#jobs-go-on-hold-without-producing-matching-log-files)
   + [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
