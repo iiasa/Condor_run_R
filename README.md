@@ -75,6 +75,10 @@ When you cannot submit jobs, ensure that:
 ### The script does not progress
 The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**.
 
+### When transferring the bundle, jobs keep on cycling between idle and running
+
+This behavior can occur on account of an outdated IP address being cached. Stop the script, invoke `condor_restart -schedd`, and try to submit again. If this does not work, stop the script, reboot, and try to submit again. Note that you will need to delete the bundle before starting the script again.
+
 ### Jobs do not run but instead go on hold
 Likely, some error occurred. First look at the output of the ``Condor_run[_basic].R`` script for
 clues. Next, issue `condor_q -held` to review the hold reason. If the hold reason  is `Failed to
