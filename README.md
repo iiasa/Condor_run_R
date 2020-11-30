@@ -4,7 +4,7 @@ R scripts to submit and analyse [HT Condor](https://research.cs.wisc.edu/htcondo
 ## Author
 Albert Brouwer
 
-## Index
+___
 
 * [Introduction](#introduction)
 * [Installation](#installation)
