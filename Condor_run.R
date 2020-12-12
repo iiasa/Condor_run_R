@@ -201,9 +201,9 @@ if (length(args) > 0) {
   config_conn<-file(temp_config_file, open="wt")
   for (i in seq_along(config_names)) {
     if (config_types[i] == "character") {
-      writeLines(str_glue('{config_names[i]} = "{get(config_names[i])}"'), job_conn)
+      writeLines(str_glue('{config_names[i]} = "{get(config_names[i])}"'), config_conn)
     } else {
-      writeLines(str_glue('{config_names[i]} = {get(config_names[i])}'), job_conn)
+      writeLines(str_glue('{config_names[i]} = {get(config_names[i])}'), config_conn)
     }
   }
   close(config_conn)
@@ -299,7 +299,7 @@ if (!dir.exists(run_dir)) dir.create(run_dir)
 
 # ---- Define some helper functions ----
 
-# Check and sanitize 7zip output and return the overal byte size of the input files
+# Check and sanitize 7zip output and return the overall byte size of the input files
 handle_7zip <- function(out) {
   if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
     cat(out, sep="\n")
