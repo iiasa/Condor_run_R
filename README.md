@@ -48,6 +48,8 @@ A typical invocation command line is therefore
 
 To set up a configuration file, copy the code block between *snippy snappy* lines from the submit script into your clipboard, and save it to a file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or [RStudio](https://rstudio.com/). Read the comments for each setting and customize as required.
 
+IIASA GLOBIOM developers should instead start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R`.
+
 ## Function of submit scripts
 1. Bundle up the job files using 7-Zip.
 2. Submit the bundle once to each of the execute hosts.
@@ -61,8 +63,15 @@ By transferring the bundle once for each execute host instead of once for each j
 
 By passing the job number to the main script of the job, each job in the run can customize the calculation, e.g. by selecting one out of a collection of scenarios.
 
+**Beware:** only after completing step 3 can a further parallel submission be performed. The script notifies you thereof as follows:
+
+`Run "test" has been submitted, it is now possible to submit additional runs while waiting for it to complete.`
+
+The submit script enforces this by using the bundle as a lock file until step 3 completes. If you abort the script or an error occurs before then, you will need to remove the bundle to free the lock. The script will throw an explanatory error until you do.
+
 ## Troubleshooting
 When you cannot submit jobs, ensure that:
+- You have reviewed the output of the submit script for causes and solutions.
 - You have obtained access to the Condor cluster from the cluster administrator.
 - You stored the necessary credentials via `condor_store_cred add`:
   * Type `condor_store_cred add` on the command line and, when prompted, enter your login password to allow Condor to schedule jobs as you.
