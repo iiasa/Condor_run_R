@@ -40,13 +40,13 @@ To check your installation, run the test in the `test_basic` subdirectory. The t
 The test submits a run of several small R jobs via `Condor_run_basic.R` and after completion performs analysis using `Condor_run_stats.R`. The plots can be viewed by opening the resulting `Rplots.pdf` file.
 
 ## Use
-Invoke the submit scripts via Rscript, or, on Linux/MacOS, you can invoke the script directly if its execute flag is set and the script has been converted to Unix format using e.g. `dos2unix` (removing the carriage returns from the line breaks). The analysis script `Condor_run_stats.R` is best run from RStudio. The submit scripts take as command line argument the name of a file with configuration settings. 
+Invoke the submit scripts via `Rscript`, or, on Linux/MacOS, you can invoke the script directly if its execute flag is set and the script has been converted to Unix format using e.g. `dos2unix` (removing the carriage returns from the line breaks). The analysis script `Condor_run_stats.R` is best run from [RStudio](https://rstudio.com/). The submit scripts take as command line argument the name of a file with configuration settings. 
 
 A typical invocation command line is therefore
 
 `Rscript Condor_run_basic.R config.R`
 
-To set up a configuration file, copy the code block between *snippy snappy* lines from the submit script into your clipboard, and save it to a file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or [RStudio](https://rstudio.com/). Read the comments for each setting and customize as required.
+To set up a configuration file, copy the code block between *snippy snappy* lines from the submit script into your clipboard, and save it to a file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or RStudio. Read the comments for each setting and customize as required.
 
 IIASA GLOBIOM developers should instead start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R`.
 
