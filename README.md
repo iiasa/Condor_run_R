@@ -11,6 +11,7 @@ ___
 * [Test](#test)
 * [Use](#use)
 * [Function of submit scripts](#function-of-submit-scripts)
+* [Job output](#job-output)
 * [Troubleshooting](#troubleshooting)
   + [The script does not progress](#the-script-does-not-progress)
   + [When transferring the bundle jobs keep on cycling between idle and running](#when-transferring-the-bundle-jobs-keep-on-cycling-between-idle-and-running)
