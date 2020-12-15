@@ -69,6 +69,13 @@ By passing the job number to the main script of the job, each job in the run can
 
 The submit script enforces this by using the bundle as a lock file until step 3 completes. If you abort the script or an error occurs before then, you will need to remove the bundle to free the lock. The script will throw an explanatory error until you do.
 
+## Job output
+Each job will typically  produce some kind of output.  For R jobs this might be an `.RData` file, for GAMS jobs this is likely to be either a GDX or restart file. There are are many ways to produce output. In R, objects can be saved to `.RData` files with the `save()` function. In GAMS, GDX files of everything can be dumped at the end of execution via the `gdx` command line option, or selectively written at run time using `execute_unload`. Restart (`.g00`) files can be saved with the `save` command line option. And so on.
+
+The submit scripts contain default functionality that has Condor transfer the job output back to the submit machine once the job completes. The relevant configuration parameters are `GET_OUTPUT`, `OUTPUT_DIR`, and `OUTPUT_FILE` for R runs using `Condor_run_basic.R`. For GAMS runs using `Condor_run.R`, the `G00_OUTPUT_DIR`, `G00_OUTPUT_FILE`, `GET_G00_OUTPUT`, `GDX_OUTPUT_DIR`, `GDX_OUTPUT_FILE` AND `GET_GDX_OUTPUT` can be used.
+
+Once all jobs are done, which can be ensured by configuring `WAIT_FOR_RUN_COMPLETION=TRUE`, you may wish to combine or analyse the retrieved output as a next step. For GAMS jobs, retrieved GDX files can be automatically merged as configured by the `MERGE_GDX_OUPTUT`, `MERGE_BIG`, `MERGE_EXCLUDE` and `REMOVE_MERGED_GDX_FILES` options (`Condor_run.R`).
+
 ## Troubleshooting
 When you cannot submit jobs, ensure that:
 - You have reviewed the output of the submit script for causes and solutions.
