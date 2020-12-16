@@ -427,8 +427,8 @@ bundle_size <- floor(file.info(bundle_path)$size/1024)
 
 # ---- Seed available execute hosts with the bundle ----
 
-# Define the template for the .bat that caches the transferred bundle on the execute host side
-bat_template <- c(
+# Define the template for the batch file / shell script that caches the transferred bundle on the execute host side
+seed_bat_template <- c(
   "@echo off",
   'set bundle_dir=e:\\condor\\bundles\\{username}',
   "if not exist %bundle_dir%\\ mkdir %bundle_dir% || exit /b %errorlevel%",
@@ -436,10 +436,10 @@ bat_template <- c(
   "move /Y {bundle} %bundle_dir%\\{unique_bundle}"
 )
 
-# Apply settings to bat template and write the .bat file
+# Apply settings to the template and write the batch file / shell script
 seed_bat <- file.path(temp_dir, str_glue("_seed.bat"))
 bat_conn<-file(seed_bat, open="wt")
-writeLines(unlist(lapply(bat_template, str_glue)), bat_conn)
+writeLines(unlist(lapply(seed_bat_template, str_glue)), bat_conn)
 close(bat_conn)
 
 # Transfer bundle to each available execute host
@@ -599,7 +599,7 @@ bat_template <- c(
   "exit /b %script_errorlevel%"
 )
 
-# Apply settings to bat template and write the .bat file
+# Apply settings to seed bat template and write the batch file / shell script
 job_bat <- file.path(temp_dir_parent, str_glue("job_{EXPERIMENT}_{predicted_cluster}.bat"))
 bat_conn<-file(job_bat, open="wt")
 writeLines(unlist(lapply(bat_template, str_glue)), bat_conn)
