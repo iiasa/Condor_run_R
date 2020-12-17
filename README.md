@@ -20,7 +20,7 @@ ___
   + [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
   + [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
   + [But why?](#but-why)
-* [Adjusting templates to your cluster](#adjusting-templates-to-your-cluster)
+* [Adapting templates to your cluster](#adapting-templates-to-your-cluster)
 
 ## Introduction
 This repository provides R scripts for submitting a Condor *run* (a set of jobs) to a cluster of execute hosts and analysing performance statistics. Four scripts are provided:
@@ -89,6 +89,7 @@ When you cannot submit jobs, ensure that:
 - Issuing the command `condor_submit` tabulates the cluster status.
 - Issuing the command `condor_q` results in a summary of queued jobs.
 - When jobs are held, issuing `condor_q -held` shows the reason why.
+- The in-script [templates are adapted to your cluster](#adapting-templates-to-your-cluster).
 - You set the HOST_REGEXP configuration option to select the right subset of execute hosts from the cluster.
 
 ### The script does not progress
@@ -154,8 +155,8 @@ For further information, see the
 [why is the job not running?](https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#why-is-the-job-not-running)
 section of the HTCondor manual.
 
-## Adjusting templates to your cluster
+## Adapting templates to your cluster
 
-The submit scripts in the [Condor_run_R repository](https://github.com/iiasa/Condor_run_R) work with the IIASA Limpopo cluster. To adjust them to a different cluster, adapt the templates `seed_job_template` and `job_template` found in both `Condor_run.R` and `Condor_run_basic.R` to generate appropriate Condor job files. Also, change the `seed_bat_template` and `bat_template` to generate a batch files or shell scripts that will run the jobs on your cluster's execute hosts.
+The submit scripts in the [Condor_run_R repository](https://github.com/iiasa/Condor_run_R) work with the IIASA Limpopo cluster. To adapt them to a different cluster, adapt the templates `seed_job_template` and `job_template` found in both `Condor_run.R` and `Condor_run_basic.R` to generate appropriate Condor job files. Also, change the `seed_bat_template` and `bat_template` to generate a batch files or shell scripts that will run the jobs on your cluster's execute hosts.
 
 Note that each execute host should provide a directory where the bundles can be cached, and should periodically delete old bundles in those caches so as to prevent their disks from filling up, e.g. using a crontab entry and a `find ... -delete` command. How old is sufficiently old to be deleted depends on how long jobs of a run might continue to be scheduled. Choose a safe margin, particularly when there is plenty of disk space for the cache.
