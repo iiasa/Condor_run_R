@@ -74,7 +74,7 @@ The submit script enforces this by using the bundle as a lock file until step 3 
 ## Job output
 Each job will typically produce some kind of output. For R jobs this might be an `.RData` file, for GAMS jobs this is likely to be either a GDX or restart file. There are are many ways to produce output. In R, objects can be saved to `.RData` files with the [`save()`](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/save) function. In GAMS, GDX files of everything can be dumped at the end of execution via the [GDX](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) command line option, or selectively written at run time using [execute_unload](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION). Restart (`.g00`) files can be saved with the [save](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave) command line option. And so on.
 
-The submit scripts contain default functionality that has Condor transfer job output back to the submit machine as each job completes. The relevant configuration settings are `GET_OUTPUT`, `OUTPUT_DIR`, and `OUTPUT_FILE` for R runs using `Condor_run_basic.R`. For GAMS runs using `Condor_run.R`, the `G00_OUTPUT_DIR`, `G00_OUTPUT_FILE`, `GET_G00_OUTPUT`, `GDX_OUTPUT_DIR`, `GDX_OUTPUT_FILE` and `GET_GDX_OUTPUT` configs can be used. Note that the files are renamed on receipt with unique numbers for the run and job so the output files from different runs and jobs are kept separate.
+The submit scripts contain default functionality that has Condor transfer job output back to the submit machine as each job completes. The relevant configuration settings are `GET_OUTPUT`, `OUTPUT_DIR`, and `OUTPUT_FILE` for R runs using `Condor_run_basic.R`. For GAMS runs using `Condor_run.R`, the `G00_OUTPUT_DIR`, `G00_OUTPUT_FILE`, `GET_G00_OUTPUT`, `GDX_OUTPUT_DIR`, `GDX_OUTPUT_FILE` and `GET_GDX_OUTPUT` configs can be used. Note that the files are renamed on receipt with unique numbers for the run and job so that the output files from different runs and jobs are kept separate.
 
 Once all jobs are done, which can be ensured by configuring `WAIT_FOR_RUN_COMPLETION=TRUE`, you may wish to combine or analyse the retrieved output as a next step. For GAMS jobs, retrieved GDX files can be automatically merged as configured by the `MERGE_GDX_OUPTUT`, `MERGE_BIG`, `MERGE_EXCLUDE` and `REMOVE_MERGED_GDX_FILES` options (`Condor_run.R`).
 
@@ -90,7 +90,7 @@ When you cannot submit jobs, ensure that:
 - Issuing the command `condor_q` results in a summary of queued jobs.
 - When jobs are held, issuing `condor_q -held` shows the reason why.
 - The in-script [templates are adapted to your cluster](#adapting-templates-to-your-cluster).
-- You set the HOST_REGEXP configuration option to select the right subset of execute hosts from the cluster.
+- You set the `HOST_REGEXP` configuration option to select the right subset of execute hosts from the cluster.
 
 ### The script does not progress
 The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**.
@@ -100,60 +100,33 @@ The output may be blocked. On Linux, this can happen on account of entering CTRL
 This behavior can occur on account of an outdated IP address being cached. Stop the script, invoke `condor_restart -schedd`, and try to submit again. If this does not work, stop the script, reboot, and try to submit again. Note that you will need to delete the bundle before starting the script again.
 
 ### Jobs do not run but instead go on hold
-Likely, some error occurred. First look at the output of the ``Condor_run[_basic].R`` script for
-clues. Next, issue `condor_q -held` to review the hold reason. If the hold reason  is `Failed to
-initialize user log to <some path on a network drive>`, see
-[the next section](#jobs-go-on-hold-without-producing-matching-log-files)
+Likely, some error occurred. First look at the output of the `Condor_run[_basic].R` script for clues. Next, issue `condor_q -held` to review the hold reason. If the hold reason  is `Failed to initialize user log to <some path on a network drive>`, see [the next section](#jobs-go-on-hold-without-producing-matching-log-files)
 
-Otherwise investigate further. Look at the various log files located at ``<CONDOR_DIR>/<EXPERIMENT>``.
+Otherwise investigate further. Look at the various log files located at `<CONDOR_DIR>/<EXPERIMENT>`.
 In order of priority:
-1.  Check the ``.log`` files: is it a Condor scheduling problem?
-2.  Check the ``.err`` files: standard error stream of the remote job. When not empty,
-    likely some error occurred.
-3.  Check the ``.out`` files: standard output of the remote job. Look for errors/warnings
-    towards the end.
-4.  Check the ``.lst`` files: GAMS listing file, search for error details. For GAMS jobs
-    only.
-5.  If all else fails, execute ``condor_q –analyze``: it might be something that
-    happened after the job completed, e.g. result files not fitting because your
-    disk is full.
+1.  Check the `.log` files: is it a Condor scheduling problem?
+2.  Check the `.err` files: standard error stream of the remote job. When not empty, likely some error occurred.
+3.  Check the `.out` files: standard output of the remote job. Look for errors/warnings towards the end.
+4.  Check the `.lst` files: GAMS listing file, search for error details. For GAMS jobs only.
+5.  If all else fails, execute ``condor_q –analyze``: it might be something that happened after the job completed, e.g. result files not fitting because your disk is full.
 
 ### Jobs go on hold without producing matching `.log` files!
-When your job produced no `.log` files in the ``<CONDOR_DIR>/<EXPERIMENT>`` directory,
-store the pool password again using `condor_store_cred -c add` and retry. Ask your cluster
-administrator for the pool password.
+When your job produced no `.log` files in the ``<CONDOR_DIR>/<EXPERIMENT>`` directory, store the pool password again using `condor_store_cred -c add` and retry. Ask your cluster administrator for the pool password.
 
-If the above does not resolve the matter, the Condor service on your submit machine may not
-have the access rights to write its logging output to `<CONDOR_DIR>`. Try to set suitable
-access permissions on that directory.
+If the above does not resolve the matter, the Condor service on your submit machine may not have the access rights to write its logging output to `<CONDOR_DIR>`. Try to set suitable access permissions on that directory.
 
 ### All seeding jobs remain idle and then abort through the PeriodicRemove expression
-It may be that the entire cluster is unavailable, but that is somewhat unlikely.
-The machine you submit from announcing itself with a wrong domain is a more
-probable cause. It has been seen to happen that submit machines announce
-themselves with the ``local`` domain, which is not valid for remote access
-so that jobs cannot be collected.
+It may be that the entire cluster is unavailable, but that is somewhat unlikely. The machine you submit from announcing itself with a wrong domain is a more probable cause. It has been seen to happen that submit machines announce themselves with the `local` domain, which is not valid for remote access so that jobs cannot be collected.
 
-To check whether the submit machine has announced itself wrongly, issue the
-``condor_q`` command. The output should contain the hostname and domain of your
-machine. If the domain is ``local`` the issue is likely present and can be
-resolved by restarting the Condor background processes on the submit machine.
+To check whether the submit machine has announced itself wrongly, issue the `condor_q` command. The output should contain the hostname and domain of your machine. If the domain is `local` the issue is likely present and can be resolved by restarting the Condor background processes on the submit machine.
 
-The crude way to restart Condor is to reboot the submit machine. The better
-way is to restart the Condor service. This can be done via the Services
-application on Windows or via ``systemctl restart condor.service`` with
-root privileges on Linux.
+The crude way to restart Condor is to reboot the submit machine. The better way is to restart the Condor service. This can be done via the Services application on Windows or via ``systemctl restart condor.service`` with root privileges on Linux.
 
 ### Jobs are idle and do not run, or only some do
-The cluster may be busy. To see who else has submitted jobs, issue `condor_status -submitters`.
-In addition, you may have a low priority so that jobs of others are given priority,
-pushing your jobs to the back of the queue. To see your priority issue `condor_userprio`.
-Large numbers mean low priority. Your cluster administrator can set your priority.
+The cluster may be busy. To see who else has submitted jobs, issue `condor_status -submitters`. In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue `condor_userprio`. Large numbers mean low priority. Your cluster administrator can set your priority.
 
 ### But why?
-For further information, see the
-[why is the job not running?](https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#why-is-the-job-not-running)
-section of the HTCondor manual.
+For further information, see the [why is the job not running?](https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#why-is-the-job-not-running) section of the HTCondor manual.
 
 ## Adapting templates to your cluster
 
