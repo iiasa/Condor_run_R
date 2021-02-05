@@ -79,7 +79,8 @@ SEED_JOB_RELEASES = 4 # optional, number of times to auto-release (retry) held s
 JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
 RUN_AS_OWNER = TRUE # optional, if TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
 NOTIFICATION = "Never" # optional, when to send notification emails. Alternatives are "Complete": job completes; "Error": job errors or goes on hold; "Always": job completes or reaches checkpoint.
-EMAIL_ADDRESS= NULL # optional, set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
+EMAIL_ADDRESS = NULL # optional, set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
+USER_NICE = FALSE # optional, be nice, give jobs of other users priority
 # .......8><....snippy.snappy....8><.........................................
 
 # Collect the names and types of the default config settings
@@ -100,7 +101,8 @@ OPTIONAL_CONFIG_SETTINGS <- c(
   "JOB_RELEASES",
   "RUN_AS_OWNER",
   "NOTIFICATION",
-  "EMAIL_ADDRESS"
+  "EMAIL_ADDRESS",
+  "USER_NICE"
 )
 
 # ---- Get set ----
@@ -611,6 +613,8 @@ job_template <- c(
   "executable = {job_bat}",
   "arguments = $(job)",
   "universe = vanilla",
+  "",
+  "user_nice = {ifelse(USER_NICE, 'True', 'False')}",
   "",
   "# Job log, output, and error files",
   "log = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
