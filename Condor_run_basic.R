@@ -80,7 +80,7 @@ JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs b
 RUN_AS_OWNER = TRUE # optional, if TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
 NOTIFICATION = "Never" # optional, when to send notification emails. Alternatives are "Complete": job completes; "Error": job errors or goes on hold; "Always": job completes or reaches checkpoint.
 EMAIL_ADDRESS = NULL # optional, set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
-USER_NICE = FALSE # optional, be nice, give jobs of other users priority
+NICE_USER = FALSE # optional, be nice, give jobs of other users priority
 # .......8><....snippy.snappy....8><.........................................
 
 # Collect the names and types of the default config settings
@@ -102,7 +102,7 @@ OPTIONAL_CONFIG_SETTINGS <- c(
   "RUN_AS_OWNER",
   "NOTIFICATION",
   "EMAIL_ADDRESS",
-  "USER_NICE"
+  "NICE_USER"
 )
 
 # ---- Get set ----
@@ -169,6 +169,7 @@ if (length(JOBS) < 1) stop("There should be at least one job in JOBS!")
 if (!all(JOBS == floor(JOBS))) stop("Job numbers in JOBS must be whole numbers!")
 if (!all(JOBS < 1e6)) stop("Job numbers in JOBS must be less than 1000000 (one million)!")
 if (!all(JOBS >= 0)) stop("Job numbers in JOBS may not be negative!")
+if (length(JOBS) > 200 && !NICE_USER) warning(str_glue("You are submitting {length(JOBS)} jobs. That's a lot. Consider being nice by configuring NICE_USER = TRUE so as to give jobs of other users priority."))
 if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
 if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
 if (!(file.exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
@@ -614,7 +615,7 @@ job_template <- c(
   "arguments = $(job)",
   "universe = vanilla",
   "",
-  "user_nice = {ifelse(USER_NICE, 'True', 'False')}",
+  "nice_user = {ifelse(NICE_USER, 'True', 'False')}",
   "",
   "# Job log, output, and error files",
   "log = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
