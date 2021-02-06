@@ -18,5 +18,3 @@ OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit
 OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
 CONDOR_DIR = "Condor" # directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
-SEED_JOB_RELEASES = 4 # number of times to auto-release held seed jobs before giving up
-JOB_RELEASES = 5 # number of times to auto-release held jobs before giving up

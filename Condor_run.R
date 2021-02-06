@@ -110,7 +110,7 @@ MERGE_ID = NULL # optional, comma-separated list of symbols to include in the me
 MERGE_EXCLUDE = NULL # optional, comma-separated list of symbols to exclude from the merge, defaults to none
 REMOVE_MERGED_GDX_FILES = FALSE # optional
 CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle
-SEED_JOB_RELEASES = 4 # optional, number of times to auto-release (retry) held seed jobs before giving up
+SEED_JOB_RELEASES = 0 # optional, number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
 RUN_AS_OWNER = TRUE # optional, if TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
 NOTIFICATION = "Never" # optional, when to send notification emails. Alternatives are "Complete": job completes; "Error": job errors or goes on hold; "Always": job completes or reaches checkpoint.
@@ -571,7 +571,7 @@ for (hostdom in hostdoms) {
     "output = {run_dir}/_seed_{hostname}.out",
     "error = {run_dir}/_seed_{hostname}.err",
     "",
-    "periodic_release = (NumJobStarts < {SEED_JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
+    "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
     "",
     "requirements = \\",
     '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
@@ -733,7 +733,7 @@ job_template <- c(
   "error = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).err",
   "stream_error = True",
   "",
-  "periodic_release =  (NumJobStarts < {JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
+  "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
   "",
   "requirements = \\",
   '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
