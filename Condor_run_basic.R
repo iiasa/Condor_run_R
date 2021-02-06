@@ -465,7 +465,7 @@ for (hostdom in hostdoms) {
     "output = {run_dir}/_seed_{hostname}.out",
     "error = {run_dir}/_seed_{hostname}.err",
     "",
-    "periodic_release = (NumJobStarts < {SEED_JOB_RELEASES}) && ((CurrentTime - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
+    "periodic_release = (NumJobStarts < {SEED_JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
     "",
     "requirements = \\",
     '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
@@ -624,7 +624,7 @@ job_template <- c(
   "error = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).err",
   "stream_error = True",
   "",
-  "periodic_release =  (NumJobStarts < {JOB_RELEASES}) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
+  "periodic_release =  (NumJobStarts < {JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
   "",
   "requirements = \\",
   '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
