@@ -14,7 +14,7 @@ ___
 * [Job output](#job-output)
 * [Troubleshooting](#troubleshooting)
   + [The script does not progress](#the-script-does-not-progress)
-  + [When transferring the bundle jobs keep on cycling between idle and running](#when-transferring-the-bundle-jobs-keep-on-cycling-between-idle-and-running)
+  + [When transferring the bundle, jobs stay in the running state indefinately](#when-transferring-the-bundle-jobs-stay-in-the-running-state-indefinately)
   + [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
   + [Jobs go on hold without producing matching `.log` files!](#jobs-go-on-hold-without-producing-matching-log-files)
   + [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
@@ -95,9 +95,11 @@ When you cannot submit jobs, ensure that:
 ### The script does not progress
 The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**.
 
-### When transferring the bundle, jobs keep on cycling between idle and running
+### When transferring the bundle, jobs stay in the running state indefinately
 
-This behavior can occur on account of an outdated IP address being cached. Stop the script, invoke `condor_restart -schedd`, and try to submit again. If this does not work, stop the script, reboot, and try to submit again. Note that you will need to delete the bundle before starting the script again.
+This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke `condor_restart -schedd`, and try to submit again. You will be asked to delete the bundle first.
+
+If the resubmission also stays stuck in the running state when transferring the bundle, stop the script, reboot, and then try to submit again. If your temp directory survives reboots, you will again be asked to delete the bundle first.
 
 ### Jobs do not run but instead go on hold
 Likely, some error occurred. First look at the output of the `Condor_run[_basic].R` script for clues. Next, issue `condor_q -held` to review the hold reason. If the hold reason  is `Failed to initialize user log to <some path on a network drive>`, see [the next section](#jobs-go-on-hold-without-producing-matching-log-files)
