@@ -13,6 +13,7 @@ ___
 * [Function of submit scripts](#function-of-submit-scripts)
 * [Job output](#job-output)
 * [Troubleshooting](#troubleshooting)
+  + [None of the above nor below solves my problem](#none-of-the-above-nor-below-solves-my-problem)
   + [The script does not progress](#the-script-does-not-progress)
   + [When transferring the bundle, jobs stay in the running state indefinately](#when-transferring-the-bundle-jobs-stay-in-the-running-state-indefinately)
   + [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
@@ -91,6 +92,10 @@ When you cannot submit jobs, ensure that:
 - When jobs are held, issuing `condor_q -held` shows the reason why.
 - The in-script [templates are adapted to your cluster](#adapting-templates-to-your-cluster).
 - You set the `HOST_REGEXP` configuration option to select the right subset of execute hosts from the cluster.
+
+### None of the above nor below solves my problem
+
+Reboot your machine and try to submit again.
 
 ### The script does not progress
 The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**.
