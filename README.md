@@ -1,3 +1,5 @@
+![License](https://img.shields.io/github/license/iiasa/Condor_run_R)
+
 # Condor_run_R
 R scripts to submit and analyse [HT Condor](https://research.cs.wisc.edu/htcondor/) runs
 
