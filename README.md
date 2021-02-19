@@ -17,7 +17,7 @@ ___
   + [The script does not progress](#the-script-does-not-progress)
   + [When transferring the bundle, jobs stay in the running state indefinately](#when-transferring-the-bundle-jobs-stay-in-the-running-state-indefinately)
   + [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
-  + [Jobs go on hold without producing matching `.log` files!](#jobs-go-on-hold-without-producing-matching-log-files)
+  + [Jobs go on hold without producing matching `.log` files](#jobs-go-on-hold-without-producing-matching-log-files)
   + [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
   + [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
   + [But why?](#but-why)
@@ -117,10 +117,10 @@ In order of priority:
 4.  Check the `.lst` files: GAMS listing file, search for error details. For GAMS jobs only.
 5.  If all else fails, execute ``condor_q –analyze``: it might be something that happened after the job completed, e.g. result files not fitting because your disk is full.
 
-### Jobs go on hold without producing matching `.log` files!
+### Jobs go on hold without producing matching `.log` files
 When your job produced no `.log` files in the ``<CONDOR_DIR>/<EXPERIMENT>`` directory, store the pool password again using `condor_store_cred -c add` and retry. Ask your cluster administrator for the pool password.
 
-If the above does not resolve the matter, the Condor service on your submit machine may not have the access rights to write its logging output to `<CONDOR_DIR>`. Try to set suitable access permissions on that directory.
+If the above does not resolve the matter, the Condor service/daemons on your submit machine may not have the access rights to write logging output to `<CONDOR_DIR>`. Set access permissions on that directory or (grand)parent directory that give write access to the service/daemons, or move your submission files onto a disk or under a directory that is writable by others, not just your user account. 
 
 ### All seeding jobs remain idle and then abort through the PeriodicRemove expression
 It may be that the entire cluster is unavailable, but that is somewhat unlikely. The machine you submit from announcing itself with a wrong domain is a more probable cause. It has been seen to happen that submit machines announce themselves with the `local` domain, which is not valid for remote access so that jobs cannot be collected.
