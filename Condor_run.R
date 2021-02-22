@@ -626,31 +626,29 @@ predicted_cluster <- cluster+1
 # Wait until seed jobs complete
 cat("Waiting for bundle seeding to complete...\n")
 monitor(clusters)
-return_values <- get_return_values(run_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
 rm(clusters)
 
-# Check whether seed jobs terminated abnormally
-if (all(is.na(return_values))) {
-  invisible(file.remove(bundle_path))
-  stop(str_glue("All seeding jobs terminated abnormally! For details, see the _seed_* files in {run_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/README.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
-}
-if (any(is.na(return_values))) {
-  if (length(return_values[is.na(return_values)]) == 1) {
-    warning(str_glue("A seeding job terminated abnormally, will refrain from scheduling jobs on the affected execute host {hostnames[is.na(return_values)]}. Probably, this host is currently unavailable."))
-  } else {
-    warning(str_glue("Seeding jobs terminated abnormally, will refrain from scheduling jobs on the affected execute hosts {str_c(hostnames[is.na(return_values)], collapse=', ')}. Probably, these hosts are currently unavailable."))
-  }
-  hostdoms <- hostdoms[!is.na(return_values)]
-  hostnames <- hostnames[!is.na(return_values)]
-  return_values <- return_values[!is.na(return_values)]
-}
+# Determine which seed jobs failed
+return_values <- get_return_values(run_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
+err_file_sizes <-  lapply(hostnames, function(hostname) return(file.size(file.path(run_dir, str_glue("_seed_{hostname}.err")))))
+failed_seeds <- is.na(return_values) | return_values != 0 | err_file_sizes != 0
+rm(return_values, err_file_sizes)
 
-# Check whether seed jobs returned a non-zero return value
-if (any(return_values != 0)) {
+# Check whether seed jobs failed
+if (all(failed_seeds)) {
   invisible(file.remove(bundle_path))
-  stop(str_glue("Seeding job(s) for {str_c(hostnames[return_values != 0], collapse=', ')} returned a non-zero return value! For details, see the _seed_* files in {run_dir}"))
+  stop(str_glue("All seeding jobs failed! For details, see the _seed_* files in {run_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/README.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
 }
-rm(return_values)
+if (any(failed_seeds)) {
+  if (length(failed_seeds[failed_seeds == TRUE]) == 1) {
+    warning(str_glue("A seeding job failed, will refrain from scheduling jobs on the affected execute host {hostnames[failed_seeds]}. Probably, this host is currently unavailable."))
+  } else {
+    warning(str_glue("Seeding jobs failed, will refrain from scheduling jobs on the affected execute hosts {str_c(hostnames[failed_seeds], collapse=', ')}. Probably, these hosts are currently unavailable."))
+  }
+  hostdoms <- hostdoms[!failed_seeds]
+  hostnames <- hostnames[!failed_seeds]
+}
+rm(failed_seeds)
 
 # Remove seeding log files of normally terminated seed jobs
 invisible(file.remove(seed_bat))
