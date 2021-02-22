@@ -125,11 +125,16 @@ args <- commandArgs(trailingOnly=TRUE)
 if (length(args) == 0) {
   warning("No config file argument supplied, using default run settings.")
 } else if (length(args) == 1) {
+  # Remove mandatatory config defaults from the global scope
   rm(list=config_names[!(config_names %in% OPTIONAL_CONFIG_SETTINGS)])
+
+  # Source the config file, should add mandatory config settings to the global scope
   source(args[1], local=TRUE, echo=FALSE)
+
+  # Check that all config settings exist, this catches mandatory settings missing in the config file
   for (i in seq_along(config_names))  {
     name <- config_names[i]
-    if (!exists(name)) stop(str_glue("{name} not set in {args[1]}!"))
+    if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {args[1]}!"))
     type <- typeof(get(name))
     if (type != config_types[[i]] &&
         name != "JOBS" && # R has no stable numerical type
