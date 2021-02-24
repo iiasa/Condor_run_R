@@ -539,7 +539,9 @@ bundle_size <- floor(file.info(bundle_path)$size/1024)
 # Define the template for the batch file / shell script that caches the transferred bundle on the execute host side
 seed_bat_template <- c(
   "@echo off",
-  'set bundle_dir=e:\\condor\\bundles\\{username}',
+  "set bundle_root=d:\\condor\\bundles",
+  "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
+  "set bundle_dir=%bundle_root%\\{username}",
   "if not exist %bundle_dir%\\ mkdir %bundle_dir% || exit /b %errorlevel%",
   "@echo on",
   "move /Y {bundle} %bundle_dir%\\{unique_bundle}"
@@ -694,9 +696,11 @@ bat_template <- c(
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
   'mkdir "{in_gams_curdir(G00_OUTPUT_DIR)}" 2>NUL || exit /b %errorlevel%',
   'mkdir "{in_gams_curdir(GDX_OUTPUT_DIR)}" 2>NUL || exit /b %errorlevel%',
+  "set bundle_root=d:\\condor\\bundles",
+  "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
   "@echo on",
-  "touch e:\\condor\\bundles\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
-  '7z x e:\\condor\\bundles\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
+  "touch %bundle_root%\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
+  '7z x %bundle_root%\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
   'C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe "{GAMS_FILE_PATH}" -logOption=3 {ifelse(GAMS_CURDIR != "", str_glue("curDir=\\"{GAMS_CURDIR}\\" "), "")}{ifelse(RESTART_FILE_PATH != "", str_glue("restart=\\"{RESTART_FILE_PATH}\\" "), "")}save="{G00_OUTPUT_DIR}/{g00_prefix}" {str_glue(GAMS_ARGUMENTS)}',
   "set gams_errorlevel=%errorlevel%",
