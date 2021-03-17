@@ -3,34 +3,49 @@
 # performed with Condor_run_basic.R or Condor_run.R. For assessing job run
 # times and cluster performance behaviour.
 #
-# Usage: run/source this script from RStudio, invoke the script using Rscript,
-# or, on Linux/MacOS you can invoke the script directly (this works provided
-# that the execute flag is set and carriage returns have been removed using
-# e.g. dos2unix).
-#
+# Option 1: run/source this script from RStudio.
 # Before running the script, set EXPERIMENTS, CLUSTER, JOB_RELATIVE_PATH,
-# CONDOR_DIR, and SUBDIRECTORY as required.
-#
-# When run from RStudio, this script looks for log files in
+# CONDOR_DIR, and SUBDIRECTORY as required. When run from RStudio, this script
+# looks for log files in:
 # <Location of this script>/<RELATIVE_PATH>/<CONDOR_DIR>/<EXPERIMENTS[]|SUBDIRECTORY>
 #
-# When run from the command line, this script looks for log files in
+# Option 2: invoke the script from the command line.
+# Usage:
+# > [Rscript] [<relpath>/]Condor_run_stat.R <config file1.R> <config file2.R> ...
+# The config files are the same as those passed to the Condor_run[_basic].R
+# runs to be analyzed. When run from the command line, this script looks for
+# log files in:
 # <Current Directory>/<CONDOR_DIR>/<EXPERIMENTS[]|SUBDIRECTORY>
+#
+# On Linux/MacOS you can invoke the script directly without Rscript. This
+# works provided that the execute flag is set and carriage returns have been
+# removed using e.g. dos2unix.
 #
 # Invoking this script from the command line causes plots to be output to a PDF.
 #
 # Author: Albert Brouwer
 # Repository: https://github.com/iiasa/Condor_run_R
 
-# Names of experiments to analyse, as set via the EXPERIMENT config setting of your runs.
-EXPERIMENTS <- c("experiment1")
-#EXPERIMENTS <- c("limpopo1_affinity_half", "limpopo1_affinity_f", "limpopo1_affinity_double")
-#EXPERIMENTS <- c("10x55MB", "20x28MB", "30x18MB", "40x14MB", "60x9MB", "80x7MB", "100x7MB", "120x7MB", "140x7MB") #, "many")
+if (Sys.getenv("RSTUDIO") == "1") {
+  # Names of experiments to analyse, as set via the EXPERIMENT config setting of your runs.
+  EXPERIMENTS <- c("experiment1")
+  # for running from RStudio, relative to where this script is located
+  RELATIVE_PATH <- c("test_basic")
+} else {
+  args <- commandArgs(trailingOnly=TRUE)
+  if (length(args) == 0) {
+    stop("No config file argument(s) supplied!")
+  }
+  EXPERIMENTS <- c()
+  for (arg in args) {
+    source(arg, local=TRUE, echo=FALSE)
+    EXPERIMENTS <- c(EXPERIMENTS, EXPERIMENT)
+  }
+}
 
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
 CLUSTER <- "*"
 
-RELATIVE_PATH <- c("test_basic") # for running from RStudio, relative to where this script is located
 CONDOR_DIR <- "Condor" # Set the same as identically named config setting used with Condor_run[_basic].R
 
 # Name of directory under Model/Condor with output files to analyze. Set to NULL to default to the experiment name.
