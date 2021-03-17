@@ -52,11 +52,12 @@ CONDOR_DIR <- "Condor" # Set the same as identically named config setting used w
 SUBDIRECTORY <- NULL
 
 # Map known IP4s to hostnames for readability
-hostname_map <- c("147.125.199.211"="limpopo1",
-                  "147.125.199.212"="limpopo2",
-                  "147.125.199.213"="limpopo3",
-                  "147.125.199.214"="limpopo4",
-                  "147.125.199.220"="limpopo5")
+hostname_map <- c("147.125.99.211"="limpopo1",
+                  "147.125.99.212"="limpopo2",
+                  "147.125.99.213"="limpopo3",
+                  "147.125.99.214"="limpopo4",
+                  "147.125.99.220"="limpopo5",
+                  "147.125.99.216"="limpopo6")
 
 # Required packages
 options(tidyverse.quiet=TRUE)
