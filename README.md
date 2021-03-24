@@ -24,6 +24,7 @@ ___
   + [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
   + [But why?](#but-why)
 * [Adapting templates to your cluster](#adapting-templates-to-your-cluster)
+* [Configuring execute hosts](#configuring-execute-hosts)
 
 ## Introduction
 This repository provides R scripts for submitting a Condor *run* (a set of jobs) to a cluster of execute hosts and analysing performance statistics. Four scripts are provided:
@@ -142,3 +143,11 @@ For further information, see the [why is the job not running?](https://htcondor.
 The submit scripts in the [Condor_run_R repository](https://github.com/iiasa/Condor_run_R) work with the IIASA Limpopo cluster. To adjust the scripts to a different cluster, adapt the templates `seed_job_template` and `job_template` found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. Also, change the `seed_bat_template` and `bat_template` to generate a batch files or shell scripts that will run the jobs on your cluster's execute hosts.
 
 Note that each execute host should provide a directory where the bundles can be cached, and should periodically delete old bundles in those caches so as to prevent their disks from filling up, e.g. using a crontab entry and a `find <cache directory> -mtime +1 -delete` command. How old is sufficiently old to be deleted depends on how long jobs of a run might continue to be scheduled. Choose a safe margin, particularly when there is plenty of disk space for the cache.
+
+## Configuring execute hosts
+
+As Condor administrator, you can adjust the configuration of execute hosts to accomodate their seeding with bundles. Though seeding jobs request no resources, Condor nevertheless does not schedule them when there is not at least one unoccupied CPU or a minimum of disk, swap, and memory available on execute hosts. Presumably, Condor internally amends a job's stated resource requirements to make them more realistic. Unfortuntely, this means that when one or more execute hosts are fully occupied, submitting a new run through `Condor_run_R` scripting will have the seeding jobs of hosts remain idle (queued).
+
+The default seed job configuration template has been set up to time out in that eventuality. But if that happens, only a subset of the execute hosts will participate in the run. And if all execute hosts are fully occupied, all seed jobs will time out and the submission will fail. To prevent this from happening, adjust the Condor configuration of the execute hosts to provide a low-resource partitionable slot to which one CPU and a *small quantity* of disk, swap, and memory are allocated. Once so reconfigured, this slot will be mostly ignored by resource-requiring jobs, and remain available for seeding jobs.
+
+To resolve the question of what consitutes a *small quantity*, the test script in `tests/seeding` can be used to fully occupy a cluster or a specific execute host (use the `HOST_REGEXP` config setting) and subsequently try seeding. Perform a bisection search of the excecute host's seeding slot disk, swap, memory resource allocation, by changing the allocation between tests, to determine the rough minimum allocation values that allow seeding jobs to be accepted. These values should be minimized so as to make it unlikely that a resource-requesting job gets scheduled in the slot. The slot also needs at least one CPU dedicated to it. Make sure that the Condor daemons on the execute host being tests pick up the configuration after you change it and before running the test again.
