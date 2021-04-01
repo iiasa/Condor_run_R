@@ -375,7 +375,7 @@ summarize(experiment=dplyr::first(experiment),
           `stdev [min]`=sd(`duration [min]`),
           `min [min]`=min(`duration [min]`),
           `max [min]`=max(`duration [min]`),
-          `throughput [jobs/h]`=n()/max(`duration [h]`)) %>%
+          `throughput [jobs/h]`=n()/max(`latency [h]` + `duration [h]`)) %>%
 arrange(cluster) -> summary
 print(summary)
 print(ggplot(summary, aes(x=jobs/5, y=`mean [min]`, color=experiment)) + geom_errorbar(aes(ymin=`mean [min]`-`stdev [min]`, ymax=`mean [min]`+`stdev [min]`), width=1) + geom_point(size=3) + xlab("jobs/limpopo") + ylab("mean job time [min]") + ggtitle("contention") + theme_grey(base_size=20))
