@@ -36,11 +36,14 @@ if (Sys.getenv("RSTUDIO") == "1") {
   if (length(args) == 0) {
     stop("No config file argument(s) supplied!")
   }
+  # From each config file passed on the command line, collect the EXPERIMENT name
   EXPERIMENTS <- c()
   for (arg in args) {
     source(arg, local=TRUE, echo=FALSE)
     EXPERIMENTS <- c(EXPERIMENTS, EXPERIMENT)
   }
+  # Use landscape mode for generating the PDF with plots
+  pdf(paper = "a4r")
 }
 
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
