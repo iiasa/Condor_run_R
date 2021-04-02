@@ -43,7 +43,7 @@ if (Sys.getenv("RSTUDIO") == "1") {
     EXPERIMENTS <- c(EXPERIMENTS, EXPERIMENT)
   }
   # Use landscape mode for generating the PDF with plots
-  pdf(paper = "a4r")
+  pdf(paper = "a4r", width=11.7, height=8.3)
 }
 
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
