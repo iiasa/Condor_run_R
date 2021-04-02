@@ -381,8 +381,8 @@ summarize(experiment=dplyr::first(experiment),
           `throughput [jobs/h]`=n()/max(`latency [h]` + `duration [h]`)) %>%
 arrange(cluster) -> summary
 print(summary)
-print(ggplot(summary, aes(x=jobs/5, y=`mean [min]`, color=experiment)) + geom_errorbar(aes(ymin=`mean [min]`-`stdev [min]`, ymax=`mean [min]`+`stdev [min]`), width=1) + geom_point(size=3) + xlab("jobs/limpopo") + ylab("mean job time [min]") + ggtitle("contention") + theme_grey(base_size=20))
-print(ggplot(summary, aes(x=jobs, y=`throughput [jobs/h]`, color=experiment)) + geom_point(size=3) + scale_x_continuous(trans='log10') + xlab("jobs/run") + ylab("jobs/h") + ggtitle("throughput") + theme_grey(base_size=20))
+print(ggplot(summary, aes(x=jobs/5, y=`mean [min]`, color=str_glue("{experiment}_{cluster}"))) + geom_errorbar(aes(ymin=`mean [min]`-`stdev [min]`, ymax=`mean [min]`+`stdev [min]`), width=1) + geom_point(size=3) + xlab("jobs/limpopo") + ylab("mean job time [min]") + scale_color_discrete(name = "run") + ggtitle("contention") + theme_grey(base_size=20))
+print(ggplot(summary, aes(x=jobs, y=`throughput [jobs/h]`, color=str_glue("{experiment}_{cluster}"))) + geom_point(size=3) + scale_x_continuous(trans='log10') + xlab("jobs/run") + ylab("jobs/h") + scale_color_discrete(name = "run") + ggtitle("throughput") + theme_grey(base_size=20))
 
 options(tibble.print_max = Inf)
 
