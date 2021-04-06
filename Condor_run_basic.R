@@ -298,7 +298,14 @@ monitor <- function(clusters) {
     ) {
       outerr <- system2("condor_reschedule", stdout=TRUE, stderr=TRUE)
       if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-        warning(str_c(c("Invocation of condor_reschedule failed with the following output:", outerr), collapse='\n'), call.=FALSE)
+        # Try to workaround issue with a seemingly superfluous args=c("reschedule") parameter
+        # because R seems to sometimes call some underlying generic exe that needs a parameter to
+        # resolve which command it should behave as.
+        outerr2 <- system2("condor_reschedule", args=c("reschedule"), stdout=TRUE, stderr=TRUE)
+        if (!is.null(attr(outerr2, "status")) && attr(outerr2, "status") != 0) {
+          # Warn about the first error, not the also-failed workaround
+          warning(str_c(c("Invocation of condor_reschedule failed with the following output:", outerr), collapse='\n'), call.=FALSE)
+        }
       }
       reschedule_invocations <- reschedule_invocations-1
       changes_since_reschedule <- FALSE
