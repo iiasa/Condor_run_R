@@ -28,9 +28,9 @@
 
 if (Sys.getenv("RSTUDIO") == "1") {
   # Names of experiments to analyse, as set via the EXPERIMENT config setting of your runs.
-  EXPERIMENTS <- c("experiment1")
+  EXPERIMENTS <- c("sleep10_default_slots")
   # for running from RStudio, relative to where this script is located
-  RELATIVE_PATH <- c("test_basic")
+  RELATIVE_PATH <- c("tests/seeding")
 } else {
   args <- commandArgs(trailingOnly=TRUE)
   if (length(args) == 0) {
@@ -246,18 +246,19 @@ for (i in seq_along(roots)) {
   if (!is.na(host)) hosts[i] = host
 }
 
-# If available, obtain the Condor partitionable slot name from the .out file
+# If available, obtain the Condor slot name from the .out file
 # To make it available, execute the following command in the batch file of your jobs:
 # echo _CONDOR_SLOT = %_CONDOR_SLOT%
 slots <- list()
 for (i in seq_along(roots)) {
   slot_line <- grep("^_CONDOR_SLOT ?= ?.*$", out_files[[i]], value=TRUE)
-  slot <- str_match(slot_line, "^_CONDOR_SLOT ?= ?(.*)_\\d+$")[2] # clip off the dynamic slot number
+  # try to match dynamic slot format and clip off dynamic slot number
+  slot <- str_match(slot_line, "^_CONDOR_SLOT ?= ?(.*)_\\d+$")[2]
   if (is.na(slot)) {
-    slots[[i]] = NA
-  } else {
-    slots[[i]] = slot
+    # try to match regular slot format
+    slot <- str_match(slot_line, "^_CONDOR_SLOT ?= ?(.*)$")[2]
   }
+  slots[[i]] = slot # NA if no match
 }
 
 # Extract the EXECUTION TIME occurrences from the .out files
