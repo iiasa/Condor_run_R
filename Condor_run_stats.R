@@ -360,7 +360,7 @@ if (any(!is.na(jobs["latency [min]"]))) {
   print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=slot)) + geom_point(alpha=1) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1) + geom_segment(aes(xend=job, yend=`latency [min]`+`duration [min]`), alpha=1) + ylab("job start-stop time after submission [min]"))
 
 }
-print(ggplot(jobs, aes(x=job, y=`duration [min]`, color=run)) + geom_smooth(method="lm", se=FALSE) + geom_point())
+print(ggplot(jobs, aes(x=job, y=`duration [min]`, color=run)) + geom_smooth(formula = y ~ x, method="lm", se=FALSE) + geom_point())
 print(ggplot(jobs, aes(x=host, y=`duration [min]`, color=run)) + geom_point())
 if ("EXECUTION TIME 1 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=job, y=`EXECUTION TIME 1 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point())
 if ("EXECUTION TIME 2 [s]" %in% names(jobs)) print(ggplot(jobs, aes(x=job, y=`EXECUTION TIME 2 [min]`, color=run)) + geom_smooth(method="lm", se=FALSE)  + geom_point())
