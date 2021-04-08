@@ -370,9 +370,9 @@ for (name in names(jobs)) {
 
 # Plot, print() needed for sourcing because of https://yihui.name/en/2017/06/top-level-r-expressions/
 print(ggplot(jobs, aes(x=job, y=host_slot, color=slot)) + geom_point(size=3) + ggtitle("slot allocation") + theme_grey(base_size=20))
+print(ggplot() + geom_point(data=jobs, aes(x=`latency [min]`, y=running_at_start, color=run)) + geom_point(data=jobs, aes(x=`latency [min]`+`duration [min]`, y=running_at_stop, color=run)) + xlab("time after submission [min]") + ylab("running jobs") + theme_grey(base_size=20))
 if (any(!is.na(jobs["latency [min]"]))) {
   print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=run)) + geom_point(alpha=1/2) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1/2) + geom_segment(aes(xend=job, yend=`latency [min]`+`duration [min]`), alpha=1/5) + ylab("job start-stop time after submission [min]") + theme_grey(base_size=20))
-  print(ggplot() + geom_point(data=jobs, aes(x=`latency [min]`, y=running_at_start, color=run)) + geom_point(data=jobs, aes(x=`latency [min]`+`duration [min]`, y=running_at_stop, color=run)) + xlab("time after submission [min]") + ylab("running jobs") + theme_grey(base_size=20))
   print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=slot)) + geom_point(alpha=1) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1) + geom_segment(aes(xend=job, yend=`latency [min]`+`duration [min]`), alpha=1) + ylab("job start-stop time after submission [min]"))
 
 }
