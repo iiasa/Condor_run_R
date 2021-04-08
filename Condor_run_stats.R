@@ -28,7 +28,7 @@
 
 if (Sys.getenv("RSTUDIO") == "1") {
   # Names of experiments to analyse, as set via the EXPERIMENT config setting of your runs.
-  EXPERIMENTS <- c("sleep10_default_slots")
+  EXPERIMENTS <- c("127busylong7.8GB_part05", "127busylong7.8GB_part06")
   # for running from RStudio, relative to where this script is located
   RELATIVE_PATH <- c("tests/seeding")
 } else {
@@ -198,7 +198,7 @@ for (i in seq_along(roots)) {
   hosts <- c(hosts, host)
 }
 
-# Extract the job terminate times (with uncertain year) from the .log files
+# Extract the job termination times (with uncertain year) from the .log files
 terminate_times <- list()
 for (i in seq_along(roots)) {
   lines <- grep("\\) \\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d Job terminated.$", log_files[[i]], value=TRUE)
@@ -209,7 +209,7 @@ for (i in seq_along(roots)) {
   terminate_times <- c(terminate_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
 }
 
-# Calculate the execution latencies in seconds (difference between submit and execute times)
+# Calculate the execution start latencies in seconds (difference between submit and execution start times)
 latencies <- c()
 for (i in seq_along(roots)) {
   if (is.na(submit_times[[i]])) {
@@ -235,6 +235,19 @@ for (i in seq_along(roots)) {
     duration <- difftime(terminate_times[[i]], start_times_minus_1y[[i]], units="secs")
   }
   durations <- c(durations, duration)
+}
+
+# Determine the number of running jobs in each cluster
+running_at_start <- c()
+running_at_stop <- c()
+for (i in seq_along(roots)) {
+  if (is.na(latencies[[i]]) || is.na(durations[[i]])) {
+    running_at_start <- c(running_at_start, NA)
+    running_at_stop <- c(running_at_stop, NA)
+  } else {
+    running_at_start <- c(running_at_start, sum(clusters[[i]] == clusters & latencies[[i]] >= latencies & latencies[[i]] < latencies + durations, na.rm=TRUE))
+    running_at_stop <- c(running_at_stop, sum(clusters[[i]] == clusters & latencies[[i]] + durations[[i]] >= latencies & latencies[[i]] + durations[[i]] < latencies + durations, na.rm=TRUE))
+  }
 }
 
 # If available, obtain the hostname from the .out files instead
@@ -327,7 +340,9 @@ jobs <- tibble(experiment=unlist(experiments),
                slot=unlist(slots),
                root=roots,
                `latency [s]`=latencies,
-               `duration [s]`=durations)
+               `duration [s]`=durations,
+               running_at_start=running_at_start,
+               running_at_stop=running_at_stop)
 
 # Add a combined host_slot column
 jobs <- add_column(jobs, host_slot=paste(jobs$host, jobs$slot))
@@ -357,6 +372,7 @@ for (name in names(jobs)) {
 print(ggplot(jobs, aes(x=job, y=host_slot, color=slot)) + geom_point(size=3) + ggtitle("slot allocation") + theme_grey(base_size=20))
 if (any(!is.na(jobs["latency [min]"]))) {
   print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=run)) + geom_point(alpha=1/2) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1/2) + geom_segment(aes(xend=job, yend=`latency [min]`+`duration [min]`), alpha=1/5) + ylab("job start-stop time after submission [min]") + theme_grey(base_size=20))
+  print(ggplot() + geom_point(data=jobs, aes(x=`latency [min]`, y=running_at_start, color=run)) + geom_point(data=jobs, aes(x=`latency [min]`+`duration [min]`, y=running_at_stop, color=run)) + xlab("time after submission [min]") + ylab("running jobs") + theme_grey(base_size=20))
   print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=slot)) + geom_point(alpha=1) + geom_point(aes(y=`latency [min]`+`duration [min]`), alpha=1) + geom_segment(aes(xend=job, yend=`latency [min]`+`duration [min]`), alpha=1) + ylab("job start-stop time after submission [min]"))
 
 }
