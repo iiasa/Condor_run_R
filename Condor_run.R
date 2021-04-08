@@ -72,9 +72,11 @@ rm(list=ls())
 # To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
 # to a file, give it a .R extension to get nice syntax highlighting.
 #
-# Note that in the below defaults, an output GDX is produced via the gdx= GAMS
-# command line parameter. However, you may wish to limit what goes into the
-# GDX by instead using EXECUTE_UNLOAD from GAMS.
+# BEWARE: with the default GAMS_ARGUMENTS below, an output GDX is produced via
+# the gdx= GAMS command line parameter that contains all data. You may wish
+# to limit what goes into the GDX by instead using EXECUTE_UNLOAD from GAMS.
+# If you do, do not forget to override the GAMS_ARGUMENTS default in your
+# configuration file with a value without a gdx= argument.
 #
 # Use paths with / as path separator.
 # Unless otherwise specified, paths are relative to the current working directory.
