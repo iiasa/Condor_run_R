@@ -95,8 +95,8 @@ if (Sys.getenv("RSTUDIO") == "1") {
       }
     }
   }
-  # Use landscape mode for generating the PDF with plots
-  pdf(paper = "a4r", width=11.7, height=8.3)
+  # Set PDF filename and use landscape mode for generating the PDF with plots
+  pdf(paper = "a4r", width=11.7, height=8.3, file=str_c(str_c(lapply(EXPERIMENT_LOG_DIRECTORIES, basename), collapse="_"), ".pdf"))
 }
 
 # ---- Preload the .out and .log files from the given experiment log directories ----
