@@ -11,7 +11,13 @@
 #
 # Option 2: invoke the script from the command line.
 # Usage:
-# > [Rscript] [<relpath>/]Condor_run_stat.R <config file1.R> <config file2.R> ...
+# > [Rscript] [<relpath>/]Condor_run_stat.R <ex1> <ex2> ...
+# where <ex1>, <ex2>, and so on is an arbitrary list of experiments
+# specifiers that can be either:
+# - a configuration file holding an EXPERIMENT setting
+# - path to an experiment directory holding run log files
+# - the name of the experiment
+#
 # The config files are the same as those passed to the Condor_run[_basic].R
 # runs to be analyzed. When run from the command line, this script looks for
 # log files in:
@@ -26,33 +32,10 @@
 # Author: Albert Brouwer
 # Repository: https://github.com/iiasa/Condor_run_R
 
-if (Sys.getenv("RSTUDIO") == "1") {
-  # Names of experiments to analyse, as set via the EXPERIMENT config setting of your runs.
-  EXPERIMENTS <- c("127busylong7.8GB_part05", "127busylong7.8GB_part06")
-  # for running from RStudio, relative to where this script is located
-  RELATIVE_PATH <- c("tests/seeding")
-} else {
-  args <- commandArgs(trailingOnly=TRUE)
-  if (length(args) == 0) {
-    stop("No config file argument(s) supplied!")
-  }
-  # From each config file passed on the command line, collect the EXPERIMENT name
-  EXPERIMENTS <- c()
-  for (arg in args) {
-    source(arg, local=TRUE, echo=FALSE)
-    EXPERIMENTS <- c(EXPERIMENTS, EXPERIMENT)
-  }
-  # Use landscape mode for generating the PDF with plots
-  pdf(paper = "a4r", width=11.7, height=8.3)
-}
+# ---- Initialization ----
 
 # Job $(Cluster) number string, use * or ? wildcards to match multiple cluster numbers
 CLUSTER <- "*"
-
-CONDOR_DIR <- "Condor" # Set the same as identically named config setting used with Condor_run[_basic].R
-
-# Name of directory under Model/Condor with output files to analyze. Set to NULL to default to the experiment name.
-SUBDIRECTORY <- NULL
 
 # Map known IP4s to hostnames for readability
 hostname_map <- c("147.125.99.211"="limpopo1",
@@ -67,42 +50,83 @@ options(tidyverse.quiet=TRUE)
 library(tidyverse)
 options(tibble.width = Inf)
 
-# ---- Load the output files of the specified Condor run(s) ----
+# ---- Handle arguments and set up plotting for RStudio or command line ----
+
+if (Sys.getenv("RSTUDIO") == "1") {
+  # Names of experiments to analyse, as set via the EXPERIMENT config setting of your runs.
+  EXPERIMENT_LOG_DIRECTORIES <- c("tests/seeding/Condor/127busylong7.8GB_part06")
+} else {
+  args <- commandArgs(trailingOnly=TRUE)
+  if (length(args) == 0) {
+    stop("No configuration file or experiment directory argument(s) supplied!")
+  }
+  # From each argument passed on the command line, collect the experiment log directory
+  EXPERIMENT_LOG_DIRECTORIES <- c()
+  for (arg in args) {
+    if (!file.exists(arg)) {
+      stop(str_glue("Argument '{arg}' is neither a configuration file nor an experiment log directory!"))
+    }
+    if (file.info(arg)$isdir) {
+      # It is a directory, directly add it to the experiment log directories
+      EXPERIMENT_LOG_DIRECTORIES <- c(EXPERIMENT_LOG_DIRECTORIES, arg)
+    } else {
+      # It is a file, try to source it as a configuration file
+      source(arg, local=TRUE, echo=FALSE)
+      if (!exists("EXPERIMENT")) {
+        stop(str_glue("No EXPERIMENT defined in file '{arg}'!"))
+      }
+      # Construct the path to the experiment log directory from the configuration
+      if (exists("CONDOR_DIR")) {
+        # The experiment log directory should be under CONDOR_DIR
+        eld <- file.path(CONDOR_DIR, EXPERIMENT)
+        if (!file.exists(eld) || !file.info(eld)$isdir) {
+          stop(str_glue("Could not locate experiment log directory at '{eld}' as configured in CONDOR_DIR and EXPERIMENT of configuration file '{arg}!'"))
+        }
+        EXPERIMENT_LOG_DIRECTORIES <- c(EXPERIMENT_LOG_DIRECTORIES, eld)
+        rm(CONDOR_DIR, EXPERIMENT)
+      } else {
+        # The experiment log directory should be the default "Condor" directory
+        eld <- file.path("Condor", EXPERIMENT)
+        if (!file.exists(eld) || !file.info(eld)$isdir) {
+          stop(str_glue("Could not locate experiment log directory at '{eld}' in the default CONDOR_DIR='Condor' directory and as configured in EXPERIMENT of configuration file '{arg}!'"))
+        }
+        EXPERIMENT_LOG_DIRECTORIES <- c(EXPERIMENT_LOG_DIRECTORIES, eld)
+        rm(EXPERIMENT)
+      }
+    }
+  }
+  # Use landscape mode for generating the PDF with plots
+  pdf(paper = "a4r", width=11.7, height=8.3)
+}
+
+# ---- Preload the .out and .log files from the given experiment log directories ----
 
 # Alphabetically list the .out and .log files resulting from the Condor run and check that they match up
 out_paths <- c()
 log_paths <- c()
 experiments <- list() # expanded to a per-job list
-for (experiment in EXPERIMENTS) {
+for (eld in EXPERIMENT_LOG_DIRECTORIES) {
+  experiment <- basename(eld)
   if (Sys.getenv("RSTUDIO") == "1") {
-    if (is.null(SUBDIRECTORY)) {
-      experiment_dir <- file.path(dirname(rstudioapi::getActiveDocumentContext()$path), RELATIVE_PATH, CONDOR_DIR, experiment)
-    } else {
-      experiment_dir <- file.path(dirname(rstudioapi::getActiveDocumentContext()$path), RELATIVE_PATH, CONDOR_DIR, SUBDIRECTORY)
-    }
+    experiment_log_dir <- file.path(dirname(rstudioapi::getActiveDocumentContext()$path), eld)
   } else {
-    if (is.null(SUBDIRECTORY)) {
-      experiment_dir <- file.path(getwd(), CONDOR_DIR, experiment)
-    } else {
-      experiment_dir <- file.path(getwd(), CONDOR_DIR, SUBDIRECTORY)
-    }
+    experiment_log_dir <- file.path(getwd(), eld)
   }
-  if (!dir.exists(experiment_dir)) stop(str_glue("Experiment directory not found! Expected location: {experiment_dir}!"))
-  outs <- list.files(path=experiment_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.out"), full.names=TRUE, recursive=FALSE)
+  outs <- list.files(path=experiment_log_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.out"), full.names=TRUE, recursive=FALSE)
   out_paths <- c(out_paths, outs)
-  logs <- list.files(path=experiment_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.log"), full.names=TRUE, recursive=FALSE)
+  logs <- list.files(path=experiment_log_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.log"), full.names=TRUE, recursive=FALSE)
   log_paths <- c(log_paths, logs)
   experiments <- c(experiments, rep(experiment, length(logs)))
 }
 if (length(out_paths)!=length(log_paths)) stop(str_glue("The number of .out ({length(out_paths)}) and .log ({length(log_paths)}) files should be equal!"))
-if (length(out_paths)==0) stop(str_glue("No output files for CLUSTER {CLUSTER} found in {experiment_dir}!"))
+if (length(out_paths)==0) stop(str_glue("No output files for CLUSTER {CLUSTER} found in {experiment_log_dir}!"))
 
 # Reduce the list of .out and .log file paths to extensionless root paths of these job output files and check that they are the same
 for (i in seq_along(out_paths))
   out_paths[i] <- str_sub(out_paths[i], 1, -5)
 for (i in seq_along(log_paths))
   log_paths[i] <- str_sub(log_paths[i], 1, -5)
-if (!all(out_paths==log_paths)) stop("The .out and .log files for CLUSTER {CLUSTER} found in {experiment_dir} do not match up!")
+if (!all(out_paths==log_paths)) stop("The .out and .log files for CLUSTER {CLUSTER} found in {experiment_log_dir} do not match up!")
 roots <- as.list(out_paths)
 
 # Remove aborted jobs
