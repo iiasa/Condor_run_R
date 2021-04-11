@@ -54,7 +54,7 @@ options(tibble.width = Inf)
 
 if (Sys.getenv("RSTUDIO") == "1") {
   # Names of experiments to analyse, as set via the EXPERIMENT config setting of your runs.
-  EXPERIMENT_LOG_DIRECTORIES <- c("tests/seeding/Condor/127busylong7.8GB_part06")
+  EXPERIMENT_LOG_DIRECTORIES <- c("tests/seeding/Condor/127busylong7.8GB_part05", "tests/seeding/Condor/127busylong7.8GB_part06")
 } else {
   args <- commandArgs(trailingOnly=TRUE)
   if (length(args) == 0) {
@@ -395,8 +395,8 @@ for (name in names(jobs)) {
 # Plot, print() needed for sourcing because of https://yihui.name/en/2017/06/top-level-r-expressions/
 
 print(ggplot()
-      + geom_point(data = jobs, aes(x = `latency [min]`, y = running_at_start, color = run))
-      + geom_point(data = jobs, aes(x = `latency [min]` + `duration [min]`, y = running_at_stop, color = run))
+      + geom_point(data=jobs, aes(x=`latency [min]`, y=running_at_start, color=run))
+      + geom_point(data=jobs, aes(x=`latency [min]` + `duration [min]`, y=running_at_stop, color=run))
       + xlab("time after submission [min]")
       + ylab("running jobs")
       + theme_grey(base_size = 20)
@@ -461,11 +461,12 @@ if ("Cplex Time 1 [s]" %in% names(jobs)) {
 
 # Summarize
 jobs %>%
-select(experiment, cluster, submitted, `duration [min]`, `latency [h]`, `duration [h]`) %>%
+select(experiment, cluster, submitted, `duration [min]`, `latency [h]`, `duration [h]`, `running_at_start`) %>%
 group_by(cluster) %>%
 summarize(experiment=dplyr::first(experiment),
           submitted=min(submitted),
           `jobs`=n(),
+          `max running`=max(`running_at_start`),
           `mean [min]`=mean(`duration [min]`),
           `stderr [min]`=sd(`duration [min]`)/sqrt(jobs),
           `stdev [min]`=sd(`duration [min]`),
