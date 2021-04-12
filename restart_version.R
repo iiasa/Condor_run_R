@@ -39,4 +39,4 @@ if (is.na(version_match[1])) {
 }
 
 # Display GAMS version
-cat(str_glue("GAMS version: {version_match[2]}.{version_match[3]}\n"))
+print(str_glue("GAMS version: {version_match[2]}.{version_match[3]}"))
