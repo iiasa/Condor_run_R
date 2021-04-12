@@ -461,7 +461,7 @@ if ("Cplex Time 1 [s]" %in% names(jobs)) {
 
 # Summarize
 jobs %>%
-select(experiment, cluster, submitted, `duration [min]`, `latency [h]`, `duration [h]`, `running_at_start`) %>%
+select(experiment, cluster, submitted, `latency [min]`, `duration [min]`, `latency [h]`, `duration [h]`, `running_at_start`) %>%
 group_by(cluster) %>%
 summarize(experiment=dplyr::first(experiment),
           submitted=min(submitted),
@@ -472,6 +472,7 @@ summarize(experiment=dplyr::first(experiment),
           `stdev [min]`=sd(`duration [min]`),
           `min [min]`=min(`duration [min]`),
           `max [min]`=max(`duration [min]`),
+          `overall [min]`=max(`latency [min]` + `duration [min]`),
           `throughput [jobs/h]`=n()/max(`latency [h]` + `duration [h]`)) %>%
 arrange(cluster) -> summary
 print(summary)
