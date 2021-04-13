@@ -54,7 +54,8 @@ options(tibble.width = Inf)
 
 if (Sys.getenv("RSTUDIO") == "1") {
   # Names of experiments to analyse, as set via the EXPERIMENT config setting of your runs.
-  EXPERIMENT_LOG_DIRECTORIES <- c("tests/seeding/Condor/127busylong7.8GB_part05", "tests/seeding/Condor/127busylong7.8GB_part06")
+  #EXPERIMENT_LOG_DIRECTORIES <- c("tests/seeding/Condor/127busylong7.8GB_part05", "tests/seeding/Condor/127busylong7.8GB_part06")
+  EXPERIMENT_LOG_DIRECTORIES <- c("../../GLOBIOM/Trunk_for_Condor_testing/Condor/limpopo1")
 } else {
   args <- commandArgs(trailingOnly=TRUE)
   if (length(args) == 0) {
@@ -298,31 +299,6 @@ for (i in seq_along(roots)) {
   slots[[i]] = slot # NA if no match
 }
 
-# Extract the EXECUTION TIME occurrences from the .out files
-execution_times <- list()
-max_matches <- 0
-for (i in seq_along(roots)) {
-  seconds <- c()
-  for (line in grep("^EXECUTION TIME\\s+=\\s+[0-9]+[.][0-9]+ SECONDS", out_files[[i]], value=TRUE)) {
-    seconds <- c(seconds, as.double(str_match(line, "^EXECUTION TIME\\s+=\\s+([0-9]+[.][0-9]+) SECONDS")[2]))
-  }
-  max_matches <- max(max_matches, length(seconds))
-  execution_times <- c(execution_times, list(seconds))
-}
-# Set any missing occurrences (early abort of job presumably) to NA
-if (max_matches > 0) {
-  for (i in seq_along(execution_times)) {
-    for (j in 1:max_matches) {
-      if (length(execution_times[[i]]) < j) execution_times[[i]][j] = NA
-    }
-  }
-}
-if (max_matches > 0) {
-  execution_times <- transpose(execution_times)
-} else {
-  execution_times <- list()
-}
-
 # Extract the Cplex Time occurrences from the .out files
 cplex_times <- list()
 max_matches <- 0
@@ -371,10 +347,6 @@ jobs <- tibble(experiment=unlist(experiments),
 # Add a combined host_slot column
 jobs <- add_column(jobs, host_slot=paste(jobs$host, jobs$slot))
 
-# Add the extracted EXECUTION TIMEs to the jobs data
-for (i in seq_along(execution_times)) {
-  jobs <- add_column(jobs, !!(str_glue("EXECUTION TIME {i} [s]")) := unlist(execution_times[[i]]))
-}
 
 # Add the extracted Cplex Times to the jobs data
 for (i in seq_along(cplex_times)) {
@@ -436,21 +408,10 @@ print(ggplot(jobs, aes(x=job, y=`duration [min]`, color=run))
 print(ggplot(jobs, aes(x=host, y=`duration [min]`, color=run))
       + geom_point()
 )
-if ("EXECUTION TIME 1 [s]" %in% names(jobs)) {
-  print(ggplot(jobs, aes(x=job, y=`EXECUTION TIME 1 [min]`, color=run))
-        + geom_smooth(method="lm", se=FALSE)
-        + geom_point()
-  )
-}
-if ("EXECUTION TIME 2 [s]" %in% names(jobs)) {
-  print(ggplot(jobs, aes(x=job, y=`EXECUTION TIME 2 [min]`, color=run))
-        + geom_smooth(method="lm", se=FALSE)
-        + geom_point()
-  )
-}
 if ("Cplex Time 1 [s]" %in% names(jobs)) {
   print(ggplot(jobs, aes(x=job, y=`Cplex Time 1 [min]`, color=run))
-        + geom_smooth(method="lm", se=FALSE) + geom_point()
+        + geom_smooth(method="lm", se=FALSE)
+        + geom_point()
   )
 }
 if ("Cplex Time 1 [s]" %in% names(jobs)) {
