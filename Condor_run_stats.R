@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+l#!/usr/bin/env Rscript
 # Plot and summarize performance stats extracted from log files of Condor runs
 # performed with Condor_run_basic.R or Condor_run.R. For assessing job run
 # times and cluster performance behaviour.
@@ -299,29 +299,14 @@ for (i in seq_along(roots)) {
   slots[[i]] = slot # NA if no match
 }
 
-# Extract the Cplex Time occurrences from the .out files
-cplex_times <- list()
-max_matches <- 0
+# Extract the total CPLEX time from the .out files
+total_CPLEX_times <- c()
 for (i in seq_along(roots)) {
-  seconds <- c()
+  s <- 0
   for (line in grep("^Cplex Time: [0-9]+[.][0-9]+sec", out_files[[i]], value=TRUE)) {
-    seconds <- c(seconds, as.double(str_match(line, "^Cplex Time: ([0-9]+[.][0-9]+)sec")[2]))
+    s <- s + as.double(str_match(line, "^Cplex Time: ([0-9]+[.][0-9]+)sec")[2])
   }
-  max_matches <- max(max_matches, length(seconds))
-  cplex_times <- c(cplex_times, list(seconds))
-}
-# Set any missing occurrences (early abort of job presumably) to NA
-if (max_matches > 0) {
-  for (i in seq_along(cplex_times)) {
-    for (j in 1:max_matches) {
-      if (length(cplex_times[[i]]) < j) cplex_times[[i]][j] = NA
-    }
-  }
-}
-if (max_matches > 0) {
-  cplex_times <- transpose(cplex_times)
-} else {
-  cplex_times <- list()
+  total_CPLEX_times <- c(total_CPLEX_times, s)
 }
 
 # Extraction complete, loaded .log and .out files are no longer needed
@@ -342,16 +327,11 @@ jobs <- tibble(experiment=unlist(experiments),
                `latency [s]`=latencies,
                `duration [s]`=durations,
                running_at_start=running_at_start,
-               running_at_stop=running_at_stop)
+               running_at_stop=running_at_stop,
+               `total CPLEX time [s]`=total_CPLEX_times)
 
 # Add a combined host_slot column
 jobs <- add_column(jobs, host_slot=paste(jobs$host, jobs$slot))
-
-
-# Add the extracted Cplex Times to the jobs data
-for (i in seq_along(cplex_times)) {
-  jobs <- add_column(jobs, !!(str_glue("Cplex Time {i} [s]")) := unlist(cplex_times[[i]]))
-}
 
 # Before every column with [s] units, add derived columns with [min] and [h] units
 for (name in names(jobs)) {
@@ -408,14 +388,9 @@ print(ggplot(jobs, aes(x=job, y=`duration [min]`, color=run))
 print(ggplot(jobs, aes(x=host, y=`duration [min]`, color=run))
       + geom_point()
 )
-if ("Cplex Time 1 [s]" %in% names(jobs)) {
-  print(ggplot(jobs, aes(x=job, y=`Cplex Time 1 [min]`, color=run))
-        + geom_smooth(method="lm", se=FALSE)
-        + geom_point()
-  )
-}
-if ("Cplex Time 1 [s]" %in% names(jobs)) {
-  print(ggplot(jobs, aes(x=host, y=`Cplex Time 1 [min]`, color=run))
+
+if (any(jobs["total CPLEX time [min]"] > 0)) {
+  print(ggplot(jobs, aes(x=job, y=`total CPLEX time [min]`, color=run))
         + geom_point()
   )
 }
