@@ -1,4 +1,4 @@
-l#!/usr/bin/env Rscript
+#!/usr/bin/env Rscript
 # Plot and summarize performance stats extracted from log files of Condor runs
 # performed with Condor_run_basic.R or Condor_run.R. For assessing job run
 # times and cluster performance behaviour.
@@ -302,8 +302,9 @@ for (i in seq_along(roots)) {
 # Extract the total CPLEX time from the .out files
 total_CPLEX_times <- c()
 for (i in seq_along(roots)) {
-  s <- 0
+  s <- NaN
   for (line in grep("^Cplex Time: [0-9]+[.][0-9]+sec", out_files[[i]], value=TRUE)) {
+    if (is.nan(s)) s<- 0
     s <- s + as.double(str_match(line, "^Cplex Time: ([0-9]+[.][0-9]+)sec")[2])
   }
   total_CPLEX_times <- c(total_CPLEX_times, s)
@@ -389,7 +390,7 @@ print(ggplot(jobs, aes(x=host, y=`duration [min]`, color=run))
       + geom_point()
 )
 
-if (any(jobs["total CPLEX time [min]"] > 0)) {
+if (any(!is.nan(unlist(jobs["total CPLEX time [min]"])))) {
   print(ggplot(jobs, aes(x=job, y=`total CPLEX time [min]`, color=run))
         + geom_point()
   )
