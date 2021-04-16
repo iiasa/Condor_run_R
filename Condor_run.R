@@ -460,6 +460,8 @@ summarize_jobs <- function(jobs) {
 }
 
 # A function that for all given jobs tests if a file exists and is not empty.
+# Empty files are removed.
+#
 # The file_template is a template of the filename that is run through str_glue
 # and can make use of variables defined in the calling context. The dir parameter
 # indicates the directory containing the files.
@@ -823,7 +825,8 @@ if (WAIT_FOR_RUN_COMPLETION) {
   invisible(file.remove(job_bat))
 
   # Check that result files exist and are not empty, warn otherwise and remove empty files
-  lsts_complete <- all_exist_and_not_empty(run_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.lst", ".lst")
+  all_exist_and_not_empty(run_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.err", ".err")
+  all_exist_and_not_empty(run_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.lst", ".lst")
   if (GET_G00_OUTPUT) {
     g00s_complete <- all_exist_and_not_empty(in_gams_curdir(G00_OUTPUT_DIR), "{g00_prefix}_{EXPERIMENT}_{cluster}.{job}.g00", "work (.g00)")
   }

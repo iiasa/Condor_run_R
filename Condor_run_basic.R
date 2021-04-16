@@ -718,6 +718,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   invisible(file.remove(job_bat))
 
   # Check that result files exist and are not empty, warn otherwise and remove empty files
+  all_exist_and_not_empty(run_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.err", ".err")
   if (GET_OUTPUT) {
     output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR, 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.{output_extension}', output_extension)
   }
