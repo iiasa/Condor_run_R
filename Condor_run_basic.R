@@ -126,12 +126,10 @@ temp_dir_parent <- dirname(temp_dir) # Remove the R-session-specific random subd
 
 # Read config file if specified via an argument, check presence and types.
 args <- commandArgs(trailingOnly=TRUE)
-#setwd("test_basic")
-#args <- c("config.R")
 if (length(args) == 0) {
   warning("No config file argument supplied, using default run settings.")
 } else if (length(args) == 1) {
-  # Remove mandatatory config defaults from the global scope
+  # Remove mandatory config defaults from the global scope
   rm(list=config_names[!(config_names %in% OPTIONAL_CONFIG_SETTINGS)])
 
   # Source the config file, should add mandatory config settings to the global scope
@@ -367,6 +365,8 @@ summarize_jobs <- function(jobs) {
 }
 
 # A function that for all given jobs tests if a file exists and is not empty.
+# Empty files are removed.
+#
 # The file_template is a template of the filename that is run through str_glue
 # and can make use of variables defined in the calling context. The dir parameter
 # indicates the directory containing the files.

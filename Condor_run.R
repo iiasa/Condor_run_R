@@ -78,9 +78,9 @@ rm(list=ls())
 # If you do, do not forget to override the GAMS_ARGUMENTS default in your
 # configuration file with a value without a gdx= argument.
 #
+# .......8><....snippy.snappy....8><.........................................
 # Use paths with / as path separator.
 # Unless otherwise specified, paths are relative to the current working directory.
-# .......8><....snippy.snappy....8><.........................................
 EXPERIMENT = "test" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
 PREFIX = "_globiom" # prefix for per-job .err, log, .lst, and .out files
 JOBS = c(0:3,7,10)
@@ -165,11 +165,10 @@ temp_dir_parent <- dirname(temp_dir) # Remove the R-session-specific random subd
 
 # Read config file if specified via an argument, check presence and types.
 args <- commandArgs(trailingOnly=TRUE)
-#args <- c("..\\R\\config.R")
 if (length(args) == 0) {
   warning("No config file argument supplied, using default run settings.")
 } else if (length(args) == 1) {
-  # Remove mandatatory config defaults from the global scope
+  # Remove mandatory config defaults from the global scope
   rm(list=config_names[!(config_names %in% OPTIONAL_CONFIG_SETTINGS)])
 
   # Source the config file, should add mandatory config settings to the global scope
