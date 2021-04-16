@@ -373,7 +373,7 @@ summarize_jobs <- function(jobs) {
 #
 # Warnings are generated when files are absent or empty.
 # The boolean return value is TRUE when all files exist and are not empty.
-all_exist_and_not_empty <- function(dir, file_template, file_type) {
+all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
   absentees <- c()
   empties <- c()
   for (job in JOBS) {
@@ -388,10 +388,10 @@ all_exist_and_not_empty <- function(dir, file_template, file_type) {
       empties <- c(empties, empty)
     }
   }
-  if (any(absentees)) {
+  if (warn && any(absentees)) {
     warning(str_glue("No {file_type} files returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
   }
-  if (any(empties)) {
+  if (warn && any(empties)) {
     warning(str_glue("Empty {file_type} files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were removed."), call.=FALSE)
   }
   return(!(any(absentees) || any(empties)))
@@ -724,7 +724,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   invisible(file.remove(job_bat))
 
   # Check that result files exist and are not empty, warn otherwise and remove empty files
-  all_exist_and_not_empty(run_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.err", ".err")
+  all_exist_and_not_empty(run_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.err", ".err", warn=FALSE)
   if (GET_OUTPUT) {
     output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR, 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.{output_extension}', output_extension)
   }
