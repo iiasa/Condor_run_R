@@ -18,7 +18,7 @@
 # command invocation.
 #
 # When invoking this script, the working directory (current directory)
-# must contain the the files to be bundled up with 7-zip. The bundle is
+# must contain the files to be bundled up with 7-zip. The bundle is
 # sent over to the remote execute hosts and is unpacked there at the
 # start of each job. The GAMS file to run for a job should be contained
 # in the bundle and configured with GAMS_FILE_PATH. If this GAMS file

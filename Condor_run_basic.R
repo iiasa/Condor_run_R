@@ -16,6 +16,12 @@
 # either from the command prompt, shell, or using whatever your language
 # of choice supports for command invocation.
 #
+# When invoking this script, the working directory (current directory)
+# must contain the files to be bundled up with 7-zip. The bundle is
+# sent over to the remote execute hosts and is unpacked there at the
+# start of each job. The script to run for a job with the configured
+# LAUNCHER should be contained in the bundle and be set via SCRIPT.
+#
 # If you cannot invoke Rscript, you will need to add where the R binaries
 # reside to your PATH environment variable. On Windows, this is typically
 # C:\Program Files\R\R-x.y.z\bin\x64 (where x.y.z is the R version).
