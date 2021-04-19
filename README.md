@@ -17,6 +17,7 @@ ___
 * [Troubleshooting](#troubleshooting)
   + [None of the above nor below solves my problem](#none-of-the-above-nor-below-solves-my-problem)
   + [The script does not progress](#the-script-does-not-progress)
+  + [You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials](#you-get-error-no-credential-stored-for-userdomain-but-did-store-your-credentials)
   + [When transferring the bundle, jobs stay in the running state indefinately](#when-transferring-the-bundle-jobs-stay-in-the-running-state-indefinately)
   + [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
   + [Jobs go on hold without producing matching `.log` files](#jobs-go-on-hold-without-producing-matching-log-files)
