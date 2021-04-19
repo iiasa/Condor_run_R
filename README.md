@@ -108,7 +108,7 @@ The output may be blocked. On Linux, this can happen on account of entering CTRL
 
 Try to submit again. It might be a transient error.
 
-If not, you may have recently changed your password and need to store your used credentials again with `condor_store_cred add` (see above).
+If not, you may have recently changed your password and need to store your user credentials again with `condor_store_cred add` (see above).
 
 ### When transferring the bundle, jobs stay in the running state indefinately
 
