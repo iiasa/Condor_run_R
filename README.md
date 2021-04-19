@@ -103,6 +103,12 @@ Reboot your machine and try to submit again.
 ### The script does not progress
 The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**.
 
+### You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials
+
+Try to submit again. It might be a transient error.
+
+If not, you may have recently changed your password and need to store your used credentials again with `condor_store_cred add` (see above).
+
 ### When transferring the bundle, jobs stay in the running state indefinately
 
 This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke `condor_restart -schedd`, and try to submit again. You will be asked to delete the bundle first.
