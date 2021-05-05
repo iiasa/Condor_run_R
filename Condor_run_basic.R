@@ -494,7 +494,7 @@ for (hostdom in hostdoms) {
     "  ( GLOBIOM =?= True ) && \\",
     '  ( TARGET.Machine == "{hostdom}" )',
     "",
-    "# periodic_remove = (JobStatus == 1) && (CurrentTime - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute host is not responding
+    "periodic_remove = (JobStatus == 1) && (CurrentTime - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute host is not responding
     "",
     "request_memory = 0",
     "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
