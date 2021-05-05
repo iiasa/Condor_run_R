@@ -2,7 +2,7 @@
 EXPERIMENT = "seeding_inspite_of_occupation" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
 PREFIX = "_condor" # prefix for per-job .err, log, .lst, and .out files
 JOBS = c(0:19)
-HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
+HOST_REGEXP = "^limpopo6" # a regular expression to select execute hosts from the cluster
 REQUEST_MEMORY = 1000 # memory (MiB) to reserve for each job
 REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 LAUNCHER = "Rscript" # interpreter with which to launch the script
@@ -16,5 +16,5 @@ RETAIN_BUNDLE = FALSE
 GET_OUTPUT = TRUE
 OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine
 OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
-WAIT_FOR_RUN_COMPLETION = FALSE
+WAIT_FOR_RUN_COMPLETION = TRUE
 CONDOR_DIR = "Condor" # directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files)
