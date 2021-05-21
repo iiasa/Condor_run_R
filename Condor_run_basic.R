@@ -129,22 +129,26 @@ args <- commandArgs(trailingOnly=TRUE)
 if (length(args) == 0) {
   warning("No config file argument supplied, using default run settings.")
 } else if (length(args) == 1) {
+  # Check that the specified config file exists
+  config_file_arg <- args[1]
+  if (!(file.exists(config_file_arg))) stop(str_glue('Invalid command line argument: specified configuration file "{config_file}" does not exist!'))
+
   # Remove mandatory config defaults from the global scope
   rm(list=config_names[!(config_names %in% OPTIONAL_CONFIG_SETTINGS)])
 
   # Source the config file, should add mandatory config settings to the global scope
-  source(args[1], local=TRUE, echo=FALSE)
+  source(config_file_arg, local=TRUE, echo=FALSE)
 
   # Check that all config settings exist, this catches mandatory settings missing in the config file
   for (i in seq_along(config_names))  {
     name <- config_names[i]
-    if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {args[1]}!"))
+    if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {config_file_arg}!"))
     type <- typeof(get(name))
     if (type != config_types[[i]] &&
         name != "JOBS" && # R has no stable numerical type
         type != "NULL" && # allow for configured vector being empty
         config_types[[i]] != "NULL" # allow for default vector being empty
-    ) stop(str_glue("{name} set to wrong type in {args[1]}, type should be {config_types[[i]]}"))
+    ) stop(str_glue("{name} set to wrong type in {config_file_arg}, type should be {config_types[[i]]}"))
   }
 } else {
   stop("Multiple arguments provided! Expecting at most a single config file argument.")
@@ -153,9 +157,9 @@ if (length(args) == 0) {
 # Copy/write configuration to a file in the temp directory for reference early to minimize the risk of it being edited in the mean time
 temp_config_file <- file.path(temp_dir, str_glue("config.R"))
 if (length(args) > 0) {
-  if (!file.copy(args[1], temp_config_file, overwrite=TRUE)) {
+  if (!file.copy(config_file_arg, temp_config_file, overwrite=TRUE)) {
     invisible(file.remove(bundle_path))
-    stop(str_glue("Cannot copy the configuration file {args[1]} to {run_dir}"))
+    stop(str_glue("Cannot make a copy of the configuration file {config_file_arg}!"))
   }
 } else {
   # No configuration file provided, write default configuration defined above (definition order is lost)
