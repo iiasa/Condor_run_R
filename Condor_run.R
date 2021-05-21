@@ -830,7 +830,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
     g00s_complete <- all_exist_and_not_empty(in_gams_curdir(G00_OUTPUT_DIR), "{g00_prefix}_{EXPERIMENT}_{cluster}.{job}.g00", "work (.g00)")
   }
   if (GET_GDX_OUTPUT) {
-    gdxs_complete <- all_exist_and_not_empty(in_gams_curdir(GDX_OUTPUT_DIR), 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx', "GDX")
+    gdxs_complete <- all_exist_and_not_empty(in_gams_curdir(GDX_OUTPUT_DIR), '{gdx_prefix}_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.gdx', "GDX")
   }
 
   return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log"))))
