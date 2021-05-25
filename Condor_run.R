@@ -118,6 +118,7 @@ RUN_AS_OWNER = TRUE # optional, if TRUE, jobs will run as you and have access to
 NOTIFICATION = "Never" # optional, when to send notification emails. Alternatives are "Complete": job completes; "Error": job errors or goes on hold; "Always": job completes or reaches checkpoint.
 EMAIL_ADDRESS = NULL # optional, set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
 NICE_USER = FALSE # optional, be nice, give jobs of other users priority
+CLUSTER_NUMBER_LOG = "" # optional, path of log file for capturing cluster number, empty == none.
 # .......8><....snippy.snappy....8><.........................................
 
 # Collect the names and types of the default config settings
@@ -147,7 +148,8 @@ OPTIONAL_CONFIG_SETTINGS <- c(
   "RUN_AS_OWNER",
   "NOTIFICATION",
   "EMAIL_ADDRESS",
-  "NICE_USER"
+  "NICE_USER",
+  "CLUSTER_NUMBER_LOG"
 )
 
 # ---- Get set ----
@@ -806,7 +808,15 @@ if (RETAIN_BUNDLE) {
   if (!success) warning("Could not make a reference copy of bundle!")
 }
 invisible(file.remove(bundle_path)) # Removing the bundle unblocks this script for another submission
-cat(str_glue('Run "{EXPERIMENT}" has been submitted, it is now possible to submit additional runs while waiting for it to complete.'), sep="\n")
+cat(str_glue('Run "{EXPERIMENT}" with cluster number {cluster} has been submitted, it is now possible to submit additional runs while waiting for it to complete.'), sep="\n")
+
+# Log the cluster number if requested. If you parse the above stdout, you can parse out the cluster number.
+# If you cannot capture the stdout, you can request the cluster number to be logged by specifying a log file
+# path in CLUSTER_NUMBER_LOG.
+
+if (CLUSTER_NUMBER_LOG != "") {
+  readr::write_file(str_glue("{cluster}"), CLUSTER_NUMBER_LOG)
+}
 
 # Remove dated job batch files that are almost certainly no longer in use (older than 10 days)
 # Needed because Windows does not periodically clean up TEMP and because the current job batch
