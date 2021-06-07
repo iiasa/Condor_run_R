@@ -42,9 +42,7 @@ For submission, you in addition need a local [HT Condor installation](https://re
 Test that `condor_status`, `Rscript`, and `7z` can be invoked from the command line. When this does not work, add the appropriate installation directories to your `PATH` environment variable. [See here](https://iiasa.github.io/GLOBIOM/R.html#setting-environment-variables) for instructions on how to do so.
 
 ## Test
-To check your setup, run the `basic` test in the `tests` subdirectory of the unpacked archive. Each test can be started by running a cross-platform `test.bat` script.
-
-The tests submit a run of several small R jobs via `Condor_run_basic.R` and after completion performs analysis using `Condor_run_stats.R`. The plots can be viewed by opening the resulting PDF file.
+To check your setup, run the `basic` test in the `tests` subdirectory of the unpacked archive. Each test can be started by running a cross-platform `test.bat` script. The `basic` test submits a run of several small R jobs via `Condor_run_basic.R` and after completion performs analysis using `Condor_run_stats.R`. The plots can be viewed by opening the resulting PDF file.
 
 ## Use
 Invoke the submit scripts via `Rscript`, or, on Linux/MacOS, you can invoke the script directly if its execute flag is set and the script has been converted to Unix format using e.g. `dos2unix` (removing the carriage returns from the line breaks). The analysis script `Condor_run_stats.R` is best run from [RStudio](https://rstudio.com/). The submit scripts take as command line argument the name of a file with configuration settings. 
