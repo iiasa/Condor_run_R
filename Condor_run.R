@@ -126,7 +126,7 @@ config_names <- ls()
 if (length(config_names) == 0) {stop("Default configuration is absent! Please restore the default configuration. It is required for configuration checking, also when providing a separate configuration file.")}
 config_types <- lapply(lapply(config_names, get), typeof)
 
-# Presence of Config settings is obligatory in a config file other then for the settings listed here
+# Presence of Config settings is obligatory in a config file other than for the settings listed here
 OPTIONAL_CONFIG_SETTINGS <- c(
   "EXECUTE_HOST_GAMS_VERSIONS",
   "BUNDLE_INCLUDE",
@@ -189,7 +189,8 @@ if (length(args) == 0) {
     if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {config_file_arg}!"))
     type <- typeof(get(name))
     if (type != config_types[[i]] &&
-        name != "JOBS" && # R has no stable numerical type
+        type != "integer" && # R has no stable numerical type
+        type != "double" && # R has no stable numerical type
         type != "NULL" && # allow for configured vector being empty
         config_types[[i]] != "NULL" # allow for default vector being empty
     ) stop(str_glue("{name} set to wrong type in {config_file_arg}, type should be {config_types[[i]]}"))
