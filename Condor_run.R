@@ -89,8 +89,8 @@ REQUEST_MEMORY = 7800 # memory (MiB) to reserve for each job
 REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 GAMS_FILE_PATH = "6_scenarios_limpopo.gms" # path to GAMS file to run for each job, relative to GAMS_CURDIR
 GAMS_ARGUMENTS = "gdx={GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE} //nsim='%1' PC=2 PS=0 PW=130" # additional GAMS arguments, can use {<config>} expansion here
-GAMS_VERSION = "24.4" # must be installed on all execute hosts
-EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "25.1", "29.1", "32.2") # optional, GAMS versions installed on execute hosts
+GAMS_VERSION = "32.2" # must be installed on all execute hosts
+EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2") # optional, GAMS versions installed on execute hosts
 GAMS_CURDIR = "" # optional, working directory for GAMS and its arguments relative to working directory, "" defaults to the working directory
 BUNDLE_INCLUDE = "*" # optional, recursive, what to include in bundle, can be a wildcard
 BUNDLE_INCLUDE_DIRS = c() # optional, further directories to include recursively, added to root of bundle, supports wildcards
