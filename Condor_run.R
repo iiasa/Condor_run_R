@@ -119,6 +119,45 @@ NOTIFICATION = "Never" # optional, when to send notification emails. Alternative
 EMAIL_ADDRESS = NULL # optional, set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
 NICE_USER = FALSE # optional, be nice, give jobs of other users priority
 CLUSTER_NUMBER_LOG = "" # optional, path of log file for capturing cluster number, empty == none.
+# optional, define the Condor .job file template for the run
+JOB_TEMPLATE <- c(
+  "executable = {job_bat}",
+  "arguments = $(job)",
+  "universe = vanilla",
+  "",
+  "nice_user = {ifelse(NICE_USER, 'True', 'False')}",
+  "",
+  "# Job log, output, and error files",
+  "log = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
+  "output = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).out",
+  "stream_output = True",
+  "error = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).err",
+  "stream_error = True",
+  "",
+  "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
+  "",
+  "requirements = \\",
+  '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
+  '  ( (OpSys == "WINDOWS")||(OpSys == "WINNT61") ) && \\',
+  "  ( GLOBIOM =?= True ) && \\",
+  "  ( ( TARGET.Machine == \"{str_c(hostdoms, collapse='\" ) || ( TARGET.Machine == \"')}\") )",
+  "request_memory = {REQUEST_MEMORY}",
+  "request_cpus = {REQUEST_CPUS}", # Number of "CPUs" (hardware threads) to reserve for each job
+  "request_disk = {request_disk}",
+  "",
+  '+IIASAGroup = "ESM"', # Identifies you as part of the group allowed to use ESM cluster
+  "run_as_owner = {ifelse(RUN_AS_OWNER, 'True', 'False')}",
+  "",
+  "should_transfer_files = YES",
+  "when_to_transfer_output = ON_EXIT",
+  'transfer_output_files = {str_sub(in_gams_curdir(GAMS_FILE_PATH), 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{in_gams_curdir(G00_OUTPUT_DIR)}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{in_gams_curdir(GDX_OUTPUT_DIR)}/{GDX_OUTPUT_FILE}"), "")}',
+  'transfer_output_remaps = "{str_sub(GAMS_FILE_PATH, 1, -5)}.lst={run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={in_gams_curdir(G00_OUTPUT_DIR)}/{g00_prefix}_{EXPERIMENT}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={in_gams_curdir(GDX_OUTPUT_DIR)}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  "",
+  "notification = {NOTIFICATION}",
+  '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
+  "",
+  "queue job in ({str_c(JOBS,collapse=',')})"
+)
 # .......8><....snippy.snappy....8><.........................................
 
 # Collect the names and types of the default config settings
@@ -149,7 +188,8 @@ OPTIONAL_CONFIG_SETTINGS <- c(
   "NOTIFICATION",
   "EMAIL_ADDRESS",
   "NICE_USER",
-  "CLUSTER_NUMBER_LOG"
+  "CLUSTER_NUMBER_LOG",
+  "JOB_TEMPLATE"
 )
 
 # ---- Get set ----
@@ -737,52 +777,12 @@ writeLines(unlist(lapply(bat_template, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_template, bat_conn)
 
-# Define the Condor .job file template for the run
-job_template <- c(
-  "executable = {job_bat}",
-  "arguments = $(job)",
-  "universe = vanilla",
-  "",
-  "nice_user = {ifelse(NICE_USER, 'True', 'False')}",
-  "",
-  "# Job log, output, and error files",
-  "log = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
-  "output = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).out",
-  "stream_output = True",
-  "error = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).err",
-  "stream_error = True",
-  "",
-  "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
-  "",
-  "requirements = \\",
-  '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
-  '  ( (OpSys == "WINDOWS")||(OpSys == "WINNT61") ) && \\',
-  "  ( GLOBIOM =?= True ) && \\",
-  "  ( ( TARGET.Machine == \"{str_c(hostdoms, collapse='\" ) || ( TARGET.Machine == \"')}\") )",
-  "request_memory = {REQUEST_MEMORY}",
-  "request_cpus = {REQUEST_CPUS}", # Number of "CPUs" (hardware threads) to reserve for each job
-  "request_disk = {request_disk}",
-  "",
-  '+IIASAGroup = "ESM"', # Identifies you as part of the group allowed to use ESM cluster
-  "run_as_owner = {ifelse(RUN_AS_OWNER, 'True', 'False')}",
-  "",
-  "should_transfer_files = YES",
-  "when_to_transfer_output = ON_EXIT",
-  'transfer_output_files = {str_sub(in_gams_curdir(GAMS_FILE_PATH), 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{in_gams_curdir(G00_OUTPUT_DIR)}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{in_gams_curdir(GDX_OUTPUT_DIR)}/{GDX_OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{str_sub(GAMS_FILE_PATH, 1, -5)}.lst={run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={in_gams_curdir(G00_OUTPUT_DIR)}/{g00_prefix}_{EXPERIMENT}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={in_gams_curdir(GDX_OUTPUT_DIR)}/{gdx_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
-  "",
-  "notification = {NOTIFICATION}",
-  '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
-  "",
-  "queue job in ({str_c(JOBS,collapse=',')})"
-)
-
 # Apply settings to job template and write the .job file to use for submission
 job_file <- file.path(run_dir, str_glue("submit_{EXPERIMENT}_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
-writeLines(unlist(lapply(job_template, str_glue)), job_conn)
+writeLines(unlist(lapply(JOB_TEMPLATE, str_glue)), job_conn)
 close(job_conn)
-rm(job_template, job_conn)
+rm(job_conn)
 
 # ---- Submit the run and clean up temp files ----
 
