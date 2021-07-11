@@ -90,15 +90,6 @@ REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 GAMS_FILE_PATH = "6_scenarios_limpopo.gms" # path to GAMS file to run for each job, relative to GAMS_CURDIR
 GAMS_ARGUMENTS = "gdx={GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE} //nsim=%1 PC=2 PS=0 PW=130" # additional GAMS arguments, can use {<config>} expansion here
 GAMS_VERSION = "32.2" # must be installed on all execute hosts
-EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2") # optional, GAMS versions installed on execute hosts
-GAMS_CURDIR = "" # optional, working directory for GAMS and its arguments relative to working directory, "" defaults to the working directory
-BUNDLE_INCLUDE = "*" # optional, recursive, what to include in bundle, can be a wildcard
-BUNDLE_INCLUDE_DIRS = c() # optional, further directories to include recursively, added to root of bundle, supports wildcards
-BUNDLE_EXCLUDE_DIRS = c(".git", ".svn", "225*") # optional, recursive, supports wildcards
-BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst") # optional, supports wildcards
-BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bundle, can also use an absolute path for these
-RETAIN_BUNDLE = FALSE # optional
-RESTART_FILE_PATH = "" # optional, included in bundle if set, relative to GAMS_CURDIR
 G00_OUTPUT_DIR = "t" # relative to GAMS_CURDIR both host-side and on the submit machine, excluded from bundle
 G00_OUTPUT_FILE = "a6_out.g00" # host-side, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 GET_G00_OUTPUT = FALSE
@@ -107,6 +98,19 @@ GDX_OUTPUT_FILE = "output.gdx" # as produced on the host-side by gdx= GAMS param
 GET_GDX_OUTPUT = TRUE
 WAIT_FOR_RUN_COMPLETION = TRUE
 MERGE_GDX_OUTPUT = FALSE # optional
+# .......8><....snippy.snappy....8><.........................................
+
+# The below configuration parameters can optionally be included in your
+# configuration file but are but are not obligatory.
+EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2") # optional, GAMS versions installed on execute hosts
+BUNDLE_INCLUDE = "*" # optional, recursive, what to include in bundle, can be a wildcard
+BUNDLE_INCLUDE_DIRS = c() # optional, further directories to include recursively, added to root of bundle, supports wildcards
+BUNDLE_EXCLUDE_DIRS = c(".git", ".svn", "225*") # optional, recursive, supports wildcards
+BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst") # optional, supports wildcards
+BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bundle, can also use an absolute path for these
+GAMS_CURDIR = "" # optional, working directory for GAMS and its arguments relative to working directory, "" defaults to the working directory
+RETAIN_BUNDLE = FALSE # optional
+RESTART_FILE_PATH = "" # optional, included in bundle if set, relative to GAMS_CURDIR
 MERGE_BIG = NULL # optional, symbol size cutoff beyond which GDXMERGE writes symbols one-by-one to avoid running out of memory.
 MERGE_ID = NULL # optional, comma-separated list of symbols to include in the merge, defaults to all
 MERGE_EXCLUDE = NULL # optional, comma-separated list of symbols to exclude from the merge, defaults to none
@@ -158,7 +162,31 @@ JOB_TEMPLATE <- c(
   "",
   "queue job in ({str_c(JOBS,collapse=',')})"
 )
-# .......8><....snippy.snappy....8><.........................................
+# optional: define the template for the .bat file that specifies what should be
+#           run on the execute host side for each job. Using POSIX commands
+#           requires e.g. GAMS gbin to be on-path on Windows execute hosts.
+BAT_TEMPLATE <- c(
+  "@echo off",
+  'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
+  "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
+  'mkdir "{in_gams_curdir(G00_OUTPUT_DIR)}" 2>NUL || exit /b %errorlevel%',
+  'mkdir "{in_gams_curdir(GDX_OUTPUT_DIR)}" 2>NUL || exit /b %errorlevel%',
+  "set bundle_root=d:\\condor\\bundles",
+  "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
+  "@echo on",
+  "touch %bundle_root%\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
+  '7z x %bundle_root%\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
+  "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
+  'C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe "{GAMS_FILE_PATH}" -logOption=3 {ifelse(GAMS_CURDIR != "", str_glue("curDir=\\"{GAMS_CURDIR}\\" "), "")}{ifelse(RESTART_FILE_PATH != "", str_glue("restart=\\"{RESTART_FILE_PATH}\\" "), "")}save="{G00_OUTPUT_DIR}/{g00_prefix}" {str_glue(GAMS_ARGUMENTS)}',
+  "set gams_errorlevel=%errorlevel%",
+  "@echo off",
+  "if %gams_errorlevel% neq 0 (",
+  "  echo ERROR: GAMS failed with error code %gams_errorlevel% 1>&2",
+  "  echo See https://www.gams.com/latest/docs/UG_GAMSReturnCodes.html#UG_GAMSReturnCodes_ListOfErrorCodes 1>&2",
+  ")",
+  "sleep 1", # Make it less likely that the .out file is truncated.
+  "exit /b %gams_errorlevel%"
+)
 
 # Collect the names and types of the default config settings
 config_names <- ls()
@@ -173,8 +201,8 @@ OPTIONAL_CONFIG_SETTINGS <- c(
   "BUNDLE_EXCLUDE_DIRS",
   "BUNDLE_EXCLUDE_FILES",
   "BUNDLE_ADDITIONAL_FILES",
-  "RETAIN_BUNDLE",
   "GAMS_CURDIR",
+  "RETAIN_BUNDLE",
   "RESTART_FILE_PATH",
   "MERGE_GDX_OUTPUT",
   "MERGE_BIG",
@@ -189,7 +217,8 @@ OPTIONAL_CONFIG_SETTINGS <- c(
   "EMAIL_ADDRESS",
   "NICE_USER",
   "CLUSTER_NUMBER_LOG",
-  "JOB_TEMPLATE"
+  "JOB_TEMPLATE",
+  "BAT_TEMPLATE"
 )
 
 # ---- Get set ----
@@ -611,6 +640,8 @@ writeLines(unlist(lapply(seed_bat_template, str_glue)), bat_conn)
 close(bat_conn)
 
 # Transfer bundle to each available execute host
+# Execute-host-side automated bundle cleanup is assumed to be active:
+# https://mis.iiasa.ac.at/portal/page/portal/IIASA/Content/TicketS/Ticket?defpar=1%26pWFLType=24%26pItemKey=103034818402942720
 cluster_regexp <- "submitted to cluster (\\d+)[.]$"
 clusters <- c()
 hostnames <- c()
@@ -743,39 +774,12 @@ if (!file.copy(file.path(in_gams_curdir(GAMS_FILE_PATH)), file.path(run_dir, str
   stop(str_glue("Cannot copy the configured GAMS_FILE_PATH file to {run_dir}"))
 }
 
-# Define the template for the .bat file that specifies what should be run on the execute host side for each job.
-# Note the use of POSIX commands: requires MKS Toolkit or GAMS gbin to be on-path on Windows execute hosts.
-# Execute-host-side automated bundle cleanup is assumed to be active:
-# https://mis.iiasa.ac.at/portal/page/portal/IIASA/Content/TicketS/Ticket?defpar=1%26pWFLType=24%26pItemKey=103034818402942720
-bat_template <- c(
-  "@echo off",
-  'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
-  "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
-  'mkdir "{in_gams_curdir(G00_OUTPUT_DIR)}" 2>NUL || exit /b %errorlevel%',
-  'mkdir "{in_gams_curdir(GDX_OUTPUT_DIR)}" 2>NUL || exit /b %errorlevel%',
-  "set bundle_root=d:\\condor\\bundles",
-  "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
-  "@echo on",
-  "touch %bundle_root%\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
-  '7z x %bundle_root%\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
-  "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
-  'C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe "{GAMS_FILE_PATH}" -logOption=3 {ifelse(GAMS_CURDIR != "", str_glue("curDir=\\"{GAMS_CURDIR}\\" "), "")}{ifelse(RESTART_FILE_PATH != "", str_glue("restart=\\"{RESTART_FILE_PATH}\\" "), "")}save="{G00_OUTPUT_DIR}/{g00_prefix}" {str_glue(GAMS_ARGUMENTS)}',
-  "set gams_errorlevel=%errorlevel%",
-  "@echo off",
-  "if %gams_errorlevel% neq 0 (",
-  "  echo ERROR: GAMS failed with error code %gams_errorlevel% 1>&2",
-  "  echo See https://www.gams.com/latest/docs/UG_GAMSReturnCodes.html#UG_GAMSReturnCodes_ListOfErrorCodes 1>&2",
-  ")",
-  "sleep 1", # Make it less likely that the .out file is truncated.
-  "exit /b %gams_errorlevel%"
-)
-
 # Apply settings to bat template and write the .bat file
 job_bat <- file.path(temp_dir_parent, str_glue("job_{EXPERIMENT}_{predicted_cluster}.bat"))
 bat_conn<-file(job_bat, open="wt")
-writeLines(unlist(lapply(bat_template, str_glue)), bat_conn)
+writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
-rm(bat_template, bat_conn)
+rm(bat_conn)
 
 # Apply settings to job template and write the .job file to use for submission
 job_file <- file.path(run_dir, str_glue("submit_{EXPERIMENT}_{predicted_cluster}.job"))

@@ -70,16 +70,20 @@ REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 LAUNCHER = "Rscript" # interpreter with which to launch the script
 SCRIPT = "my_script.R" # script that comprises your job
 ARGUMENTS = "%1" # arguments to the script
-BUNDLE_INCLUDE = "*" # optional, recursive, what to include in bundle, can be a wildcard
-BUNDLE_INCLUDE_DIRS = c("input") # optional, further directories to include recursively, added to root of bundle, supports wildcards
-BUNDLE_EXCLUDE_DIRS = c(".git", ".svn") # optional, recursive, supports wildcards
-BUNDLE_EXCLUDE_FILES = c("**/*.log") # optional, supports wildcards
-BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE
 GET_OUTPUT = TRUE
 OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine, excluded from bundle
 OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
+# .......8><....snippy.snappy....8><.........................................
+
+# The below configuration parameters can optionally be included in your
+# configuration file but are but are not obligatory.
+BUNDLE_INCLUDE = "*" # optional, recursive, what to include in bundle, can be a wildcard
+BUNDLE_INCLUDE_DIRS = c("input") # optional, further directories to include recursively, added to root of bundle, supports wildcards
+BUNDLE_EXCLUDE_DIRS = c(".git", ".svn") # optional, recursive, supports wildcards
+BUNDLE_EXCLUDE_FILES = c("**/*.log") # optional, supports wildcards
+BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bundle, can also use an absolute path for these
 CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle
 SEED_JOB_RELEASES = 0 # optional, number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
@@ -127,7 +131,28 @@ JOB_TEMPLATE <- c(
   "",
   "queue job in ({str_c(JOBS,collapse=',')})"
 )
-# .......8><....snippy.snappy....8><.........................................
+# optional: define the template for the .bat file that specifies what should be
+#           run on the execute host side for each job. Using POSIX commands
+#           requires e.g. GAMS gbin to be on-path on Windows execute hosts.
+BAT_TEMPLATE <- c(
+  "@echo off",
+  'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
+  "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
+  'md "{OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
+  "set bundle_root=d:\\condor\\bundles",
+  "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
+  "@echo on",
+  "touch %bundle_root%\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
+  '7z x %bundle_root%\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
+  "{LAUNCHER} {SCRIPT} {ARGUMENTS}",
+  "set script_errorlevel=%errorlevel%",
+  "@echo off",
+  "if %script_errorlevel% neq 0 (",
+  "  echo ERROR: script failed with error code %script_errorlevel% 1>&2",
+  ")",
+  "sleep 1", # Make it less likely that the .out file is truncated.
+  "exit /b %script_errorlevel%"
+)
 
 # Collect the names and types of the default config settings
 config_names <- ls()
@@ -150,7 +175,8 @@ OPTIONAL_CONFIG_SETTINGS <- c(
   "EMAIL_ADDRESS",
   "NICE_USER",
   "CLUSTER_NUMBER_LOG",
-  "JOB_TEMPLATE"
+  "JOB_TEMPLATE",
+  "BAT_TEMPLATE"
 )
 
 # ---- Get set ----
@@ -514,6 +540,8 @@ writeLines(unlist(lapply(seed_bat_template, str_glue)), bat_conn)
 close(bat_conn)
 
 # Transfer bundle to each available execute host
+# Execute-host-side automated bundle cleanup is assumed to be active:
+# https://mis.iiasa.ac.at/portal/page/portal/IIASA/Content/TicketS/Ticket?defpar=1%26pWFLType=24%26pItemKey=103034818402942720
 cluster_regexp <- "submitted to cluster (\\d+)[.]$"
 clusters <- c()
 hostnames <- c()
@@ -646,36 +674,12 @@ if (!file.copy(file.path(SCRIPT), file.path(run_dir, str_glue("{script_prefix}_{
   stop(str_glue("Cannot copy the configured SCRIPT file to {run_dir}"))
 }
 
-# Define the template for the .bat file that specifies what should be run on the execute host side for each job.
-# Note the use of POSIX commands: requires MKS Toolkit or GAMS gbin to be on-path on Windows execute hosts.
-# Execute-host-side automated bundle cleanup is assumed to be active:
-# https://mis.iiasa.ac.at/portal/page/portal/IIASA/Content/TicketS/Ticket?defpar=1%26pWFLType=24%26pItemKey=103034818402942720
-bat_template <- c(
-  "@echo off",
-  'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
-  "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
-  'md "{OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
-  "set bundle_root=d:\\condor\\bundles",
-  "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
-  "@echo on",
-  "touch %bundle_root%\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
-  '7z x %bundle_root%\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
-  "{LAUNCHER} {SCRIPT} {ARGUMENTS}",
-  "set script_errorlevel=%errorlevel%",
-  "@echo off",
-  "if %script_errorlevel% neq 0 (",
-  "  echo ERROR: script failed with error code %script_errorlevel% 1>&2",
-  ")",
-  "sleep 1", # Make it less likely that the .out file is truncated.
-  "exit /b %script_errorlevel%"
-)
-
 # Apply settings to seed bat template and write the batch file / shell script
 job_bat <- file.path(temp_dir_parent, str_glue("job_{EXPERIMENT}_{predicted_cluster}.bat"))
 bat_conn<-file(job_bat, open="wt")
-writeLines(unlist(lapply(bat_template, str_glue)), bat_conn)
+writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
-rm(bat_template, bat_conn)
+rm(bat_conn)
 
 # Apply settings to job template and write the .job file to use for submission
 job_file <- file.path(run_dir, str_glue("submit_{EXPERIMENT}_{predicted_cluster}.job"))
