@@ -58,7 +58,8 @@ rm(list=ls())
 # the config file.
 #
 # To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
-# to a file, give it a .R extension to get nice syntax highlighting.
+# mandatory configuration settings to a file, give it a .R extension to get nice
+# syntax highlighting.
 # .......8><....snippy.snappy....8><.........................................
 # Use paths relative to the working directory, with / as path separator.
 EXPERIMENT = "experiment_{Sys.Date()}" # label for your run, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
@@ -76,6 +77,7 @@ OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit
 OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
+mandatory_config_names <- ls()
 
 # The below configuration parameters can optionally be included in your
 # configuration file but are but are not obligatory.
@@ -138,7 +140,7 @@ BAT_TEMPLATE <- c(
   "@echo off",
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
-  'md "{OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
+  'mkdir "{OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
   "set bundle_root=d:\\condor\\bundles",
   "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
   "@echo on",
@@ -156,28 +158,9 @@ BAT_TEMPLATE <- c(
 
 # Collect the names and types of the default config settings
 config_names <- ls()
+config_names <- config_names[!(config_names %in% "mandatory_config_names")]
 if (length(config_names) == 0) {stop("Default configuration is absent! Please restore the default configuration. It is required for configuration checking, also when providing a separate configuration file.")}
 config_types <- lapply(lapply(config_names, get), typeof)
-
-# Presence of Config settings is obligatory in a config file other than for the settings listed here
-OPTIONAL_CONFIG_SETTINGS <- c(
-  "BUNDLE_INCLUDE",
-  "BUNDLE_INCLUDE_DIRS",
-  "BUNDLE_EXCLUDE_DIRS",
-  "BUNDLE_EXCLUDE_FILES",
-  "BUNDLE_ADDITIONAL_FILES",
-  "RETAIN_BUNDLE",
-  "CONDOR_DIR",
-  "SEED_JOB_RELEASES",
-  "JOB_RELEASES",
-  "RUN_AS_OWNER",
-  "NOTIFICATION",
-  "EMAIL_ADDRESS",
-  "NICE_USER",
-  "CLUSTER_NUMBER_LOG",
-  "JOB_TEMPLATE",
-  "BAT_TEMPLATE"
-)
 
 # ---- Get set ----
 
@@ -202,7 +185,8 @@ if (length(args) == 0) {
   if (!(file.exists(config_file_arg))) stop(str_glue('Invalid command line argument: specified configuration file "{config_file}" does not exist!'))
 
   # Remove mandatory config defaults from the global scope
-  rm(list=config_names[!(config_names %in% OPTIONAL_CONFIG_SETTINGS)])
+  rm(list=config_names[config_names %in% mandatory_config_names])
+  rm(mandatory_config_names)
 
   # Source the config file, should add mandatory config settings to the global scope
   source(config_file_arg, local=TRUE, echo=FALSE)

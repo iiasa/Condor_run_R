@@ -70,7 +70,8 @@ rm(list=ls())
 # the config file.
 #
 # To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
-# to a file, give it a .R extension to get nice syntax highlighting.
+# mandatory configuration settings to a file, give it a .R extension to get nice
+# syntax highlighting.
 #
 # BEWARE: with the default GAMS_ARGUMENTS below, an output GDX is produced via
 # the gdx= GAMS command line parameter that contains all data. You may wish
@@ -97,8 +98,8 @@ GDX_OUTPUT_DIR = "gdx" # relative to GAMS_CURDIR both host-side and on the submi
 GDX_OUTPUT_FILE = "output.gdx" # as produced on the host-side by gdx= GAMS parameter or execute_unload, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 GET_GDX_OUTPUT = TRUE
 WAIT_FOR_RUN_COMPLETION = TRUE
-MERGE_GDX_OUTPUT = FALSE # optional
 # .......8><....snippy.snappy....8><.........................................
+mandatory_config_names <- ls()
 
 # The below configuration parameters can optionally be included in your
 # configuration file but are but are not obligatory.
@@ -111,6 +112,7 @@ BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bun
 GAMS_CURDIR = "" # optional, working directory for GAMS and its arguments relative to working directory, "" defaults to the working directory
 RETAIN_BUNDLE = FALSE # optional
 RESTART_FILE_PATH = "" # optional, included in bundle if set, relative to GAMS_CURDIR
+MERGE_GDX_OUTPUT = FALSE # optional
 MERGE_BIG = NULL # optional, symbol size cutoff beyond which GDXMERGE writes symbols one-by-one to avoid running out of memory.
 MERGE_ID = NULL # optional, comma-separated list of symbols to include in the merge, defaults to all
 MERGE_EXCLUDE = NULL # optional, comma-separated list of symbols to exclude from the merge, defaults to none
@@ -190,36 +192,9 @@ BAT_TEMPLATE <- c(
 
 # Collect the names and types of the default config settings
 config_names <- ls()
+config_names <- config_names[!(config_names %in% "mandatory_config_names")]
 if (length(config_names) == 0) {stop("Default configuration is absent! Please restore the default configuration. It is required for configuration checking, also when providing a separate configuration file.")}
 config_types <- lapply(lapply(config_names, get), typeof)
-
-# Presence of Config settings is obligatory in a config file other than for the settings listed here
-OPTIONAL_CONFIG_SETTINGS <- c(
-  "EXECUTE_HOST_GAMS_VERSIONS",
-  "BUNDLE_INCLUDE",
-  "BUNDLE_INCLUDE_DIRS",
-  "BUNDLE_EXCLUDE_DIRS",
-  "BUNDLE_EXCLUDE_FILES",
-  "BUNDLE_ADDITIONAL_FILES",
-  "GAMS_CURDIR",
-  "RETAIN_BUNDLE",
-  "RESTART_FILE_PATH",
-  "MERGE_GDX_OUTPUT",
-  "MERGE_BIG",
-  "MERGE_ID",
-  "MERGE_EXCLUDE",
-  "REMOVE_MERGED_GDX_FILES",
-  "CONDOR_DIR",
-  "SEED_JOB_RELEASES",
-  "JOB_RELEASES",
-  "RUN_AS_OWNER",
-  "NOTIFICATION",
-  "EMAIL_ADDRESS",
-  "NICE_USER",
-  "CLUSTER_NUMBER_LOG",
-  "JOB_TEMPLATE",
-  "BAT_TEMPLATE"
-)
 
 # ---- Get set ----
 
@@ -244,7 +219,8 @@ if (length(args) == 0) {
   if (!(file.exists(config_file_arg))) stop(str_glue('Invalid command line argument: specified configuration file "{config_file}" does not exist!'))
 
   # Remove mandatory config defaults from the global scope
-  rm(list=config_names[!(config_names %in% OPTIONAL_CONFIG_SETTINGS)])
+  rm(list=config_names[config_names %in% mandatory_config_names])
+  rm(mandatory_config_names)
 
   # Source the config file, should add mandatory config settings to the global scope
   source(config_file_arg, local=TRUE, echo=FALSE)
