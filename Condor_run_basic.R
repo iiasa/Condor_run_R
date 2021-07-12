@@ -61,7 +61,7 @@ rm(list=ls())
 # to a file, give it a .R extension to get nice syntax highlighting.
 # .......8><....snippy.snappy....8><.........................................
 # Use paths relative to the working directory, with / as path separator.
-EXPERIMENT = "experiment1" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
+EXPERIMENT = "experiment_{Sys.Date()}" # label for your run, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
 PREFIX = "_condor" # prefix for per-job .err, log, and .out files
 JOBS = c(0:3,7,10)
 HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
@@ -245,6 +245,7 @@ if (length(args) > 0) {
 
 # Check and massage specific config settings
 if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory as configured in CONDOR_DIR found relative to working directory {getwd()}!"))
+EXPERIMENT <- str_glue(EXPERIMENT)
 if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT label for run has forbidden character(s)!"))
 if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
 if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")

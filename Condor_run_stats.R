@@ -76,12 +76,13 @@ if (Sys.getenv("RSTUDIO") == "1") {
       if (!exists("EXPERIMENT")) {
         stop(str_glue("No EXPERIMENT defined in file '{arg}'!"))
       }
+      EXPERIMENT <- str_glue(EXPERIMENT) # when the job completed past midnight, and the string contains a date expresssion, this will differ from the run
       # Construct the path to the experiment log directory from the configuration
       if (exists("CONDOR_DIR")) {
         # The experiment log directory should be under CONDOR_DIR
         eld <- file.path(CONDOR_DIR, EXPERIMENT)
         if (!file.exists(eld) || !file.info(eld)$isdir) {
-          stop(str_glue("Could not locate experiment log directory at '{eld}' as configured in CONDOR_DIR and EXPERIMENT of configuration file '{arg}!'"))
+          stop(str_glue("Could not locate experiment log directory at '{eld}' as configured in CONDOR_DIR and EXPERIMENT of configuration file '{arg}! Maybe the date is in the experiment name, and the run completed past midnight? If so, just specify the experiment log directory explicitely on the command line.'"))
         }
         EXPERIMENT_LOG_DIRECTORIES <- c(EXPERIMENT_LOG_DIRECTORIES, eld)
         rm(CONDOR_DIR, EXPERIMENT)

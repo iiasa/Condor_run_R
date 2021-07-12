@@ -81,7 +81,7 @@ rm(list=ls())
 # .......8><....snippy.snappy....8><.........................................
 # Use paths with / as path separator.
 # Unless otherwise specified, paths are relative to the current working directory.
-EXPERIMENT = "test" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
+EXPERIMENT = "experiment_{Sys.Date()}" # label for your run, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
 PREFIX = "_globiom" # prefix for per-job .err, log, .lst, and .out files
 JOBS = c(0:3,7,10)
 HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
@@ -301,6 +301,7 @@ in_gams_curdir <- function(path) {
 # Check and massage specific config settings
 if (GAMS_CURDIR != "" && !dir.exists(GAMS_CURDIR)) stop(str_glue("No {GAMS_CURDIR} directory as configured in GAMS_CURDIR found relative to working directory {getwd()}!"))
 if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory as configured in CONDOR_DIR found relative to working directory {getwd()}!"))
+EXPERIMENT <- str_glue(EXPERIMENT)
 if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT label for run has forbidden character(s)!"))
 if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
 if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
