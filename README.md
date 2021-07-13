@@ -149,7 +149,7 @@ For further information, see the [why is the job not running?](https://htcondor.
 
 ## Adapting templates to your cluster
 
-The submit scripts in the [Condor_run_R repository](https://github.com/iiasa/Condor_run_R) work with the IIASA Limpopo cluster. To adjust the scripts to a different cluster, adapt the templates `seed_job_template` and `job_template` found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. Also, change the `seed_bat_template` and `bat_template` to generate batch files or shell scripts that will run the jobs on your cluster's execute hosts.
+The submit scripts in the [Condor_run_R repository](https://github.com/iiasa/Condor_run_R) work with the IIASA Limpopo cluster. To adjust the scripts to a different cluster, adapt the templates `seed_job_template` and `JOB_TEMPLATE` found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. Similarly, change `seed_bat_template` and `BAT_TEMPLATE` to generate batch files or shell scripts that will run the jobs on your cluster's execute hosts.
 
 Each execute host should provide a directory where the bundles can be cached, and should periodically delete old bundles in those caches so as to prevent their disks from filling up, e.g. using a crontab entry and a `find <cache directory> -mtime +1 -delete` command that will delete all bundles with a timestamp older than one day. The `bat_template` uses [touch](https://linux.die.net/man/1/touch) to update the timestamp of the bundle to the current time. This ensures that that a bundle will not be deleted as long as jobs continue to get scheduled from it.
 
