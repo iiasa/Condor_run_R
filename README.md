@@ -46,13 +46,10 @@ Test that `condor_status`, `Rscript`, and `7z` can be invoked from the command l
 To check your setup, run the `basic` test in the `tests` subdirectory of the unpacked archive. Each test can be started by running a cross-platform `test.bat` script. The `basic` test submits a run of several small R jobs via `Condor_run_basic.R` and after completion performs analysis using `Condor_run_stats.R`. The plots can be viewed by opening the resulting PDF file.
 
 ## Updating
-
 It is recommended to always update to the [latest release of the scripts](https://github.com/iiasa/Condor_run_R/releases) so that you have the latest fixes and features. Releases are typically backwards compatible and should work with your existing run configurations. Before updating, read the release notes. Automatic notification of new releases can be enabled by going to the [main repository page](https://github.com/iiasa/Condor_run_R), clicking on the Watch/Unwatch drop down menu button at the top right of the page, and check marking Custom → Releases. You need to be signed in to GitHub for this to work.
 
 ## Use
-Invoke the submit script via `Rscript`, or, on Linux/MacOS, you can invoke the script directly if its execute flag is set and the script has been converted to Unix format using e.g. `dos2unix` (removing the carriage returns from the line breaks). The analysis script `Condor_run_stats.R` is best run from [RStudio](https://rstudio.com/). The submit scripts take as command line argument the name of a file with configuration settings. 
-
-A typical invocation command line is therefore:
+Invoke the submit script via `Rscript`, or, on Linux/MacOS, you can invoke the script directly if its execute flag is set and the script has been converted to Unix format using e.g. `dos2unix` (removing the carriage returns from the line breaks). Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. A typical invocation command line is therefore:
 
 `Rscript Condor_run_basic.R config.R`
 
@@ -60,13 +57,13 @@ If you have made customizations to your R installation via site, profile or user
 
 `Rscript --vanilla Condor_run.R config.R`
 
-To set up a configuration file, copy the code block between *snippy snappy* lines from the submit script into your clipboard, and save it to a file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or RStudio. Read the comments for each setting and customize as required.
+The submit scripts take as command line argument the name of a file with configuration settings. To set up a configuration file, copy the code block between *snippy snappy* lines from the chosen submit script into your clipboard, and save it to a file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or RStudio. Please carefully read the comments for each setting and customize as required.
 
 Note that further optional configuration settings exist (below the  *snippy snappy* block in the submit script) that you may wish to add to your configuration file and adjust to your requirements. These concern configuration settings with default values that will work for most people. 
 
-IIASA GLOBIOM developers should instead start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R`. Note that this configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`. It also assumes that a `Condor` subdirectory exists there for storing the generated log files.
+IIASA GLOBIOM developers should instead start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R`. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`.
 
-
+After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. When run from the command line, the plots are written to a PDF in the current working directory.
 
 ## Function of submit scripts
 1. Bundle up the job files using 7-Zip.
@@ -109,20 +106,17 @@ When you cannot submit jobs, ensure that:
 - You are using [up-to-date scripts](#updating).
 
 ### None of the above nor below solves my problem
-
 Try to invoke `Rscript` with the `--vanilla` option. If that does not help, reboot your machine and try to submit again.
 
 ### The script does not progress
 The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**.
 
 ### You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials
-
 Try to submit again. It might be a transient error.
 
 If not, you may have recently changed your password and need to store your user credentials again with `condor_store_cred add` (see above).
 
 ### When transferring the bundle, jobs stay in the running state indefinately
-
 This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke `condor_restart -schedd`, and try to submit again. You will be asked to delete the bundle first.
 
 If the resubmission also stays stuck in the running state when transferring the bundle, stop the script, reboot, and then try to submit again. If your temp directory survives reboots, you will again be asked to delete the bundle first.
@@ -157,13 +151,11 @@ The cluster may be busy. To see who else has submitted jobs, issue `condor_statu
 For further information, see the [why is the job not running?](https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#why-is-the-job-not-running) section of the HTCondor manual.
 
 ## Adapting templates to your cluster
-
 The submit scripts in the [Condor_run_R repository](https://github.com/iiasa/Condor_run_R) work with the IIASA Limpopo cluster. To adjust the scripts to a different cluster, adapt the templates `seed_job_template` and `JOB_TEMPLATE` found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. Similarly, change `seed_bat_template` and `BAT_TEMPLATE` to generate batch files or shell scripts that will run the jobs on your cluster's execute hosts.
 
 Each execute host should provide a directory where the bundles can be cached, and should periodically delete old bundles in those caches so as to prevent their disks from filling up, e.g. using a crontab entry and a `find <cache directory> -mtime +1 -delete` command that will delete all bundles with a timestamp older than one day. The `bat_template` uses [touch](https://linux.die.net/man/1/touch) to update the timestamp of the bundle to the current time. This ensures that that a bundle will not be deleted as long as jobs continue to get scheduled from it.
 
 ## Configuring execute hosts
-
 As Condor administrator, you can adjust the configuration of execute hosts to accomodate their seeding with bundles. Though seeding jobs request no resources, Condor nevertheless does not schedule them when there is not at least one unoccupied CPU or a minimum of disk, swap, and memory available on execute hosts. Presumably, Condor internally amends a job's stated resource requirements to make them more realistic. Unfortuntely, this means that when one or more execute hosts are fully occupied, submitting a new run through `Condor_run_R` scripting will have the seeding jobs of hosts remain idle (queued).
 
 The default seed job configuration template has been set up to time out in that eventuality. But if that happens, only a subset of the execute hosts will participate in the run. And if all execute hosts are fully occupied, all seed jobs will time out and the submission will fail. To prevent this from happening, adjust the Condor configuration of the execute hosts to provide a low-resource partitionable slot to which one CPU and a *small quantity* of disk, swap, and memory are allocated. Once so reconfigured, this slot will be mostly ignored by resource-requiring jobs, and remain available for seeding jobs.
