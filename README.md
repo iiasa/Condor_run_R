@@ -11,6 +11,7 @@ ___
 * [Introduction](#introduction)
 * [Installation](#installation)
 * [Test](#test)
+* [Updating](#updating)
 * [Use](#use)
 * [Function of submit scripts](#function-of-submit-scripts)
 * [Job output](#job-output)
