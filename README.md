@@ -101,8 +101,8 @@ When you cannot submit jobs, ensure that:
 - Issuing the command `condor_submit` tabulates the cluster status.
 - Issuing the command `condor_q` results in a summary of queued jobs.
 - When jobs are held, issuing `condor_q -held` shows the reason why.
-- The in-script [templates are adapted to your cluster](#adapting-templates-to-your-cluster).
-- You set the `HOST_REGEXP` configuration option to select the right subset of execute hosts from the cluster.
+- The [templates are adapted to your cluster](#adapting-templates-to-your-cluster).
+- You are using [up-to-date scripts](#updating).
 
 ### None of the above nor below solves my problem
 
