@@ -44,6 +44,10 @@ Test that `condor_status`, `Rscript`, and `7z` can be invoked from the command l
 ## Test
 To check your setup, run the `basic` test in the `tests` subdirectory of the unpacked archive. Each test can be started by running a cross-platform `test.bat` script. The `basic` test submits a run of several small R jobs via `Condor_run_basic.R` and after completion performs analysis using `Condor_run_stats.R`. The plots can be viewed by opening the resulting PDF file.
 
+## Updating
+
+It is recommended to always update to the [latest release of the scripts](https://github.com/iiasa/Condor_run_R/releases) so that you have the latest fixes and features. Releases are typically backwards compatible and should work with your existing run configurations. Before updating, read the release notes. Automatic notification of new releases can be enabled by going to the [main repository page](https://github.com/iiasa/Condor_run_R), clicking on the Watch/Unwatch drop down menu button at the top right of the page, and check marking Custom → Releases. You need to be signed in to GitHub for this to work.
+
 ## Use
 Invoke the submit scripts via `Rscript`, or, on Linux/MacOS, you can invoke the script directly if its execute flag is set and the script has been converted to Unix format using e.g. `dos2unix` (removing the carriage returns from the line breaks). The analysis script `Condor_run_stats.R` is best run from [RStudio](https://rstudio.com/). The submit scripts take as command line argument the name of a file with configuration settings. 
 
