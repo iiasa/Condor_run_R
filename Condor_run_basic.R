@@ -62,7 +62,6 @@ rm(list=ls())
 # syntax highlighting.
 # .......8><....snippy.snappy....8><.........................................
 # Use paths relative to the working directory, with / as path separator.
-EXPERIMENT = "experiment_{Sys.Date()}" # label for your run, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
 PREFIX = "_condor" # prefix for per-job .err, log, and .out files
 JOBS = c(0:3,7,10)
 HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
@@ -74,10 +73,25 @@ ARGUMENTS = "%1" # arguments to the script
 RETAIN_BUNDLE = FALSE
 GET_OUTPUT = TRUE
 OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine, excluded from bundle
-OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with EXPERIMENT and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
+OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
 mandatory_config_names <- ls()
+
+# The run can be labeled. The label will be used to name log files and other
+# artifacts produced by the run and group them in a separate sub directory of
+# CONDOR_DIR. The LABEL should therefore be short and contain only characters
+# that are valid in file names. You can use {} expansions as part of the label.
+#
+# A unique sequence number (the Condor "cluster" number) will also be used in
+# the artifact file names so that name collisions are avoided when using the
+# same label for multiple runs.
+#
+# NAME, EXPERIMENT, and PROJECT are synonyms for LABEL.
+LABEL = "{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
+#NAME = "name_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
+#PROJECT = "project_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
+#EXPERIMENT = "experiment_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
 
 # The below configuration parameters can optionally be included in your
 # configuration file but are but are not obligatory.
@@ -103,10 +117,10 @@ JOB_TEMPLATE <- c(
   "nice_user = {ifelse(NICE_USER, 'True', 'False')}",
   "",
   "# Job log, output, and error files",
-  "log = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
-  "output = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).out",
+  "log = {run_dir}/{PREFIX}_{LABEL}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
+  "output = {run_dir}/{PREFIX}_{LABEL}_$(cluster).$(job).out",
   "stream_output = True",
-  "error = {run_dir}/{PREFIX}_{EXPERIMENT}_$(cluster).$(job).err",
+  "error = {run_dir}/{PREFIX}_{LABEL}_$(cluster).$(job).err",
   "stream_error = True",
   "",
   "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
@@ -126,7 +140,7 @@ JOB_TEMPLATE <- c(
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
   'transfer_output_files = {ifelse(GET_OUTPUT, str_glue("{OUTPUT_DIR}/{OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_glue("{OUTPUT_FILE}={OUTPUT_DIR}/{output_prefix}_{EXPERIMENT}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extension}"), "")}"',
+  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_glue("{OUTPUT_FILE}={OUTPUT_DIR}/{output_prefix}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extension}"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -227,10 +241,15 @@ if (length(args) > 0) {
   close(config_conn)
 }
 
-# Check and massage specific config settings
+
 if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory as configured in CONDOR_DIR found relative to working directory {getwd()}!"))
-EXPERIMENT <- str_glue(EXPERIMENT)
-if (str_detect(EXPERIMENT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured EXPERIMENT label for run has forbidden character(s)!"))
+
+# Check and massage specific config settings
+if (exists("NAME")) LABEL <- NAME # allowed synonym
+if (exists("EXPERIMENT")) LABEL <- EXPERIMENT # allowed synonym
+if (exists("PROJECT")) LABEL <- PROJECT # allowed synonym
+LABEL <- str_glue(LABEL)
+if (str_detect(LABEL, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured LABEL/NAME/PROJECT/EXPERIMENT for run has forbidden character(s)!"))
 if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
 if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
 if (length(JOBS) < 1) stop("There should be at least one job in JOBS!")
@@ -262,7 +281,7 @@ if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
 # Ensure that the run directory to hold the .out/.err/.log and so on results exists
-run_dir <- file.path(CONDOR_DIR, EXPERIMENT)
+run_dir <- file.path(CONDOR_DIR, LABEL)
 if (!dir.exists(run_dir)) dir.create(run_dir)
 
 # ---- Define some helper functions ----
@@ -646,7 +665,7 @@ rm(hostnames)
 # ---- Prepare files for run ----
 
 # Move the configuration from the temp to the run directory so as to have a persistent reference
-config_file <- file.path(run_dir, str_glue("_config_{EXPERIMENT}_{predicted_cluster}.R"))
+config_file <- file.path(run_dir, str_glue("_config_{LABEL}_{predicted_cluster}.R"))
 if (!file.copy(temp_config_file, config_file, overwrite=TRUE)) {
   invisible(file.remove(bundle_path))
   stop(str_glue("Cannot copy the configuration from {temp_config_file} to {run_dir}"))
@@ -654,20 +673,20 @@ if (!file.copy(temp_config_file, config_file, overwrite=TRUE)) {
 invisible(file.remove(temp_config_file))
 
 # Copy the SCRIPT to the run directory for reference
-if (!file.copy(file.path(SCRIPT), file.path(run_dir, str_glue("{script_prefix}_{EXPERIMENT}_{predicted_cluster}.{script_extension}")), overwrite=TRUE)) {
+if (!file.copy(file.path(SCRIPT), file.path(run_dir, str_glue("{script_prefix}_{LABEL}_{predicted_cluster}.{script_extension}")), overwrite=TRUE)) {
   invisible(file.remove(bundle_path))
   stop(str_glue("Cannot copy the configured SCRIPT file to {run_dir}"))
 }
 
 # Apply settings to seed bat template and write the batch file / shell script
-job_bat <- file.path(temp_dir_parent, str_glue("job_{EXPERIMENT}_{predicted_cluster}.bat"))
+job_bat <- file.path(temp_dir_parent, str_glue("job_{LABEL}_{predicted_cluster}.bat"))
 bat_conn<-file(job_bat, open="wt")
 writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
 
 # Apply settings to job template and write the .job file to use for submission
-job_file <- file.path(run_dir, str_glue("submit_{EXPERIMENT}_{predicted_cluster}.job"))
+job_file <- file.path(run_dir, str_glue("submit_{LABEL}_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(JOB_TEMPLATE, str_glue)), job_conn)
 close(job_conn)
@@ -694,11 +713,11 @@ if (cluster != predicted_cluster) {
 
 # Retain the bundle if so requested, then remove it from temp so that further submissions are no longer blocked
 if (RETAIN_BUNDLE) {
-  success <- file.copy(bundle_path, file.path(run_dir, str_glue("bundle_{EXPERIMENT}_{cluster}.7z")))
+  success <- file.copy(bundle_path, file.path(run_dir, str_glue("bundle_{LABEL}_{cluster}.7z")))
   if (!success) warning("Could not make a reference copy of bundle!")
 }
 invisible(file.remove(bundle_path)) # Removing the bundle unblocks this script for another submission
-cat(str_glue('Run "{EXPERIMENT}" with cluster number {cluster} has been submitted, it is now possible to submit additional runs while waiting for it to complete.'), sep="\n")
+cat(str_glue('Run "{LABEL}" with cluster number {cluster} has been submitted, it is now possible to submit additional runs while waiting for it to complete.'), sep="\n")
 
 # Log the cluster number if requested. If you parse the above stdout, you can parse out the cluster number.
 # If you cannot capture the stdout, you can request the cluster number to be logged by specifying a log file
@@ -719,7 +738,7 @@ for (bat_path in list.files(path=temp_dir_parent, pattern=str_glue("job_.*_\\d+.
 
 if (WAIT_FOR_RUN_COMPLETION) {
   # Monitor the run until it completes
-  cat(str_glue('Waiting for run "{EXPERIMENT}" to complete...'), sep="\n")
+  cat(str_glue('Waiting for run "{LABEL}" to complete...'), sep="\n")
   monitor(cluster)
 
   # Remove the job batch file. This is done after waiting for the run to complete
@@ -728,17 +747,17 @@ if (WAIT_FOR_RUN_COMPLETION) {
   invisible(file.remove(job_bat))
 
   # Check that result files exist and are not empty, warn otherwise and remove empty files
-  all_exist_and_not_empty(run_dir, "{PREFIX}_{EXPERIMENT}_{cluster}.{job}.err", ".err", warn=FALSE)
+  all_exist_and_not_empty(run_dir, "{PREFIX}_{LABEL}_{cluster}.{job}.err", ".err", warn=FALSE)
   if (GET_OUTPUT) {
-    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR, 'output_{EXPERIMENT}_{cluster}.{sprintf("%06d", job)}.{output_extension}', output_extension)
+    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR, 'output_{LABEL}_{cluster}.{sprintf("%06d", job)}.{output_extension}', output_extension)
   }
 
-  return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log"))))
+  return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{LABEL}_{cluster}.{job}.log"))))
   if (any(is.na(return_values))) {
-    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {run_dir}"))
+    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{LABEL}_{cluster}.* files in {run_dir}"))
   }
   if (any(return_values != 0)) {
-    stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{EXPERIMENT}_{cluster}.* files in {run_dir}"))
+    stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{LABEL}_{cluster}.* files in {run_dir}"))
   }
   cat("All jobs are done.\n")
 
@@ -747,7 +766,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   max_memory_job <- -1
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
   for (job in JOBS) {
-    job_lines <- readLines(file.path(run_dir, str_glue("{PREFIX}_{EXPERIMENT}_{cluster}.{job}.log")))
+    job_lines <- readLines(file.path(run_dir, str_glue("{PREFIX}_{LABEL}_{cluster}.{job}.log")))
     memory_use <- as.double(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
@@ -767,5 +786,5 @@ if (WAIT_FOR_RUN_COMPLETION) {
   alarm()
 } else {
   cat(str_glue("You can monitor progress of the run with: condor_q {cluster}."), sep="\n")
-  cat(str_glue("After the run completes, you can find the output files at: {OUTPUT_DIR}/{output_prefix}_{EXPERIMENT}_{cluster}.*"), sep="\n")
+  cat(str_glue("After the run completes, you can find the output files at: {OUTPUT_DIR}/{output_prefix}_{LABEL}_{cluster}.*"), sep="\n")
 }
