@@ -1,5 +1,5 @@
 # Use paths relative to the working directory, with / as path separator.
-EXPERIMENT = "seeding_inspite_of_occupation_{Sys.Date()}" # label for your run, pick something short but descriptive without spaces and valid as part of a filename
+LABEL = "seeding_inspite_of_occupation_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
 PREFIX = "_condor" # prefix for per-job .err, log, .lst, and .out files
 JOBS = c(0:19)
 HOST_REGEXP = "^limpopo6" # a regular expression to select execute hosts from the cluster
