@@ -290,7 +290,6 @@ in_gams_curdir <- function(path) {
 
 # Check and massage specific config settings
 if (GAMS_CURDIR != "" && !dir.exists(GAMS_CURDIR)) stop(str_glue("No {GAMS_CURDIR} directory as configured in GAMS_CURDIR found relative to working directory {getwd()}!"))
-if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory as configured in CONDOR_DIR found relative to working directory {getwd()}!"))
 if (exists("NAME")) LABEL <- NAME # allowed synonym
 if (exists("EXPERIMENT")) LABEL <- EXPERIMENT # allowed synonym
 if (exists("PROJECT")) LABEL <- PROJECT # allowed synonym
@@ -368,6 +367,7 @@ if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
 # Ensure that the run directory to hold the .out/.err/.log and so on results exists
+if (!dir.exists(CONDOR_DIR)) dir.create(CONDOR_DIR)
 run_dir <- file.path(CONDOR_DIR, LABEL)
 if (!dir.exists(run_dir)) dir.create(run_dir)
 

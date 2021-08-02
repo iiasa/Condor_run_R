@@ -241,9 +241,6 @@ if (length(args) > 0) {
   close(config_conn)
 }
 
-
-if (!dir.exists(CONDOR_DIR)) stop(str_glue("No {CONDOR_DIR} directory as configured in CONDOR_DIR found relative to working directory {getwd()}!"))
-
 # Check and massage specific config settings
 if (exists("NAME")) LABEL <- NAME # allowed synonym
 if (exists("EXPERIMENT")) LABEL <- EXPERIMENT # allowed synonym
@@ -281,6 +278,7 @@ if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
 # Ensure that the run directory to hold the .out/.err/.log and so on results exists
+if (!dir.exists(CONDOR_DIR)) dir.create(CONDOR_DIR)
 run_dir <- file.path(CONDOR_DIR, LABEL)
 if (!dir.exists(run_dir)) dir.create(run_dir)
 
