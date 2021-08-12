@@ -306,23 +306,25 @@ remove_if_exists <- function(dir_path, file_name) {
   if (file.exists(file_path)) file.remove(file_path)
 }
 
+# Clear text displayed on current line
+clear_line <- function() {
+  cat("\r                                                                     \r")
+}
+
 # Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
 monitor <- function(clusters) {
   warn <- FALSE
   regexp <- "Total for query: (\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended"
   #regexp <- "(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
   reschedule_invocations <- 200 # limit the number of reschedules so it is only done early on to push out the jobs quickly
+  # initial values before first iteration
   changes_since_reschedule <- FALSE
   iterations_since_reschedule <- 0
-  q_errors        <- 0
-  prior_jobs      <- -1
-  prior_completed <- -1
-  prior_removed   <- -1
-  prior_idle      <- -1
-  prior_running   <- -1
-  prior_held      <- -1
-  prior_suspended <- -1
-  while (prior_jobs != 0) {
+  q_errors <- 0
+  prior_idle <- -1
+  prior_running <- -1
+  q <- "" # to hold formatted condor_q query result
+  repeat {
     Sys.sleep(1)
 
     # Collect Condor queue information via condor_q
@@ -346,27 +348,30 @@ monitor <- function(clusters) {
       cat(outerr, sep="\n")
       stop("Monitoring Condor queue status with condor_q failed: unexpected output! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
     }
-    jobs      <- as.integer(match[2])
-    completed <- as.integer(match[3])
-    removed   <- as.integer(match[4])
-    idle      <- as.integer(match[5])
-    running   <- as.integer(match[6])
-    held      <- as.integer(match[7])
-    suspended <- as.integer(match[8])
-    # Handle state changes
-    if (jobs      != prior_jobs ||
-        idle      != prior_idle ||
-        running   != prior_running ||
-        held      != prior_held ||
-        suspended != prior_suspended
-    ) {
-      # State changes occurred, report
-      cat(str_sub(str_glue('{jobs} jobs:{ifelse(completed==0, "", str_glue(" {completed} completed,"))}{ifelse(removed==0, "", str_glue(" {removed} removed;"))}{ifelse(idle==0, "", str_glue(" {idle} idle (queued),"))}{ifelse(running==0, "", str_glue(" {running} running,"))}{ifelse(held==0, "", str_glue(" {held} held,"))}{ifelse(suspended==0, "", str_glue(" {suspended} suspended,"))}'), 1, -2), sep="\n")
+    jobs       <- as.integer(match[2])
+    completed  <- as.integer(match[3])
+    removed    <- as.integer(match[4])
+    idle       <- as.integer(match[5])
+    running    <- as.integer(match[6])
+    held       <- as.integer(match[7])
+    suspended  <- as.integer(match[8])
+
+    # Format condor_q result
+    new_q <- str_sub(str_glue('{jobs} jobs:{ifelse(completed==0, "", str_glue(" {completed} completed,"))}{ifelse(removed==0, "", str_glue(" {removed} removed;"))}{ifelse(idle==0, "", str_glue(" {idle} idle (queued),"))}{ifelse(running==0, "", str_glue(" {running} running,"))}{ifelse(held==0, "", str_glue(" {held} held,"))}{ifelse(suspended==0, "", str_glue(" {suspended} suspended,"))}'), 1, -2)
+
+    # Display condor_q result when changed, overwriting old one
+    if (new_q != q) {
+      clear_line()
+      q <- new_q
+      cat(q)
+
       changes_since_reschedule <- TRUE
     }
     # Warn when there are held jobs for the first time
     if (held > 0 && !warn) {
+      clear_line()
       cat("Jobs are held! These may be automatically released (see SEED_JOB_RELEASES and JOB_RELEASES config settings) or released manually via condor_release. If released jobs keep on returning to the held state, there is a persistent error that should be investigated. You can remove the held jobs using condor_rm.\n")
+      cat(q)
       warn <- TRUE
     }
     # Request rescheduling early
@@ -383,7 +388,9 @@ monitor <- function(clusters) {
         outerr2 <- suppressWarnings(system2("condor_reschedule", args=c("reschedule"), stdout=TRUE, stderr=TRUE))
         if (!is.null(attr(outerr2, "status")) && attr(outerr2, "status") != 0) {
           # Warn about the first error, not the also-failed workaround
+          clear_line()
           warning(str_c(c("Invocation of condor_reschedule failed with the following output:", outerr), collapse='\n'), call.=FALSE)
+          cat(q)
         }
       }
       reschedule_invocations <- reschedule_invocations-1
@@ -392,14 +399,14 @@ monitor <- function(clusters) {
     } else {
       iterations_since_reschedule <- iterations_since_reschedule+1
     }
-    # Remember state for next iteration
-    prior_jobs      <- jobs
-    prior_completed <- completed
-    prior_removed   <- removed
-    prior_idle      <- idle
-    prior_running   <- running
-    prior_held      <- held
-    prior_suspended <- suspended
+    # Store state for next iteration
+    prior_idle <- idle
+    prior_running <- running
+    # Stop if all jobs done
+    if (jobs == 0) {
+      clear_line()
+      break
+    }
   }
 }
 
