@@ -108,6 +108,7 @@ NOTIFICATION = "Never" # optional, when to send notification emails. Alternative
 EMAIL_ADDRESS = NULL # optional, set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
 NICE_USER = FALSE # optional, be nice, give jobs of other users priority
 CLUSTER_NUMBER_LOG = "" # optional, path of log file for capturing cluster number, empty == none.
+CLEAR_LINES = TRUE # optional, clear status monitoring lines so as to show only the last status, set to FALSE when this does not work, e.g. when the output goes into the chunk output of an RMarkdown notebook. 
 # optional, define the Condor .job file template for the run
 JOB_TEMPLATE <- c(
   "executable = {job_bat}",
@@ -306,9 +307,14 @@ remove_if_exists <- function(dir_path, file_name) {
   if (file.exists(file_path)) file.remove(file_path)
 }
 
-# Clear text displayed on current line
+# Clear text displayed on current line and reset cursor to start of line
+# provided that CLEAR_LINES has been configured to be TRUE. Otherwise,
+# issue a line feed to move on to the start of the next line.
 clear_line <- function() {
-  cat("\r                                                                     \r")
+  if (CLEAR_LINES)
+    cat("\r                                                                     \r")
+  else
+    cat("\n")
 }
 
 # Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
