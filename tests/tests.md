@@ -1,4 +1,4 @@
-This directory holds tests each in its own subdirectory. Tests can
+This directory holds tests, each in its own subdirectory. Tests can
 be run via the `test.bat` script present in every test subdirectory.
 These scripts are cross-platform and function both when invoked from
 a Linux/MacOS shell as well as as well as when run from a Windows
