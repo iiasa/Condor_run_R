@@ -8,6 +8,7 @@ Tests listing:
 - [basic](basic/purpose.md)
 - [periodic_release](periodic_release/purpose.md)
 - [seeding](seeding/purpose.md)
+- [transport](transport/purpose.md)
 
 Note that some tests execute the `Condor_run_stats.R` script on run
 completion, resulting in a PDF file that can be examined to review
