@@ -489,7 +489,7 @@ all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
 
 # Show status summary of selected execute hosts
 error_code <- system2("condor_status", args=c("-compact", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
-if (error_code > 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
+if (error_code > 0) stop("Cannot show Condor pool status! Probably, your submit machine is unable to connect to the central manager. Possibly, you are running a too-old (< V8.7.2) Condor version.")
 cat("\n")
 
 # Collect available execute hosts including domain
