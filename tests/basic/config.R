@@ -1,7 +1,7 @@
 # Use paths relative to the working directory, with / as path separator.
 LABEL = "basic_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
 PREFIX = "_condor" # prefix for per-job .err, log, .lst, and .out files
-JOBS = c(0:19)
+JOBS = c(0:149)
 HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
 REQUEST_MEMORY = 1000 # memory (MiB) to reserve for each job
 REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
