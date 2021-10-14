@@ -40,7 +40,7 @@ Download the latest release [here](https://github.com/iiasa/Condor_run_R/release
 
 For submission, you in addition need a local [HT Condor installation](https://research.cs.wisc.edu/htcondor/downloads/) and [7-Zip](https://www.7-zip.org/) (on Windows) or the `p7zip` package (on Linux) install. A recent version of both is required since some of their newer features are used.
 
-Test that `condor_status`, `Rscript`, and `7z` can be invoked from the command line. When this does not work, add the appropriate installation directories to your `PATH` environment variable. [See here](https://iiasa.github.io/GLOBIOM/R.html#setting-environment-variables) for instructions on how to do so.
+Test that [`condor_status`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html), `Rscript`, and `7z` can be invoked from the command line. When this does not work, add the appropriate installation directories to your `PATH` environment variable. [See here](https://iiasa.github.io/GLOBIOM/R.html#setting-environment-variables) for instructions on how to do so.
 
 ## Test
 This repository includes [tests](tests/tests.md). To check your setup, run the [`basic` test](tests/basic/purpose.md) via the cross-platform `test.bat` script located in the `tests/basic` subdirectory. The `basic` test submits a run of several small R jobs via `Condor_run_basic.R` and after completion performs analysis using `Condor_run_stats.R`. The plots can be viewed by opening the resulting PDF file.
@@ -49,7 +49,7 @@ This repository includes [tests](tests/tests.md). To check your setup, run the [
 It is recommended to always update to the [latest release of the scripts](https://github.com/iiasa/Condor_run_R/releases) so that you have the latest fixes and features. Releases are typically backwards compatible and should work with your existing run configurations. Before updating, read the release notes. Automatic notification of new releases can be enabled by going to the [main repository page](https://github.com/iiasa/Condor_run_R), clicking on the Watch/Unwatch drop down menu button at the top right of the page, and check marking Custom → Releases. You need to be signed in to GitHub for this to work.
 
 ## Use
-Invoke the submit script via `Rscript`, or, on Linux/MacOS, you can invoke the script directly if its execute flag is set and the script has been converted to Unix format using e.g. `dos2unix` (removing the carriage returns from the line breaks). Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. A typical invocation command line is therefore:
+Invoke the submit script via `Rscript`, or, on Linux/MacOS, you can invoke the script directly if its execute flag is set and the script has been converted to Unix format using e.g. [`dos2unix`](https://manpages.debian.org/bullseye/dos2unix/dos2unix.1.en.html) (removing the carriage returns from the line breaks). Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. A typical invocation command line is therefore:
 
 `Rscript Condor_run_basic.R config.R`
 
@@ -59,7 +59,7 @@ If you have made customizations to your R installation via site, profile or user
 
 The submit scripts take as command line argument the name of a file with configuration settings. To set up a configuration file, copy the code block between *snippy snappy* lines from the chosen submit script into your clipboard, and save it to a file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or RStudio. Please carefully read the comments for each setting and customize as required.
 
-Note that further optional configuration settings exist (below the  *snippy snappy* block in the submit script) that you may wish to add to your configuration file and adjust to your requirements. These concern configuration settings with default values that will work for most people. 
+Note that further optional configuration settings exist (below the *snippy snappy* block in the submit script) that you may wish to add to your configuration file and adjust to your requirements. These concern configuration settings with default values that will work for most people. 
 
 IIASA GLOBIOM developers should instead start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R`. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`.
 
@@ -95,13 +95,13 @@ Once all jobs are done, which can be ensured by configuring `WAIT_FOR_RUN_COMPLE
 When you cannot submit jobs, ensure that:
 - You have reviewed the output of the submit script for causes and solutions.
 - You have obtained access to the Condor cluster from the cluster administrator.
-- You stored the necessary credentials via `condor_store_cred add`:
-  * Type `condor_store_cred add` on the command line and, when prompted, enter your login password to allow Condor to schedule jobs as you.
+- You stored the necessary credentials via [`condor_store_cred add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html):
+  * Type [`condor_store_cred add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) on the command line and, when prompted, enter your login password to allow Condor to schedule jobs as you.
     + **Note**: you will need to do this again after changing your password. 
-  * Type `condor_store_cred -c add` and, when prompted, enter the condor pool password (ask your administrator).
-- Issuing the command `condor_submit` tabulates the cluster status.
-- Issuing the command `condor_q` results in a summary of queued jobs.
-- When jobs are held, issuing `condor_q -held` shows the reason why.
+  * Type [`condor_store_cred -c add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) and, when prompted, enter the condor pool password (ask your administrator).
+- Issuing the command [`condor_status`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) tabulates the cluster status.
+- Issuing the command [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) results in a summary of queued jobs.
+- When jobs are held, issuing [`condor_q -held`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) shows the reason why.
 - The [templates are adapted to your cluster](#adapting-templates-to-your-cluster).
 - You are using [up-to-date scripts](#updating).
 
@@ -114,37 +114,37 @@ The output may be blocked. On Linux, this can happen on account of entering CTRL
 ### You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials
 Try to submit again. It might be a transient error.
 
-If not, you may have recently changed your password and need to store your user credentials again with `condor_store_cred add` (see above).
+If not, you may have recently changed your password and need to store your user credentials again with [`condor_store_cred add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) (see above).
 
 ### When transferring the bundle, jobs stay in the running state indefinately
-This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke `condor_restart -schedd`, and try to submit again. You will be asked to delete the bundle first.
+This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke [`condor_restart -schedd`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_restart.html), and try to submit again. You will be asked to delete the bundle first.
 
 If the resubmission also stays stuck in the running state when transferring the bundle, stop the script, reboot, and then try to submit again. If your temp directory survives reboots, you will again be asked to delete the bundle first.
 
 ### Jobs do not run but instead go on hold
-Likely, some error occurred. First look at the output of the `Condor_run[_basic].R` script for clues. Next, issue `condor_q -held` to review the hold reason. If the hold reason  is `Failed to initialize user log to <some path on a network drive>`, see [the next section](#jobs-go-on-hold-without-producing-matching-log-files)
+Likely, some error occurred. First look at the output of the `Condor_run[_basic].R` script for clues. Next, issue [`condor_q -held`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) to review the hold reason. If the hold reason  is `Failed to initialize user log to <some path on a network drive>`, see [the next section](#jobs-go-on-hold-without-producing-matching-log-files)
 
 Otherwise investigate further. Look at the various log files located at `<CONDOR_DIR>/<EXPERIMENT>`. The relevant error messages are typically located at the end of the logs. The log file type to examine are, in order of priority:
 1.  `.log` files: these files give per-job information on how Condor scheduled the job and transferred its inputs and outputs. When a log file indicates that something went wrong with the transfer of an output file, the cause is likely *not* the transfer but rather to some earlier error that made the job fail before it could produce output. Do not confuse these files with GAMS `.log` files.
 2.  `.err` files: these capture the [standard error](https://en.wikipedia.org/wiki/Standard_streams#Standard_error_(stderr)) stream of each job as it runs remotely and expand while the job runs. When not empty, likely some error occurred. For GAMS jobs, most errors are instead logged to the `.out` and `lst` files with only system-level errors producing `.err` output.
 3.  `.out` files: these capture the [standard output](https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)) stream of each job as it runs remotely and expand while the job runs. Errors may be logged here. For GAMS jobs, these files contain what is normally stored in GAMS log files (which confusingly can have the same file extension as the Condor `.log` files mentioned above) or shown in the system log of GAMS Studio. Look for errors/warnings towards the end.
 4.  `.lst` files: these are [GAMS listing files](https://www.gams.com/latest/docs/UG_GAMSOutput.html). They are produced only for GAMS jobs. The `.lst` file is transferred when a job completes or aborts and as such are not available yet while the job is still scheduled. For GAMS, this is typically the best place to look for detailed errors. Search for `****` near the end to locate them.
-5.  If the log files do not clarify the problem, execute ``condor_q –analyze`` and examine the output: it might be something that happened after the job completed, e.g. result files not fitting because your disk is full.
+5.  If the log files do not clarify the problem, execute [`condor_q –analyze`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) and examine the output: it might be something that happened after the job completed, e.g. result files not fitting because your disk is full.
 
 ### Jobs go on hold without producing matching `.log` files
-When your job produced no `.log` files in the ``<CONDOR_DIR>/<EXPERIMENT>`` directory, store the pool password again using `condor_store_cred -c add` and retry. Ask your cluster administrator for the pool password.
+When your job produced no `.log` files in the ``<CONDOR_DIR>/<EXPERIMENT>`` directory, store the pool password again using [`condor_store_cred -c add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) and retry. Ask your cluster administrator for the pool password.
 
 If the above does not resolve the matter, the Condor service/daemons on your submit machine may not have the access rights to write logging output to `<CONDOR_DIR>`. Set access permissions on that directory or (grand)parent directory that give write access to the service/daemons, or move your submission files onto a disk or under a directory that is writable by others, not just your user account. 
 
 ### All seeding jobs remain idle and then abort through the PeriodicRemove expression
-It may be that the entire cluster is unavailable, but that is somewhat unlikely. It may be that the entire cluster is fully occupied and the execute hosts have not been [properly configured to always accept seeding jobs](#configuring-execute-hosts) by the Condor administrator. Use `condor_status -submitters` to check availability and occuppation.
+It may be that the entire cluster is unavailable, but that is somewhat unlikely. It may be that the entire cluster is fully occupied and the execute hosts have not been [properly configured to always accept seeding jobs](#configuring-execute-hosts) by the Condor administrator. Use [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) to check availability and occuppation.
 
-Alternatively, the machine you submit from announcing itself with a wrong domain is a possible cause. It has been seen to happen that submit machines announce themselves with the `local` domain, which is not valid for remote access so that jobs cannot be collected. To check whether the submit machine has announced itself wrongly, issue the `condor_q` command. The output should contain the hostname and domain of your machine. If the domain is `local` the issue is likely present and can be resolved by restarting the Condor background processes on the submit machine.
+Alternatively, the machine you submit from announcing itself with a wrong domain is a possible cause. It has been seen to happen that submit machines announce themselves with the `local` domain, which is not valid for remote access so that jobs cannot be collected. To check whether the submit machine has announced itself wrongly, issue the [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) command. The output should contain the hostname and domain of your machine. If the domain is `local` the issue is likely present and can be resolved by restarting the Condor background processes on the submit machine.
 
-The crude way to restart Condor is to reboot the submit machine. The better way is to restart the Condor service. This can be done via the Services application on Windows or via ``systemctl restart condor.service`` with root privileges on Linux.
+The crude way to restart Condor is to reboot the submit machine. The better way is to restart the Condor service. This can be done via the Services application on Windows or via [`systemctl restart condor.service`](https://manpages.debian.org/bullseye/systemctl/systemctl.1.en.html) with root privileges on Linux.
 
 ### Jobs are idle and do not run, or only some do
-The cluster may be busy. To see who else has submitted jobs, issue `condor_status -submitters`. In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue `condor_userprio`. Large numbers mean low priority. Your cluster administrator can set your priority.
+The cluster may be busy. To see who else has submitted jobs, issue [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue [`condor_userprio`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_userprio.html). Large numbers mean low priority. Your cluster administrator can set your priority.
 
 ### But why?
 For further information, see the [why is the job not running?](https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#why-is-the-job-not-running) section of the HTCondor manual.
@@ -152,7 +152,7 @@ For further information, see the [why is the job not running?](https://htcondor.
 ## Adapting templates to your cluster
 The submit scripts in the [Condor_run_R repository](https://github.com/iiasa/Condor_run_R) work with the IIASA Limpopo cluster. To adjust the scripts to a different cluster, adapt the templates `seed_job_template` and `JOB_TEMPLATE` found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. Similarly, change `seed_bat_template` and `BAT_TEMPLATE` to generate batch files or shell scripts that will run the jobs on your cluster's execute hosts.
 
-Each execute host should provide a directory where the bundles can be cached, and should periodically delete old bundles in those caches so as to prevent their disks from filling up, e.g. using a crontab entry and a `find <cache directory> -mtime +1 -delete` command that will delete all bundles with a timestamp older than one day. The `bat_template` uses [touch](https://linux.die.net/man/1/touch) to update the timestamp of the bundle to the current time. This ensures that that a bundle will not be deleted as long as jobs continue to get scheduled from it.
+Each execute host should provide a directory where the bundles can be cached, and should periodically delete old bundles in those caches so as to prevent their disks from filling up, e.g. using a crontab entry and a [`find <cache directory> -mtime +1 -delete`](https://manpages.debian.org/bullseye/findutils/find.1.en.html) command that will delete all bundles with a timestamp older than one day. The `bat_template` uses [touch](https://linux.die.net/man/1/touch) to update the timestamp of the bundle to the current time. This ensures that that a bundle will not be deleted as long as jobs continue to get scheduled from it.
 
 ## Configuring execute hosts
 As Condor administrator, you can adjust the configuration of execute hosts to accomodate their seeding with bundles. Though seeding jobs request no resources, Condor nevertheless does not schedule them when there is not at least one unoccupied CPU or a minimum of disk, swap, and memory available on execute hosts. Presumably, Condor internally amends a job's stated resource requirements to make them more realistic. Unfortuntely, this means that when one or more execute hosts are fully occupied, submitting a new run through `Condor_run_R` scripting will have the seeding jobs of hosts remain idle (queued).
