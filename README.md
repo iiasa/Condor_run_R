@@ -124,13 +124,12 @@ If the resubmission also stays stuck in the running state when transferring the 
 ### Jobs do not run but instead go on hold
 Likely, some error occurred. First look at the output of the `Condor_run[_basic].R` script for clues. Next, issue `condor_q -held` to review the hold reason. If the hold reason  is `Failed to initialize user log to <some path on a network drive>`, see [the next section](#jobs-go-on-hold-without-producing-matching-log-files)
 
-Otherwise investigate further. Look at the various log files located at `<CONDOR_DIR>/<EXPERIMENT>`.
-In order of priority:
-1.  Check the `.log` files: is it a Condor scheduling problem?
-2.  Check the `.err` files: standard error stream of the remote job. When not empty, likely some error occurred.
-3.  Check the `.out` files: standard output of the remote job. Look for errors/warnings towards the end.
-4.  Check the `.lst` files: GAMS listing file, search for error details. For GAMS jobs only.
-5.  If all else fails, execute ``condor_q –analyze``: it might be something that happened after the job completed, e.g. result files not fitting because your disk is full.
+Otherwise investigate further. Look at the various log files located at `<CONDOR_DIR>/<EXPERIMENT>`. The relevant error messages are typically located at the end of the logs. The log file type to examine are, in order of priority:
+1.  `.log` files: these files give per-job information on how Condor scheduled the job and transferred its inputs and outputs. When a log file indicates that something went wrong with the transfer of an output file, the cause is likely *not* the transfer but rather to some earlier error that made the job fail before it could produce output. Do not confuse these files with GAMS `.log` files.
+2.  `.err` files: these capture the [standard error](https://en.wikipedia.org/wiki/Standard_streams#Standard_error_(stderr)) stream of each job as it runs remotely and expand while the job runs. When not empty, likely some error occurred. For GAMS jobs, most errors are instead logged to the `.out` and `lst` files with only system-level errors producing `.err` output.
+3.  `.out` files: these capture the [standard output](https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)) stream of each job as it runs remotely and expand while the job runs. Errors may be logged here. For GAMS jobs, these files contain what is normally stored in GAMS log files (which confusingly can have the same file extension as the Condor `.log` files mentioned above) or shown in the system log of GAMS Studio. Look for errors/warnings towards the end.
+4.  `.lst` files: these are GAMS listing files. They are produced only for GAMS jobs. When a GAMS jobs completes, the `.lst` file is transferred to the submit machine. Therfore, the `.lst` file is They are transferred when a job completes or aborts and as such are not available yet while the job is still scheduled. For GAMS, this is typically the best place to look for detailed errors. Search for `****` near the end to locate them.
+5.  If the log files do not clarify the problem, execute ``condor_q –analyze`` and examine the output: it might be something that happened after the job completed, e.g. result files not fitting because your disk is full.
 
 ### Jobs go on hold without producing matching `.log` files
 When your job produced no `.log` files in the ``<CONDOR_DIR>/<EXPERIMENT>`` directory, store the pool password again using `condor_store_cred -c add` and retry. Ask your cluster administrator for the pool password.
