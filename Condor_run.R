@@ -121,6 +121,7 @@ EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2") #
 BUNDLE_INCLUDE = "*" # optional, recursive, what to include in bundle, can be a wildcard
 BUNDLE_INCLUDE_DIRS = c() # optional, further directories to include recursively, added to root of bundle, supports wildcards
 BUNDLE_EXCLUDE_DIRS = c(".git", ".svn", "225*") # optional, recursive, supports wildcards
+BUNDLE_INCLUDE_FILES = c() # optional, supports wildcards
 BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst") # optional, supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bundle, can also use an absolute path for these
 GAMS_CURDIR = "" # optional, working directory for GAMS and its arguments relative to working directory, "" defaults to the working directory
@@ -618,8 +619,9 @@ if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is th
 cat("Compressing model files into bundle...\n")
 model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
   args=unlist(lapply(c("a", "-mx1", "-bb0",
-    unlist(lapply(BUNDLE_INCLUDE_DIRS, function(p) return(str_glue("-ir!", p)))),
-    unlist(lapply(BUNDLE_EXCLUDE_DIRS, function(p) return(str_glue("-xr!", p)))),
+    unlist(lapply(BUNDLE_INCLUDE_DIRS,  function(p) return(str_glue("-ir!", p)))),
+    unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!", p)))),
+    unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!", p)))),
     "-xr!{CONDOR_DIR}",
     "-xr!{in_gams_curdir(G00_OUTPUT_DIR)}",

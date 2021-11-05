@@ -98,6 +98,7 @@ LABEL = "{Sys.Date()}" # label/name for your project/experiment, pick something 
 BUNDLE_INCLUDE = "*" # optional, recursive, what to include in bundle, can be a wildcard
 BUNDLE_INCLUDE_DIRS = c("input") # optional, further directories to include recursively, added to root of bundle, supports wildcards
 BUNDLE_EXCLUDE_DIRS = c(".git", ".svn") # optional, recursive, supports wildcards
+BUNDLE_INCLUDE_FILES = c() # optional, supports wildcards
 BUNDLE_EXCLUDE_FILES = c("**/*.log") # optional, supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bundle, can also use an absolute path for these
 CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle
@@ -509,8 +510,9 @@ if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is th
 cat("Compressing model files into bundle...\n")
 model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
   args=unlist(lapply(c("a", "-mx1", "-bb0",
-    unlist(lapply(BUNDLE_INCLUDE_DIRS, function(p) return(str_glue("-ir!", p)))),
-    unlist(lapply(BUNDLE_EXCLUDE_DIRS, function(p) return(str_glue("-xr!", p)))),
+    unlist(lapply(BUNDLE_INCLUDE_DIRS,  function(p) return(str_glue("-ir!", p)))),
+    unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!", p)))),
+    unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!", p)))),
     "-xr!{CONDOR_DIR}",
     "-xr!{OUTPUT_DIR}",
