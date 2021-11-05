@@ -72,7 +72,7 @@ SCRIPT = "my_script.R" # script that comprises your job
 ARGUMENTS = "%1" # arguments to the script
 RETAIN_BUNDLE = FALSE
 GET_OUTPUT = TRUE
-OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine, excluded from bundle
+OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine it OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
@@ -102,6 +102,7 @@ BUNDLE_INCLUDE_FILES = c() # optional, supports wildcards
 BUNDLE_EXCLUDE_FILES = c("**/*.log") # optional, supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bundle, can also use an absolute path for these
 CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle
+OUTPUT_DIR_SUBMIT = NULL # optional, directory on the submit machine into where job output files are transferred. Can also be an absolute path. When set to NULL, OUTPUT_DIR will be used instead.
 SEED_JOB_RELEASES = 0 # optional, number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
 RUN_AS_OWNER = TRUE # optional, if TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
@@ -142,7 +143,7 @@ JOB_TEMPLATE <- c(
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
   'transfer_output_files = {ifelse(GET_OUTPUT, str_glue("{OUTPUT_DIR}/{OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_glue("{OUTPUT_FILE}={OUTPUT_DIR}/{output_prefix}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extension}"), "")}"',
+  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_glue("{OUTPUT_FILE}={OUTPUT_DIR_SUBMIT}/{output_prefix}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extension}"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -264,7 +265,15 @@ if (!str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 ba
 for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
-if (!(file.exists(OUTPUT_DIR))) stop(str_glue('Configured OUTPUT_DIR "{OUTPUT_DIR}" does not exist!'))
+if (is.null(OUTPUT_DIR_SUBMIT)) {
+  # Use OUTPUT_DIR on the submit machine side as well.
+  if (!(file.exists(OUTPUT_DIR))) stop(str_glue('Configured OUTPUT_DIR "{OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
+  OUTPUT_DIR_SUBMIT <- OUTPUT_DIR
+} else {
+  # Use a separate OUTPUT_DIR_SUBMIT configuration on the submit machine side.
+  if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
+  if (!(file.exists(OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured OUTPUT_DIR_SUBMIT "{OUTPUT_DIR_SUBMIT}" does not exist!'))
+}
 if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
 if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
 if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
@@ -762,7 +771,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   # Check that result files exist and are not empty, warn otherwise and remove empty files
   all_exist_and_not_empty(run_dir, "{PREFIX}_{LABEL}_{cluster}.{job}.err", ".err", warn=FALSE)
   if (GET_OUTPUT) {
-    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR, 'output_{LABEL}_{cluster}.{sprintf("%06d", job)}.{output_extension}', output_extension)
+    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR_SUBMIT, 'output_{LABEL}_{cluster}.{sprintf("%06d", job)}.{output_extension}', output_extension)
   }
 
   return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{LABEL}_{cluster}.{job}.log"))))
@@ -799,5 +808,5 @@ if (WAIT_FOR_RUN_COMPLETION) {
   alarm()
 } else {
   cat(str_glue("You can monitor progress of the run with: condor_q {cluster}."), sep="\n")
-  cat(str_glue("After the run completes, you can find the output files at: {OUTPUT_DIR}/{output_prefix}_{LABEL}_{cluster}.*"), sep="\n")
+  cat(str_glue("After the run completes, you can find the output files at: {OUTPUT_DIR_SUBMIT}/{output_prefix}_{LABEL}_{cluster}.*"), sep="\n")
 }
