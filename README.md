@@ -22,6 +22,7 @@ ___
   + [When transferring the bundle, jobs stay in the running state indefinately](#when-transferring-the-bundle-jobs-stay-in-the-running-state-indefinately)
   + [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
   + [Jobs go on hold without producing matching `.log` files](#jobs-go-on-hold-without-producing-matching-log-files)
+  + [Jobs run but at the end fail to send and write output files](#jobs-run-but-at-the-end-fail-to-send-and-write-output-files)
   + [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
   + [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
   + [But why?](#but-why)
@@ -137,9 +138,16 @@ When your job produced no `.log` files in a subdirectory of `CONDOR_DIR` there a
 
 1. The pool credentials are not stored or outdated. Store the pool password again using [`condor_store_cred -c add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) and retry. Ask your cluster administrator for the pool password.
 
-2. `CONDOR_DIR` is on a network share to that your user account can access but the locally running Condor daemon/service cannot. Either reconfigure `CONDOR_DIR` to point to a directory on a local disk (absolute paths are allowed) that Condor can access or try to reconfigure the Condor service/daemon to run from a different account or with additional rights as needed to access the network share.
+2. `CONDOR_DIR` is on a network share that your user account can access but the locally running Condor daemon/service cannot. Either reconfigure `CONDOR_DIR` to point to a directory on a local disk (absolute paths are allowed) that Condor can access or try to reconfigure the Condor service/daemon to run from a different account or with additional rights as needed to access the network share.
 
-3. The permissions on `CONDOR_DIR` prevent access by the locally running Condor daemon/service. Either change the permissions on `CONDOR_DIR` to give Condor access or reconfigure the Condor daemon/services to run from a different account or with additional rights as needed to access the `CONDOR_DIR` directory.
+3. The permissions on `CONDOR_DIR` prevent access by the locally running Condor daemon/service. Either change the permissions on `CONDOR_DIR` to give Condor access or reconfigure the Condor daemon/service to run from a different account or with additional rights as needed to access the `CONDOR_DIR` directory.
+
+### Jobs run but at the end fail to send and write output files
+There are two likely causes:
+
+1. An `[G00_|GDX_]OUTPUT_DIR[_SUBMIT]` configuration setting is pointing to a directory on a network share that your user account can access but the locally running Condor daemon/service cannot. Either reconfigure that configuration setting to point to a directory on a local disk (absolute paths are allowed in case of the `_SUBMIT` variants) that Condor can access or try to reconfigure the Condor service/daemon to run from a different account or with additional rights as needed to access the network share.
+
+2. The permissions on the directory pointed to by `[G00_|GDX_]OUTPUT_DIR[_SUBMIT]` prevent access by the locally running Condor daemon/service. Either change the permissions on that directory to give Condor access or reconfigure the Condor daemon/service to run from a different account or with additional rights as needed to gain access.
 
 ### All seeding jobs remain idle and then abort through the PeriodicRemove expression
 It may be that the entire cluster is unavailable, but that is somewhat unlikely. It may be that the entire cluster is fully occupied and the execute hosts have not been [properly configured to always accept seeding jobs](#configuring-execute-hosts) by the Condor administrator. Use [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) to check availability and occuppation.
