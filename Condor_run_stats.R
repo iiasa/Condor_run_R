@@ -7,25 +7,23 @@
 # via one of the synonymous EXPERIMENT/LABEL/NAME/PROJECT Condor_run[_basic].R
 # configuration settings.
 #
-# Option 1: run/source this script from RStudio.
-# Before running the script, set EXPERIMENTS, CLUSTER, JOB_RELATIVE_PATH,
-# CONDOR_DIR, and SUBDIRECTORY as required. When run from RStudio, this script
-# looks for log files in:
-# <Location of this script>/<RELATIVE_PATH>/<CONDOR_DIR>/<EXPERIMENTS[]|SUBDIRECTORY>
+# Option 1: source this script from RStudio.
+# Before sourcing this script from RStudio, set the first instance of
+# LOG_DIRECTORIES to the path or paths of one or more directories containing
+# Condor run log files to be analysed.
 #
 # Option 2: invoke the script from the command line.
 # Usage:
-# > [Rscript] [<relpath>/]Condor_run_stat.R <ex1> <ex2> ...
-# where <ex1>, <ex2>, and so on is an arbitrary list of experiments
-# specifiers that can be either:
-# - a configuration file holding an EXPERIMENT setting
-# - path to an experiment directory holding run log files
-# - the name of the experiment
+# > [Rscript] [<path>/]Condor_run_stat.R <config_file|log_dir> ...
+# where  the arguments can be one or more of either:
+# - a path to a configuration file as used for Condor_run[_basic].R
+# - a path to a directory holding Condor run log files.
 #
-# The config files are the same as those passed to the Condor_run[_basic].R
-# runs to be analyzed. When run from the command line, this script looks for
-# log files in:
-# <Current Directory>/<CONDOR_DIR>/<EXPERIMENTS[]|SUBDIRECTORY>
+# If you pass a configuration file as argument and its CONDOR_DIR configuration
+# setting holds a relative path or is absent and therefore has its default
+# relative path setting, the current working directory must be the same as was
+# the case when invoking Condor_run.R or Condor_run_basic.R with that
+# configuration file because otherwise the log directory cannot be located.
 #
 # On Linux/MacOS you can invoke the script directly without Rscript. This
 # works provided that the execute flag is set and carriage returns have been
@@ -58,9 +56,8 @@ options(tibble.width = Inf)
 # ---- Handle arguments and set up plotting for RStudio or command line ----
 
 if (Sys.getenv("RSTUDIO") == "1") {
-  # Names of experiments to analyse, as set via the EXPERIMENT config setting of your runs.
-  #LOG_DIRECTORIES <- c("tests/seeding/Condor/127busylong7.8GB_part05", "tests/seeding/Condor/127busylong7.8GB_part06")
-  LOG_DIRECTORIES <- c("../../GLOBIOM/Trunk_for_Condor_testing/Condor/limpopo1")
+  # Paths to one or more directories containing log files of runs to analyse.
+  LOG_DIRECTORIES <- c("tests/basic/Condor/basic_2021-11-08")
 } else {
   args <- commandArgs(trailingOnly=TRUE)
   if (length(args) == 0) {
