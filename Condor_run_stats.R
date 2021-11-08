@@ -114,14 +114,16 @@ log_paths <- c()
 experiments <- list() # expanded to a per-job list
 for (ld in LOG_DIRECTORIES) {
   experiment <- basename(ld)
-  if (Sys.getenv("RSTUDIO") == "1") {
-    log_dir <- path(dirname(rstudioapi::getActiveDocumentContext()$path), ld)
-  } else {
-    log_dir <- path(getwd(), ld)
+  if (!is_absolute_path(ld)) {
+    if (Sys.getenv("RSTUDIO") == "1") {
+      ld <- path(dirname(rstudioapi::getActiveDocumentContext()$path), ld)
+    } else {
+      ld <- path(getwd(), ld)
+    }
   }
-  outs <- dir_ls(path=log_dir, glob=str_glue("*_{experiment}_{CLUSTER}.*.out"))
+  outs <- dir_ls(path=ld, glob=str_glue("*_{experiment}_{CLUSTER}.*.out"))
   out_paths <- c(out_paths, outs)
-  logs <- dir_ls(path=log_dir, glob=str_glue("*_{experiment}_{CLUSTER}.*.log"))
+  logs <- dir_ls(path=ld, glob=str_glue("*_{experiment}_{CLUSTER}.*.log"))
   log_paths <- c(log_paths, logs)
   experiments <- c(experiments, rep(experiment, length(logs)))
 }
