@@ -101,7 +101,7 @@ BUNDLE_EXCLUDE_DIRS = c(".git", ".svn") # optional, recursive, supports wildcard
 BUNDLE_INCLUDE_FILES = c() # optional, supports wildcards
 BUNDLE_EXCLUDE_FILES = c("**/*.log") # optional, supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bundle, can also use an absolute path for these
-CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle
+CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle. Can also be an absolute path. Created when it does not exist.
 OUTPUT_DIR_SUBMIT = NULL # optional, directory on the submit machine into where job output files are transferred. Can also be an absolute path. When set to NULL, OUTPUT_DIR will be used instead.
 SEED_JOB_RELEASES = 0 # optional, number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
@@ -265,6 +265,7 @@ if (!str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 ba
 for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
+if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
 if (is.null(OUTPUT_DIR_SUBMIT)) {
   # Use OUTPUT_DIR on the submit machine side as well.
   if (!(file.exists(OUTPUT_DIR))) stop(str_glue('Configured OUTPUT_DIR "{OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))

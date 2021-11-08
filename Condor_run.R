@@ -124,6 +124,7 @@ BUNDLE_EXCLUDE_DIRS = c(".git", ".svn", "225*") # optional, recursive, supports 
 BUNDLE_INCLUDE_FILES = c() # optional, supports wildcards
 BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst") # optional, supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bundle, can also use an absolute path for these
+CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle. Can also be an absolute path. Created when it does not exist.
 GAMS_CURDIR = "" # optional, working directory for GAMS and its arguments relative to working directory, "" defaults to the working directory
 RETAIN_BUNDLE = FALSE # optional
 RESTART_FILE_PATH = "" # optional, included in bundle if set, relative to GAMS_CURDIR
@@ -132,7 +133,6 @@ MERGE_BIG = NULL # optional, symbol size cutoff beyond which GDXMERGE writes sym
 MERGE_ID = NULL # optional, comma-separated list of symbols to include in the merge, defaults to all
 MERGE_EXCLUDE = NULL # optional, comma-separated list of symbols to exclude from the merge, defaults to none
 REMOVE_MERGED_GDX_FILES = FALSE # optional
-CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle
 G00_OUTPUT_DIR_SUBMIT = NULL # optional, directory on the submit machine into where G00 job output files are transferred. Can also be an absolute path. When set to NULL, G00_OUTPUT_DIR will be used instead.
 GDX_OUTPUT_DIR_SUBMIT = NULL # optional, directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. When set to NULL, GDX_OUTPUT_DIR will be used instead.
 SEED_JOB_RELEASES = 0 # optional, number of times to auto-release (retry) held seed jobs before giving up
@@ -325,6 +325,7 @@ if (!str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS la
 for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
+if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
 if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
 if (is.null(G00_OUTPUT_DIR_SUBMIT)) {
   # Use G00_OUTPUT_DIR fon the submit machine side as well.
