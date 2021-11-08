@@ -52,6 +52,7 @@ hostname_map <- c("147.125.99.211"="limpopo1",
 # Required packages
 options(tidyverse.quiet=TRUE)
 library(tidyverse)
+library(fs)
 options(tibble.width = Inf)
 
 # ---- Handle arguments and set up plotting for RStudio or command line ----
@@ -68,10 +69,10 @@ if (Sys.getenv("RSTUDIO") == "1") {
   # From each argument passed on the command line, collect the log directory
   LOG_DIRECTORIES <- c()
   for (arg in args) {
-    if (!file.exists(arg)) {
+    if (!file_exists(arg)) {
       stop(str_glue("Argument '{arg}' is neither a configuration file nor a log directory!"))
     }
-    if (file.info(arg)$isdir) {
+    if (is_dir(arg)) {
       # It is a directory, directly add it to the log directories
       LOG_DIRECTORIES <- c(LOG_DIRECTORIES, arg)
     } else {
@@ -87,16 +88,16 @@ if (Sys.getenv("RSTUDIO") == "1") {
       # Construct the path to the experiment log directory from the configuration
       if (exists("CONDOR_DIR")) {
         # The log directory should be under CONDOR_DIR
-        ld <- file.path(CONDOR_DIR, LABEL)
-        if (!file.exists(ld) || !file.info(ld)$isdir) {
+        ld <- path(CONDOR_DIR, LABEL)
+        if (!file_exists(ld) || !is_dir(ld)) {
           stop(str_glue("Could not locate a log directory at '{ld}' as configured in CONDOR_DIR and EXPERIMENT/LABEL/NAME/PROJECT of configuration file '{arg}! Maybe the date is in the experiment name, and the run completed past midnight? If so, just specify the experiment log directory explicitely on the command line.'"))
         }
         LOG_DIRECTORIES <- c(LOG_DIRECTORIES, ld)
         rm(CONDOR_DIR, LABEL)
       } else {
         # The experiment log directory should be the default "Condor" directory
-        ld <- file.path("Condor", LABEL)
-        if (!file.exists(ld) || !file.info(ld)$isdir) {
+        ld <- path("Condor", LABEL)
+        if (!file_exists(ld) || !is_dir(ld)) {
           stop(str_glue("Could not locate experiment log directory at '{ld}' in the default CONDOR_DIR='Condor' directory and as configured in EXPERIMENT/LABEL/NAME/PROJECT of configuration file '{arg}!'"))
         }
         LOG_DIRECTORIES <- c(LOG_DIRECTORIES, ld)
@@ -117,13 +118,13 @@ experiments <- list() # expanded to a per-job list
 for (ld in LOG_DIRECTORIES) {
   experiment <- basename(ld)
   if (Sys.getenv("RSTUDIO") == "1") {
-    log_dir <- file.path(dirname(rstudioapi::getActiveDocumentContext()$path), ld)
+    log_dir <- path(dirname(rstudioapi::getActiveDocumentContext()$path), ld)
   } else {
-    log_dir <- file.path(getwd(), ld)
+    log_dir <- path(getwd(), ld)
   }
-  outs <- list.files(path=log_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.out"), full.names=TRUE, recursive=FALSE)
+  outs <- dir_ls(path=log_dir, glob=str_glue("*_{experiment}_{CLUSTER}.*.out"))
   out_paths <- c(out_paths, outs)
-  logs <- list.files(path=log_dir, pattern=str_glue("*_{experiment}_{CLUSTER}.*.log"), full.names=TRUE, recursive=FALSE)
+  logs <- dir_ls(path=log_dir, glob=str_glue("*_{experiment}_{CLUSTER}.*.log"))
   log_paths <- c(log_paths, logs)
   experiments <- c(experiments, rep(experiment, length(logs)))
 }
