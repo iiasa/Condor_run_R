@@ -9,9 +9,9 @@
 # Usage:
 # Rscript restart_version.R <restart file>
 #
-# Requires the stringr package (part of the tidyverse).
+# Requires the fs and stringr packages (part of the tidyverse).
 
-
+library(fs)
 library(stringr)
 
 # Get and check argument
@@ -20,14 +20,14 @@ if (length(args) == 0) {
   stop("No restart file argument supplied!")
 } else if (length(args) == 1) {
   restart_file = args[1]
-  if (!file.exists(restart_file)) stop(str_glue('No restart file present at "{restart_file}"!'))
+  if (!file_exists(restart_file)) stop(str_glue('No restart file present at "{restart_file}"!'))
 } else {
   stop("Multiple arguments provided! Expecting at most a single restart file argument.")
 }
 
 # Determine GAMS version used to generate restart file
 conn <- file(restart_file, "rb")
-byte_count <- min(4000, file.info(restart_file)$size)
+byte_count <- min(4000, file_size(restart_file))
 invisible(seek(conn, where=-byte_count, origin="end"))
 tail_bytes <- readBin(conn, what=integer(), size=1, n=byte_count)
 close(conn)
