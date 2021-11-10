@@ -217,13 +217,14 @@ config_types <- lapply(lapply(config_names, get), typeof)
 # ---- Get set ----
 
 # Required packages
+library(fs)
 library(stringr)
 
 # Determine the platform file separator and the temp directory with R-default separators
 temp_dir <- tempdir()
 fsep <- ifelse(str_detect(temp_dir, fixed("\\") ), "\\", ".Platform$file.sep") # Get the platform file separator: .Platform$file.sep is set to / on Windows
 temp_dir <- str_replace_all(temp_dir, fixed(fsep), .Platform$file.sep)
-temp_dir_parent <- dirname(temp_dir) # Remove the R-session-specific random subdirectory: identical between sessions
+temp_dir_parent <- dirname(temp_dir) # Move up from the R-session-specific random sub directory to get a temp dir identical between sessions
 
 # ---- Process environment and run config settings ----
 
@@ -234,7 +235,7 @@ if (length(args) == 0) {
 } else if (length(args) == 1) {
   # Check that the specified config file exists
   config_file_arg <- args[1]
-  if (!(file.exists(config_file_arg))) stop(str_glue('Invalid command line argument: specified configuration file "{config_file}" does not exist!'))
+  if (!(file_exists(config_file_arg))) stop(str_glue('Invalid command line argument: specified configuration file "{config_file}" does not exist!'))
 
   # Remove mandatory config defaults from the global scope
   rm(list=config_names[config_names %in% mandatory_config_names])
@@ -263,12 +264,16 @@ if (length(args) == 0) {
 }
 
 # Copy/write configuration to a file in the temp directory for reference early to minimize the risk of it being edited in the mean time
-temp_config_file <- file.path(temp_dir, str_glue("config.R"))
+temp_config_file <- path(temp_dir, str_glue("config.R"))
 if (length(args) > 0) {
-  if (!file.copy(config_file_arg, temp_config_file, overwrite=TRUE)) {
-    invisible(file.remove(bundle_path))
-    stop(str_glue("Cannot make a copy of the configuration file {config_file_arg}!"))
-  }
+  tryCatch(
+    file_copy(config_file_arg, temp_config_file, overwrite=TRUE),
+    error=function(cond) {
+      file_delete(bundle_path)
+      message(cond)
+      stop(str_glue("Cannot make a copy of the configuration file {config_file_arg}!"))
+    }
+  )
 } else {
   # No configuration file provided, write default configuration defined above (definition order is lost)
   config_conn<-file(temp_config_file, open="wt")
@@ -288,12 +293,12 @@ in_gams_curdir <- function(path) {
     return(path)
   } 
   else {
-    return(file.path(GAMS_CURDIR, path))
+    return(path(GAMS_CURDIR, path))
   }
 }
 
 # Check and massage specific config settings
-if (GAMS_CURDIR != "" && !dir.exists(GAMS_CURDIR)) stop(str_glue("No {GAMS_CURDIR} directory as configured in GAMS_CURDIR found relative to working directory {getwd()}!"))
+if (GAMS_CURDIR != "" && !dir_exists(GAMS_CURDIR)) stop(str_glue("No {GAMS_CURDIR} directory as configured in GAMS_CURDIR found relative to working directory {getwd()}!"))
 if (exists("NAME")) LABEL <- NAME # allowed synonym
 if (exists("EXPERIMENT")) LABEL <- EXPERIMENT # allowed synonym
 if (exists("PROJECT")) LABEL <- PROJECT # allowed synonym
@@ -309,10 +314,10 @@ if (length(JOBS) > 200 && !NICE_USER) warning(str_glue("You are submitting {leng
 if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
 if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
 if (str_sub(GAMS_FILE_PATH, -4) != ".gms") stop(str_glue("Configured GAMS_FILE_PATH has no .gms extension!"))
-if (!(file.exists(in_gams_curdir(GAMS_FILE_PATH)))) stop(str_glue('Configured GAMS_FILE_PATH "{GAMS_FILE_PATH}" does not exist relative to GAMS_CURDIR!'))
+if (!(file_exists(in_gams_curdir(GAMS_FILE_PATH)))) stop(str_glue('Configured GAMS_FILE_PATH "{GAMS_FILE_PATH}" does not exist relative to GAMS_CURDIR!'))
 if (str_detect(GAMS_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured GAMS_FILE_PATH has forbidden character(s)! Use / as path separator."))
   if (RESTART_FILE_PATH != "") {
-  if (!(file.exists(in_gams_curdir(RESTART_FILE_PATH)))) stop(str_glue('Configured RESTART_FILE_PATH "{RESTART_FILE_PATH}" does not exist relative to GAMS_CURDIR!'))
+  if (!(file_exists(in_gams_curdir(RESTART_FILE_PATH)))) stop(str_glue('Configured RESTART_FILE_PATH "{RESTART_FILE_PATH}" does not exist relative to GAMS_CURDIR!'))
   if (str_detect(RESTART_FILE_PATH, "^/") || str_detect(RESTART_FILE_PATH, "^.:")) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: absolute paths not allowed!"))
   if (str_detect(RESTART_FILE_PATH, fixed("../"))) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: you may not go up to parent directories using ../"))
   if (str_detect(RESTART_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured RESTART_FILE_PATH has forbidden character(s)! Use / as path separator."))
@@ -323,27 +328,27 @@ if (!(GAMS_VERSION %in% EXECUTE_HOST_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS
 dotless_version <- str_glue(version_match[2], version_match[3])
 if (!str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion that must be used for passing the job number with which the job-specific (e.g. scenario) can be selected.")
 for (file in BUNDLE_ADDITIONAL_FILES) {
-  if (!(file.exists(file.path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
+  if (!(file_exists(path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
 if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
 if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
 if (is.null(G00_OUTPUT_DIR_SUBMIT)) {
-  # Use G00_OUTPUT_DIR fon the submit machine side as well.
-  if (!(file.exists(in_gams_curdir(G00_OUTPUT_DIR)))) stop(str_glue('Configured G00_OUTPUT_DIR "{G00_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
+  # Use G00_OUTPUT_DIR on the submit machine side as well.
+  if (!(file_exists(in_gams_curdir(G00_OUTPUT_DIR)))) stop(str_glue('Configured G00_OUTPUT_DIR "{G00_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
   G00_OUTPUT_DIR_SUBMIT <- in_gams_curdir(G00_OUTPUT_DIR)
 } else {
   # Use a separate G00_OUTPUT_DIR_SUBMIT configuration on the submit machine side
   if (str_detect(G00_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
-  if (!(file.exists(G00_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured G00_OUTPUT_DIR_SUBMIT "{G00_OUTPUT_DIR_SUBMIT}" does not exist!'))
+  if (!(file_exists(G00_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured G00_OUTPUT_DIR_SUBMIT "{G00_OUTPUT_DIR_SUBMIT}" does not exist!'))
 }
 if (is.null(GDX_OUTPUT_DIR_SUBMIT)) {
   # Use GDX_OUTPUT_DIR on the submit machine side as well.
-  if (!(file.exists(in_gams_curdir(GDX_OUTPUT_DIR)))) stop(str_glue('Configured GDX_OUTPUT_DIR "{GDX_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
+  if (!(file_exists(in_gams_curdir(GDX_OUTPUT_DIR)))) stop(str_glue('Configured GDX_OUTPUT_DIR "{GDX_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
   GDX_OUTPUT_DIR_SUBMIT <- in_gams_curdir(GDX_OUTPUT_DIR)
 } else {
   # Use a separate GDX_OUTPUT_DIR_SUBMIT configuration on the submit machine side.
   if (str_detect(GDX_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
-  if (!(file.exists(GDX_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured GDX_OUTPUT_DIR_SUBMIT "{GDX_OUTPUT_DIR_SUBMIT}" does not exist!'))
+  if (!(file_exists(GDX_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured GDX_OUTPUT_DIR_SUBMIT "{GDX_OUTPUT_DIR_SUBMIT}" does not exist!'))
 }
 if (str_detect(G00_OUTPUT_DIR, "^/") || str_detect(G00_OUTPUT_DIR, "^.:")) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
 if (str_detect(GDX_OUTPUT_DIR, "^/") || str_detect(GDX_OUTPUT_DIR, "^.:")) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
@@ -368,7 +373,7 @@ if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX
 # Determine GAMS version used to generate RESTART_FILE_PATH, verify that it is <= GAMS_VERSION
 if (RESTART_FILE_PATH != "") {
   conn <- file(in_gams_curdir(RESTART_FILE_PATH), "rb")
-  byte_count <- min(4000, file.info(in_gams_curdir(RESTART_FILE_PATH))$size)
+  byte_count <- min(4000, file_size(in_gams_curdir(RESTART_FILE_PATH)))
   invisible(seek(conn, where=-byte_count, origin="end"))
   tail_bytes <- readBin(conn, what=integer(), size=1, n=byte_count)
   close(conn)
@@ -390,13 +395,13 @@ if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
 # Ensure that the run directory to hold the .out/.err/.log and so on results exists
-if (!dir.exists(CONDOR_DIR)) dir.create(CONDOR_DIR)
-run_dir <- file.path(CONDOR_DIR, LABEL)
-if (!dir.exists(run_dir)) dir.create(run_dir)
+if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
+run_dir <- path(CONDOR_DIR, LABEL)
+if (!dir_exists(run_dir)) dir_create(run_dir)
 
 # ---- Define some helper functions ----
 
-# Check and sanitize 7zip output and return the overall byte size of the input files
+# Check and sanitize 7-Zip output and return the overall byte size of the input files
 handle_7zip <- function(out) {
   if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
     cat(out, sep="\n")
@@ -412,10 +417,10 @@ handle_7zip <- function(out) {
   }
 }
 
-# Remove a file if it exists
-remove_if_exists <- function(dir_path, file_name) {
-  file_path <- file.path(dir_path, file_name)
-  if (file.exists(file_path)) file.remove(file_path)
+# Delete a file if it exists
+delete_if_exists <- function(dir_path, file_name) {
+  file_path <- path(dir_path, file_name)
+  if (file_exists(file_path)) file_delete(file_path)
 }
 
 # Clear text displayed on current line and reset cursor to start of line
@@ -532,7 +537,7 @@ get_return_values <- function(log_directory, log_file_names) {
   return_values <- c()
   return_value_regexp <- "\\(1\\) Normal termination \\(return value (\\d+)\\)"
   for (name in log_file_names) {
-    loglines <- readLines(file.path(log_directory, name))
+    loglines <- readLines(path(log_directory, name))
     return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
     return_values <- c(return_values, return_value)
   }
@@ -564,7 +569,7 @@ summarize_jobs <- function(jobs) {
 }
 
 # A function that for all given jobs tests if a file exists and is not empty.
-# Empty files are removed.
+# Empty files are deleted.
 #
 # The file_template is a template of the filename that is run through str_glue
 # and can make use of variables defined in the calling context. The dir parameter
@@ -576,14 +581,14 @@ all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
   absentees <- c()
   empties <- c()
   for (job in JOBS) {
-    path <- file.path(dir, str_glue(file_template))
-    absent <- !file.exists(path)
+    path <- path(dir, str_glue(file_template))
+    absent <- !file_exists(path)
     absentees <- c(absentees, absent)
     if (absent) {
       empties <- c(empties, FALSE)
     } else {
-      empty <- file.info(path)$size == 0
-      if (empty) file.remove(path)
+      empty <- file_size(path) == 0
+      if (empty) file_delete(path)
       empties <- c(empties, empty)
     }
   }
@@ -591,7 +596,7 @@ all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
     warning(str_glue("No {file_type} files returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
   }
   if (warn && any(empties)) {
-    warning(str_glue("Empty {file_type} files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were removed."), call.=FALSE)
+    warning(str_glue("Empty {file_type} files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were deleted."), call.=FALSE)
   }
   return(!(any(absentees) || any(empties)))
 }
@@ -613,9 +618,9 @@ if (length(hostdoms) == 0) stop("No execute hosts matching HOST_REGEXP are avail
 # Set R-default and platform-specific paths to the bundle
 bundle <- "job_bundle.7z"
 unique_bundle <- str_glue('bundle_{str_replace_all(Sys.time(), "[- :]", "")}.7z') # To keep multiple cached bundles separate
-bundle_path <- file.path(temp_dir_parent, bundle) # Invariant so that it can double-duty as a lock file blocking interfering parallel submisisons
+bundle_path <- path(temp_dir_parent, bundle) # Invariant so that it can double-duty as a lock file blocking interfering parallel submissions
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
-if (file.exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing? If so, let that submission end first. If not, remove the file and try again."))
+if (file_exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing? If so, let that submission end first. If not, delete the file and try again."))
 
 cat("Compressing model files into bundle...\n")
 model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
@@ -648,7 +653,7 @@ if (RESTART_FILE_PATH != "" || length(BUNDLE_ADDITIONAL_FILES) != 0) {
 request_disk <- ceiling((model_byte_size+additional_byte_size)/1024)+2*1024*1024
 
 # Determine the bundle size in KiB
-bundle_size <- floor(file.info(bundle_path)$size/1024)
+bundle_size <- floor(file_size(bundle_path)/1024)
 
 # ---- Seed available execute hosts with the bundle ----
 
@@ -664,7 +669,7 @@ seed_bat_template <- c(
 )
 
 # Apply settings to the template and write the batch file / shell script
-seed_bat <- file.path(temp_dir, str_glue("_seed.bat"))
+seed_bat <- path(temp_dir, str_glue("_seed.bat"))
 bat_conn<-file(seed_bat, open="wt")
 writeLines(unlist(lapply(seed_bat_template, str_glue)), bat_conn)
 close(bat_conn)
@@ -715,26 +720,26 @@ for (hostdom in hostdoms) {
   )
 
   # Apply settings to seed job template and write the .job file to use for submission
-  seed_job_file <- file.path(temp_dir, str_glue("_seed_{hostname}.job"))
+  seed_job_file <- path(temp_dir, str_glue("_seed_{hostname}.job"))
   seed_job_conn<-file(seed_job_file, open="wt")
   writeLines(unlist(lapply(seed_job_template, str_glue)), seed_job_conn)
   close(seed_job_conn)
   rm(seed_job_template, seed_job_conn)
 
-  # Remove any job output left over from an aborted prior run
-  remove_if_exists(run_dir, str_glue("_seed_{hostname}.log"))
-  remove_if_exists(run_dir, str_glue("_seed_{hostname}.out"))
-  remove_if_exists(run_dir, str_glue("_seed_{hostname}.err"))
+  # Delete any job output left over from an aborted prior run
+  delete_if_exists(run_dir, str_glue("_seed_{hostname}.log"))
+  delete_if_exists(run_dir, str_glue("_seed_{hostname}.out"))
+  delete_if_exists(run_dir, str_glue("_seed_{hostname}.err"))
 
   outerr <- system2("condor_submit", args=seed_job_file, stdout=TRUE, stderr=TRUE)
   if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
     cat(outerr, sep="\n")
-    invisible(file.remove(bundle_path))
+    file_delete(bundle_path)
     stop("Submission of bundle seed job failed!")
   }
   cluster <- as.integer(str_match(tail(grep(cluster_regexp, outerr, value=TRUE), 1), cluster_regexp)[2])
   if (is.na(cluster)) {
-    invisible(file.remove(bundle_path))
+    file_delete(bundle_path)
     stop("Cannot extract cluster number from condor_submit output!")
   }
   clusters <- c(clusters, cluster)
@@ -750,13 +755,13 @@ rm(clusters)
 
 # Determine which seed jobs failed
 return_values <- get_return_values(run_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
-err_file_sizes <-  lapply(hostnames, function(hostname) return(file.size(file.path(run_dir, str_glue("_seed_{hostname}.err")))))
+err_file_sizes <-  lapply(hostnames, function(hostname) return(file_size(path(run_dir, str_glue("_seed_{hostname}.err")))))
 failed_seeds <- is.na(return_values) | return_values != 0 | err_file_sizes != 0
 rm(return_values, err_file_sizes)
 
 # Check whether seed jobs failed
 if (all(failed_seeds)) {
-  invisible(file.remove(bundle_path))
+  file_delete(bundle_path)
   stop(str_glue("All seeding jobs failed! For details, see the _seed_* files in {run_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/README.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
 }
 if (any(failed_seeds)) {
@@ -770,13 +775,13 @@ if (any(failed_seeds)) {
 }
 rm(failed_seeds)
 
-# Remove seeding log files of normally terminated seed jobs
-invisible(file.remove(seed_bat))
+# Delete seeding log files of normally terminated seed jobs
+file_delete(seed_bat)
 for (hostname in hostnames) {
-  file.remove(file.path(temp_dir, str_glue("_seed_{hostname}.job")))
-  file.remove(file.path(run_dir, str_glue("_seed_{hostname}.log")))
-  file.remove(file.path(run_dir, str_glue("_seed_{hostname}.out")))
-  file.remove(file.path(run_dir, str_glue("_seed_{hostname}.err")))
+  delete_if_exists(temp_dir, str_glue("_seed_{hostname}.job"))
+  delete_if_exists(run_dir, str_glue("_seed_{hostname}.log"))
+  delete_if_exists(run_dir, str_glue("_seed_{hostname}.out"))
+  delete_if_exists(run_dir, str_glue("_seed_{hostname}.err"))
 }
 
 # Report that seeding is done
@@ -791,28 +796,36 @@ rm(hostnames)
 # ---- Prepare files for run ----
 
 # Move the configuration from the temp to the run directory so as to have a persistent reference
-config_file <- file.path(run_dir, str_glue("_config_{LABEL}_{predicted_cluster}.R"))
-if (!file.copy(temp_config_file, config_file, overwrite=TRUE)) {
-  invisible(file.remove(bundle_path))
-  stop(str_glue("Cannot copy the configuration from {temp_config_file} to {run_dir}"))
-}
-invisible(file.remove(temp_config_file))
+config_file <- path(run_dir, str_glue("_config_{LABEL}_{predicted_cluster}.R"))
+tryCatch(
+  file_copy(temp_config_file, config_file, overwrite=TRUE),
+  error=function(cond) {
+    file_delete(bundle_path)
+    message(cond)
+    stop(str_glue("Cannot copy the configuration from {temp_config_file} to {run_dir}!"))
+  }
+)
+file_delete(temp_config_file)
 
-# Copy the GAMS file to the run directory for reference
-if (!file.copy(file.path(in_gams_curdir(GAMS_FILE_PATH)), file.path(run_dir, str_glue("{str_sub(basename(GAMS_FILE_PATH), 1, -5)}_{LABEL}_{predicted_cluster}.gms")), overwrite=TRUE)) {
-  invisible(file.remove(bundle_path))
-  stop(str_glue("Cannot copy the configured GAMS_FILE_PATH file to {run_dir}"))
-}
+# Copy the GAMS_FILE_PATH file to the run directory for reference
+tryCatch(
+  file_copy(in_gams_curdir(GAMS_FILE_PATH), path(run_dir, str_glue("{str_sub(basename(GAMS_FILE_PATH), 1, -5)}_{LABEL}_{predicted_cluster}.gms")), overwrite=TRUE),
+  error=function(cond) {
+    file_delete(bundle_path)
+    message(cond)
+    stop(str_glue("Cannot copy the configured GAMS_FILE_PATH file to {run_dir}"))
+  }
+)
 
 # Apply settings to bat template and write the .bat file
-job_bat <- file.path(temp_dir_parent, str_glue("job_{LABEL}_{predicted_cluster}.bat"))
+job_bat <- path(temp_dir_parent, str_glue("job_{LABEL}_{predicted_cluster}.bat"))
 bat_conn<-file(job_bat, open="wt")
 writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
 
 # Apply settings to job template and write the .job file to use for submission
-job_file <- file.path(run_dir, str_glue("submit_{LABEL}_{predicted_cluster}.job"))
+job_file <- path(run_dir, str_glue("submit_{LABEL}_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(JOB_TEMPLATE, str_glue)), job_conn)
 close(job_conn)
@@ -823,26 +836,31 @@ rm(job_conn)
 outerr <- system2("condor_submit", args=job_file, stdout=TRUE, stderr=TRUE)
 cat(outerr, sep="\n")
 if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-  invisible(file.remove(bundle_path))
+  file_delete(bundle_path)
   stop("Submission of Condor run failed!")
 }
 cluster <- as.integer(str_match(tail(grep(cluster_regexp, outerr, value=TRUE), 1), cluster_regexp)[2])
 if (is.na(cluster)) {
-  invisible(file.remove(bundle_path))
+  file_delete(bundle_path)
   stop("Cannot extract cluster number from condor_submit output!")
 }
 if (cluster != predicted_cluster) {
   # system2("condor_rm", args=str_glue("{cluster}")) # should do this, but it does not work due to some weird Condor/R/Windows bug.
-  invisible(file.remove(bundle_path))
+  file_delete(bundle_path)
   stop(str_glue("Submission cluster number {cluster} not equal to prediction {predicted_cluster}! You probably submitted something else via Condor while this submission was ongoing, causing the cluster number (sequence count of your submissions) to increment. As a result, log files have been named with a wrong cluster number.\n\nPlease do not submit additional Condor jobs until after a submission has completed. Note that this does not mean that you have to wait for the run to complete before submitting further runs, just wait for the submission to make it to the point where the execute hosts have been handed the jobs. Please try again.\n\nYou should first remove the run's jobs with: condor_rm {cluster}."))
 }
 
-# Retain the bundle if so requested, then remove it from temp so that further submissions are no longer blocked
+# Retain the bundle if so requested, then delete it from temp so that further submissions are no longer blocked
 if (RETAIN_BUNDLE) {
-  success <- file.copy(bundle_path, file.path(run_dir, str_glue("bundle_{LABEL}_{cluster}.7z")))
-  if (!success) warning("Could not make a reference copy of bundle!")
+  tryCatch(
+    file_copy(bundle_path, path(run_dir, str_glue("bundle_{LABEL}_{cluster}.7z"))),
+    error=function(cond) {
+      message(cond)
+      warning("Could not make a reference copy of bundle as requested via RETAIN_BUNDLE!")
+    }
+  )
 }
-invisible(file.remove(bundle_path)) # Removing the bundle unblocks this script for another submission
+file_delete(bundle_path) # Deleting the bundle unblocks this script for another submission
 cat(str_glue('Run "{LABEL}" with cluster number {cluster} has been submitted, it is now possible to submit additional runs while waiting for it to complete.'), sep="\n")
 
 # Log the cluster number if requested. If you parse the above stdout, you can parse out the cluster number.
@@ -853,11 +871,11 @@ if (CLUSTER_NUMBER_LOG != "") {
   readr::write_file(str_glue("{cluster}"), CLUSTER_NUMBER_LOG)
 }
 
-# Remove dated job batch files that are almost certainly no longer in use (older than 10 days)
+# Delete dated job batch files that are almost certainly no longer in use (older than 10 days)
 # Needed because Windows does not periodically clean up TEMP and because the current job batch
 # file is not deleted unless you make this script wait for the run to complete.
-for (bat_path in list.files(path=temp_dir_parent, pattern=str_glue("job_.*_\\d+.bat"), full.names=TRUE)) {
-  if (difftime(Sys.time(), file.info(bat_path)$ctime, unit="days") > 10) invisible(file.remove(bat_path))
+for (bat_path in dir_ls(path=temp_dir_parent, regexp="job_.*_\\d+.bat")) {
+  if (difftime(Sys.time(), file_info(bat_path)$birth_time, unit="days") > 10) file_delete(bat_path)
 }
 
 # ---- Handle run results ----
@@ -867,12 +885,12 @@ if (WAIT_FOR_RUN_COMPLETION) {
   cat(str_glue('Waiting for run "{LABEL}" to complete...'), sep="\n")
   monitor(cluster)
 
-  # Remove the job batch file. This is done after waiting for the run to complete
+  # Delete the job batch file. This is done after waiting for the run to complete
   # because jobs can continue to be scheduled well after the initial submission when
   # there are more jobs in the run than available slot partitions.
-  invisible(file.remove(job_bat))
+  file_delete(job_bat)
 
-  # Check that result files exist and are not empty, warn otherwise and remove empty files
+  # Check that result files exist and are not empty, warn otherwise and delete empty files
   all_exist_and_not_empty(run_dir, "{PREFIX}_{LABEL}_{cluster}.{job}.err", ".err", warn=FALSE)
   all_exist_and_not_empty(run_dir, "{PREFIX}_{LABEL}_{cluster}.{job}.lst", ".lst")
   if (GET_G00_OUTPUT) {
@@ -896,7 +914,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   max_memory_job <- -1
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
   for (job in JOBS) {
-    job_lines <- readLines(file.path(run_dir, str_glue("{PREFIX}_{LABEL}_{cluster}.{job}.log")))
+    job_lines <- readLines(path(run_dir, str_glue("{PREFIX}_{LABEL}_{cluster}.{job}.log")))
     memory_use <- as.double(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
@@ -936,10 +954,10 @@ if (WAIT_FOR_RUN_COMPLETION) {
       error_code <- system2("gdxmerge", args=merge_args)
       setwd(prior_wd)
       if (error_code > 0) stop("Merging failed!")
-      # Remove merged GDX files if so requested
+      # Delete merged GDX files if so requested
       if (REMOVE_MERGED_GDX_FILES) {
         for (job in JOBS) {
-          file.remove(file.path(GDX_OUTPUT_DIR_SUBMIT, str_glue('{gdx_prefix}_{LABEL}_{cluster}.{sprintf("%06d", job)}.gdx')))
+          file_delete(path(GDX_OUTPUT_DIR_SUBMIT, str_glue('{gdx_prefix}_{LABEL}_{cluster}.{sprintf("%06d", job)}.gdx')))
         }
       }
     }
