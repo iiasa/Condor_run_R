@@ -90,12 +90,6 @@ REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 GAMS_FILE_PATH = "6_scenarios_limpopo.gms" # path to GAMS file to run for each job, relative to GAMS_CURDIR
 GAMS_ARGUMENTS = "gdx={GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE} //nsim=%1 PC=2 PS=0 PW=130" # additional GAMS arguments, can use {<config>} expansion here
 GAMS_VERSION = "32.2" # must be installed on all execute hosts
-G00_OUTPUT_DIR = "t" # relative to GAMS_CURDIR both host-side and on the submit machine if G00_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
-G00_OUTPUT_FILE = "a6_out.g00" # host-side, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
-GET_G00_OUTPUT = FALSE
-GDX_OUTPUT_DIR = "gdx" # relative to GAMS_CURDIR both host-side and on the submit machine if GDX_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
-GDX_OUTPUT_FILE = "output.gdx" # as produced on the host-side by gdx= GAMS parameter or execute_unload, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
-GET_GDX_OUTPUT = TRUE
 WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
 mandatory_config_names <- ls()
@@ -133,8 +127,14 @@ MERGE_BIG = NULL # optional, symbol size cutoff beyond which GDXMERGE writes sym
 MERGE_ID = NULL # optional, comma-separated list of symbols to include in the merge, defaults to all
 MERGE_EXCLUDE = NULL # optional, comma-separated list of symbols to exclude from the merge, defaults to none
 REMOVE_MERGED_GDX_FILES = FALSE # optional
+G00_OUTPUT_DIR = "t" # optional, relative to GAMS_CURDIR both host-side and on the submit machine if G00_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 G00_OUTPUT_DIR_SUBMIT = NULL # optional, directory on the submit machine into where G00 job output files are transferred. Can also be an absolute path. When set to NULL, G00_OUTPUT_DIR will be used instead.
+G00_OUTPUT_FILE = "a6_out.g00" # optional, host-side, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
+GET_G00_OUTPUT = FALSE # optional
+GDX_OUTPUT_DIR = "gdx" # optional, relative to GAMS_CURDIR both host-side and on the submit machine if GDX_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 GDX_OUTPUT_DIR_SUBMIT = NULL # optional, directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. When set to NULL, GDX_OUTPUT_DIR will be used instead.
+GDX_OUTPUT_FILE = "output.gdx" # optional, as produced on the host-side by gdx= GAMS parameter or execute_unload, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
+GET_GDX_OUTPUT = TRUE # optional
 SEED_JOB_RELEASES = 0 # optional, number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
 RUN_AS_OWNER = TRUE # optional, if TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
