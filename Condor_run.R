@@ -127,13 +127,13 @@ MERGE_BIG = NULL # optional, symbol size cutoff beyond which GDXMERGE writes sym
 MERGE_ID = NULL # optional, comma-separated list of symbols to include in the merge, defaults to all
 MERGE_EXCLUDE = NULL # optional, comma-separated list of symbols to exclude from the merge, defaults to none
 REMOVE_MERGED_GDX_FILES = FALSE # optional
-G00_OUTPUT_DIR = "t" # optional, relative to GAMS_CURDIR both host-side and on the submit machine if G00_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
+G00_OUTPUT_DIR = "" # optional, relative to GAMS_CURDIR both host-side and on the submit machine if G00_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 G00_OUTPUT_DIR_SUBMIT = NULL # optional, directory on the submit machine into where G00 job output files are transferred. Can also be an absolute path. When set to NULL, G00_OUTPUT_DIR will be used instead.
-G00_OUTPUT_FILE = "a6_out.g00" # optional, host-side, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
+G00_OUTPUT_FILE = "" # optional, host-side, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 GET_G00_OUTPUT = FALSE # optional
-GDX_OUTPUT_DIR = "gdx" # optional, relative to GAMS_CURDIR both host-side and on the submit machine if GDX_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
+GDX_OUTPUT_DIR = "" # optional, relative to GAMS_CURDIR both host-side and on the submit machine if GDX_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 GDX_OUTPUT_DIR_SUBMIT = NULL # optional, directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. When set to NULL, GDX_OUTPUT_DIR will be used instead.
-GDX_OUTPUT_FILE = "output.gdx" # optional, as produced on the host-side by gdx= GAMS parameter or execute_unload, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
+GDX_OUTPUT_FILE = "" # optional, as produced on the host-side by gdx= GAMS parameter or execute_unload, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 GET_GDX_OUTPUT = FALSE # optional
 SEED_JOB_RELEASES = 0 # optional, number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # optional, number of times to auto-release (retry) held jobs before giving up
@@ -331,44 +331,57 @@ for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file_exists(path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
 if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
-if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
-if (is.null(G00_OUTPUT_DIR_SUBMIT)) {
-  # Use G00_OUTPUT_DIR on the submit machine side as well.
-  if (!(file_exists(in_gams_curdir(G00_OUTPUT_DIR)))) stop(str_glue('Configured G00_OUTPUT_DIR "{G00_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
-  G00_OUTPUT_DIR_SUBMIT <- in_gams_curdir(G00_OUTPUT_DIR)
-} else {
-  # Use a separate G00_OUTPUT_DIR_SUBMIT configuration on the submit machine side
-  if (str_detect(G00_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
-  if (!(file_exists(G00_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured G00_OUTPUT_DIR_SUBMIT "{G00_OUTPUT_DIR_SUBMIT}" does not exist!'))
-}
-if (is.null(GDX_OUTPUT_DIR_SUBMIT)) {
-  # Use GDX_OUTPUT_DIR on the submit machine side as well.
-  if (!(file_exists(in_gams_curdir(GDX_OUTPUT_DIR)))) stop(str_glue('Configured GDX_OUTPUT_DIR "{GDX_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
-  GDX_OUTPUT_DIR_SUBMIT <- in_gams_curdir(GDX_OUTPUT_DIR)
-} else {
-  # Use a separate GDX_OUTPUT_DIR_SUBMIT configuration on the submit machine side.
-  if (str_detect(GDX_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
-  if (!(file_exists(GDX_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured GDX_OUTPUT_DIR_SUBMIT "{GDX_OUTPUT_DIR_SUBMIT}" does not exist!'))
-}
-if (str_detect(G00_OUTPUT_DIR, "^/") || str_detect(G00_OUTPUT_DIR, "^.:")) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
-if (str_detect(GDX_OUTPUT_DIR, "^/") || str_detect(GDX_OUTPUT_DIR, "^.:")) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
-if (str_detect(G00_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
-if (str_detect(GDX_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
-if (str_detect(G00_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
-if (str_detect(GDX_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
 
-
-if (str_sub(G00_OUTPUT_FILE, -4) != ".g00") stop(str_glue("Configured G00_OUTPUT_FILE has no .g00 extension!"))
-if (str_length(G00_OUTPUT_FILE) <= 4) stop(str_glue("Configured G00_OUTPUT_FILE needs more than an extension!"))
-if (str_detect(G00_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured G00_OUTPUT_FILE has forbidden character(s)!"))
-g00_prefix <- str_sub(G00_OUTPUT_FILE, 1, -5)
-if (str_sub(GDX_OUTPUT_FILE, -4) != ".gdx") stop(str_glue("Configured GDX_OUTPUT_FILE has no .gdx extension!"))
-if (str_length(GDX_OUTPUT_FILE) <= 4) stop(str_glue("Configured GDX_OUTPUT_FILE needs more than an extension!"))
-if (str_detect(GDX_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GDX_OUTPUT_FILE has forbidden character(s)!"))
-gdx_prefix <- str_sub(GDX_OUTPUT_FILE, 1, -5)
+# Check and massage GAMS output config settings
+if (GET_G00_OUTPUT) {
+  if (is.null(G00_OUTPUT_DIR_SUBMIT)) {
+    # Use G00_OUTPUT_DIR on the submit machine side as well.
+    if (!(file_exists(in_gams_curdir(G00_OUTPUT_DIR)))) stop(str_glue('Configured G00_OUTPUT_DIR "{G00_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
+    G00_OUTPUT_DIR_SUBMIT <- in_gams_curdir(G00_OUTPUT_DIR)
+  } else {
+    # Use a separate G00_OUTPUT_DIR_SUBMIT configuration on the submit machine side
+    if (str_detect(G00_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
+    if (!(file_exists(G00_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured G00_OUTPUT_DIR_SUBMIT "{G00_OUTPUT_DIR_SUBMIT}" does not exist!'))
+  }
+  if (str_detect(G00_OUTPUT_DIR, "^/") || str_detect(G00_OUTPUT_DIR, "^.:")) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
+  if (str_detect(G00_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
+  if (str_detect(G00_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
+  if (str_sub(G00_OUTPUT_FILE, -4) != ".g00") stop(str_glue("Configured G00_OUTPUT_FILE has no .g00 extension!"))
+  if (str_length(G00_OUTPUT_FILE) <= 4) stop(str_glue("Configured G00_OUTPUT_FILE needs more than an extension!"))
+  if (str_detect(G00_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured G00_OUTPUT_FILE has forbidden character(s)!"))
+  g00_prefix <- str_sub(G00_OUTPUT_FILE, 1, -5) # used only when GET_G00_OUTPUT == TRUE
+} else if (GET_GDX_OUTPUT) {
+  if (is.null(GDX_OUTPUT_DIR_SUBMIT)) {
+    # Use GDX_OUTPUT_DIR on the submit machine side as well.
+    if (!(file_exists(in_gams_curdir(GDX_OUTPUT_DIR)))) stop(str_glue('Configured GDX_OUTPUT_DIR "{GDX_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
+    GDX_OUTPUT_DIR_SUBMIT <- in_gams_curdir(GDX_OUTPUT_DIR)
+  } else {
+    # Use a separate GDX_OUTPUT_DIR_SUBMIT configuration on the submit machine side.
+    if (str_detect(GDX_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
+    if (!(file_exists(GDX_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured GDX_OUTPUT_DIR_SUBMIT "{GDX_OUTPUT_DIR_SUBMIT}" does not exist!'))
+  }
+  if (str_detect(GDX_OUTPUT_DIR, "^/") || str_detect(GDX_OUTPUT_DIR, "^.:")) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
+  if (str_detect(GDX_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
+  if (str_detect(GDX_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
+  if (str_sub(GDX_OUTPUT_FILE, -4) != ".gdx") stop(str_glue("Configured GDX_OUTPUT_FILE has no .gdx extension!"))
+  if (str_length(GDX_OUTPUT_FILE) <= 4) stop(str_glue("Configured GDX_OUTPUT_FILE needs more than an extension!"))
+  if (str_detect(GDX_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GDX_OUTPUT_FILE has forbidden character(s)!"))
+  gdx_prefix <- str_sub(GDX_OUTPUT_FILE, 1, -5) # used only when GET_GDX_OUTPUT == TRUE
+} else {
+  stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
+}
 if (MERGE_GDX_OUTPUT && !GET_GDX_OUTPUT) stop("Cannot MERGE_GDX_OUTPUT without first doing GET_GDX_OUTPUT!")
 if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT without first doing WAIT_FOR_RUN_COMPLETION!")
 if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX_FILES without first doing MERGE_GDX_OUTPUT!")
+
+# Though not utlized unless GET_G00_OUTPUT or GET_GDX_OUTPUT are TRUE, the below variables are
+# used in conditional string expansion via str_glue() such that the non-use is enacted only
+# only after the expansion already happened. Hence we need to assign some dummy values here when
+# when no assignment happened above.
+if (!exists("g00_prefix")) g00_prefix <- ""
+if (!exists("gdx_prefix")) gdx_prefix <- ""
+if (is.null(G00_OUTPUT_DIR_SUBMIT)) G00_OUTPUT_DIR_SUBMIT <- ""
+if (is.null(GDX_OUTPUT_DIR_SUBMIT)) GDX_OUTPUT_DIR_SUBMIT <- ""
 
 # Determine GAMS version used to generate RESTART_FILE_PATH, verify that it is <= GAMS_VERSION
 if (RESTART_FILE_PATH != "") {
@@ -884,7 +897,6 @@ if (WAIT_FOR_RUN_COMPLETION) {
   # Monitor the run until it completes
   cat(str_glue('Waiting for run "{LABEL}" to complete...'), sep="\n")
   monitor(cluster)
-
   # Delete the job batch file. This is done after waiting for the run to complete
   # because jobs can continue to be scheduled well after the initial submission when
   # there are more jobs in the run than available slot partitions.
