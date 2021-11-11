@@ -121,15 +121,15 @@ BUNDLE_ADDITIONAL_FILES = c() # optional, additional files to add to root of bun
 CONDOR_DIR = "Condor" # optional, directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle. Can also be an absolute path. Created when it does not exist.
 GAMS_CURDIR = "" # optional, working directory for GAMS and its arguments relative to working directory, "" defaults to the working directory
 RETAIN_BUNDLE = FALSE # optional
-RESTART_FILE_PATH = "" # optional, included in bundle if set, relative to GAMS_CURDIR
+RESTART_FILE_PATH = "" # optional, path relative to GAMS_CURDIR pointing to the work/restart file to launch GAMS with on the host side. Included in bundle if set.
 MERGE_GDX_OUTPUT = FALSE # optional, uses GDXMERGE (https://www.gams.com/latest/docs/T_GDXMERGE.html)
 MERGE_BIG = NULL # optional, symbol size cutoff beyond which GDXMERGE writes symbols one-by-one to avoid running out of memory (see https://www.gams.com/latest/docs/T_GDXMERGE.html)
 MERGE_ID = NULL # optional, comma-separated list of symbols to include in the merge, defaults to all
 MERGE_EXCLUDE = NULL # optional, comma-separated list of symbols to exclude from the merge, defaults to none
 REMOVE_MERGED_GDX_FILES = FALSE # optional
-G00_OUTPUT_DIR = "" # optional, relative to GAMS_CURDIR both host-side and on the submit machine if G00_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
+G00_OUTPUT_DIR = "" # optional, directory for work/save file. Relative to GAMS_CURDIR both host-side and on the submit machine if G00_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 G00_OUTPUT_DIR_SUBMIT = NULL # optional, directory on the submit machine into where G00 job output files are transferred. Can also be an absolute path. When set to NULL, G00_OUTPUT_DIR will be used instead.
-G00_OUTPUT_FILE = "" # optional, host-side, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
+G00_OUTPUT_FILE = "" # optional, name of work/save file. Host-side, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 GET_G00_OUTPUT = FALSE # optional
 GDX_OUTPUT_DIR = "" # optional, relative to GAMS_CURDIR both host-side and on the submit machine if GDX_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 GDX_OUTPUT_DIR_SUBMIT = NULL # optional, directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. When set to NULL, GDX_OUTPUT_DIR will be used instead.
@@ -906,7 +906,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   all_exist_and_not_empty(run_dir, "{PREFIX}_{LABEL}_{cluster}.{job}.err", ".err", warn=FALSE)
   all_exist_and_not_empty(run_dir, "{PREFIX}_{LABEL}_{cluster}.{job}.lst", ".lst")
   if (GET_G00_OUTPUT) {
-    g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, "{g00_prefix}_{LABEL}_{cluster}.{job}.g00", "work (.g00)")
+    g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, "{g00_prefix}_{LABEL}_{cluster}.{job}.g00", "work/save (.g00)")
   }
   if (GET_GDX_OUTPUT) {
     gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR_SUBMIT, '{gdx_prefix}_{LABEL}_{cluster}.{sprintf("%06d", job)}.gdx', "GDX")
