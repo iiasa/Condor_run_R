@@ -333,6 +333,7 @@ for (file in BUNDLE_ADDITIONAL_FILES) {
 if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
 
 # Check and massage GAMS output config settings
+if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
 if (GET_G00_OUTPUT) {
   if (is.null(G00_OUTPUT_DIR_SUBMIT)) {
     # Use G00_OUTPUT_DIR on the submit machine side as well.
@@ -350,7 +351,8 @@ if (GET_G00_OUTPUT) {
   if (str_length(G00_OUTPUT_FILE) <= 4) stop(str_glue("Configured G00_OUTPUT_FILE needs more than an extension!"))
   if (str_detect(G00_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured G00_OUTPUT_FILE has forbidden character(s)!"))
   g00_prefix <- str_sub(G00_OUTPUT_FILE, 1, -5) # used only when GET_G00_OUTPUT == TRUE
-} else if (GET_GDX_OUTPUT) {
+}
+if (GET_GDX_OUTPUT) {
   if (is.null(GDX_OUTPUT_DIR_SUBMIT)) {
     # Use GDX_OUTPUT_DIR on the submit machine side as well.
     if (!(file_exists(in_gams_curdir(GDX_OUTPUT_DIR)))) stop(str_glue('Configured GDX_OUTPUT_DIR "{GDX_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
@@ -367,8 +369,6 @@ if (GET_G00_OUTPUT) {
   if (str_length(GDX_OUTPUT_FILE) <= 4) stop(str_glue("Configured GDX_OUTPUT_FILE needs more than an extension!"))
   if (str_detect(GDX_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GDX_OUTPUT_FILE has forbidden character(s)!"))
   gdx_prefix <- str_sub(GDX_OUTPUT_FILE, 1, -5) # used only when GET_GDX_OUTPUT == TRUE
-} else {
-  stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
 }
 if (MERGE_GDX_OUTPUT && !GET_GDX_OUTPUT) stop("Cannot MERGE_GDX_OUTPUT without first doing GET_GDX_OUTPUT!")
 if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT without first doing WAIT_FOR_RUN_COMPLETION!")
