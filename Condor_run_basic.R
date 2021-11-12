@@ -54,8 +54,7 @@ rm(list=ls())
 
 # Override the default config settings via a run-config file passed as a first
 # argument to this script. Lines with settings like the ones just below can be
-# used in the config file. Only settings marked as optional can be omitted from
-# the config file.
+# used in the config file.
 #
 # To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
 # MANDATORY configuration settings to a file, give it a .R extension to get nice

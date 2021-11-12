@@ -66,18 +66,11 @@ rm(list=ls())
 
 # Override the default config settings via a run-config file passed as a first
 # argument to this script. Lines with settings like the ones just below can be
-# used in the config file. Only settings marked as optional can be omitted from
-# the config file.
+# used in the config file.
 #
 # To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
 # MANDATORY configuration settings to a file, give it a .R extension to get nice
 # syntax highlighting.
-#
-# BEWARE: with the default GAMS_ARGUMENTS below, an output GDX is produced via
-# the gdx= GAMS command line parameter that contains all data. You may wish
-# to limit what goes into the GDX by instead using EXECUTE_UNLOAD from GAMS.
-# If you do, do not forget to override the GAMS_ARGUMENTS default in your
-# configuration file with a value without a gdx= argument.
 #
 # .......8><....snippy.snappy....8><.........................................
 # In path values, use '/' as directory separator. Paths are relative to
@@ -122,21 +115,21 @@ BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.
 BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
 CONDOR_DIR = "Condor" # directory where Condor reference files are stored in a per-experiment subdirectory (.err, .log, .out, .job and so on files), excluded from bundle. Can also be an absolute path. Created when it does not exist.
 GAMS_CURDIR = "" # working directory for GAMS and its arguments relative to working directory, "" defaults to the working directory
-RETAIN_BUNDLE = FALSE # optional
+RETAIN_BUNDLE = FALSE
 RESTART_FILE_PATH = "" # path relative to GAMS_CURDIR pointing to the work/restart file to launch GAMS with on the host side. Included in bundle if set.
 MERGE_GDX_OUTPUT = FALSE # uses GDXMERGE (https://www.gams.com/latest/docs/T_GDXMERGE.html)
 MERGE_BIG = NULL # symbol size cutoff beyond which GDXMERGE writes symbols one-by-one to avoid running out of memory (see https://www.gams.com/latest/docs/T_GDXMERGE.html)
 MERGE_ID = NULL # comma-separated list of symbols to include in the merge, defaults to all
 MERGE_EXCLUDE = NULL # comma-separated list of symbols to exclude from the merge, defaults to none
-REMOVE_MERGED_GDX_FILES = FALSE # optional
+REMOVE_MERGED_GDX_FILES = FALSE
 G00_OUTPUT_DIR = "" # directory for work/save file. Relative to GAMS_CURDIR both host-side and on the submit machine if G00_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 G00_OUTPUT_DIR_SUBMIT = NULL # directory on the submit machine into where G00 job output files are transferred. Can also be an absolute path. When set to NULL, G00_OUTPUT_DIR will be used instead.
 G00_OUTPUT_FILE = "" # name of work/save file. Host-side, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
-GET_G00_OUTPUT = FALSE # optional
+GET_G00_OUTPUT = FALSE
 GDX_OUTPUT_DIR = "" # relative to GAMS_CURDIR both host-side and on the submit machine if GDX_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 GDX_OUTPUT_DIR_SUBMIT = NULL # directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. When set to NULL, GDX_OUTPUT_DIR will be used instead.
 GDX_OUTPUT_FILE = "" # as produced on the host-side by gdx= GAMS parameter or execute_unload, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
-GET_GDX_OUTPUT = FALSE # optional
+GET_GDX_OUTPUT = FALSE
 SEED_JOB_RELEASES = 0 # number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # number of times to auto-release (retry) held jobs before giving up
 RUN_AS_OWNER = TRUE # if TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
