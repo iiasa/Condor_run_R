@@ -82,7 +82,6 @@ rm(list=ls())
 # .......8><....snippy.snappy....8><.........................................
 # Use paths with / as path separator.
 # Unless otherwise specified, paths are relative to the current working directory.
-PREFIX = "_globiom" # prefix for per-job .err, log, .lst, and .out files
 JOBS = c(0:3,7,10)
 HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
 REQUEST_MEMORY = 7800 # memory (MiB) to reserve for each job
@@ -143,6 +142,7 @@ EMAIL_ADDRESS = NULL # optional, set with your email if you don't receive notifi
 NICE_USER = FALSE # optional, be nice, give jobs of other users priority
 CLUSTER_NUMBER_LOG = "" # optional, path of log file for capturing cluster number, empty == none.
 CLEAR_LINES = TRUE # optional, clear status monitoring lines so as to show only the last status, set to FALSE when this does not work, e.g. when the output goes into the chunk output of an RMarkdown notebook. 
+PREFIX = "job" # optional, prefix for per-job .err, log, and .out file names
 # optional, define the Condor .job file template for the run
 JOB_TEMPLATE <- c(
   "executable = {job_bat}",

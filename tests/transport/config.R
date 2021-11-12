@@ -1,5 +1,4 @@
 LABEL = "transport_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
-PREFIX = "job" # prefix for per-job .err, log, .lst, and .out files
 JOBS = c(0, 5, 10, 15, 20, 25, 30, 40, 45, 50) # New York demand shifters
 HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
 REQUEST_MEMORY = 15 # memory (MiB) to reserve for each job
