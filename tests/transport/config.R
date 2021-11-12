@@ -1,7 +1,7 @@
 LABEL = "transport_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
 JOBS = c(0, 5, 10, 15, 20, 25, 30, 40, 45, 50) # New York demand shifters
 HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
-REQUEST_MEMORY = 15 # memory (MiB) to reserve for each job
+REQUEST_MEMORY = 1000 # memory (MiB) to reserve for each job
 REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 GAMS_FILE_PATH = "transport.gms" # path to GAMS file to run for each job, relative to GAMS_CURDIR
 GAMS_ARGUMENTS = "save={G00_OUTPUT_DIR}/{G00_OUTPUT_FILE} gdx={GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE} //shift=%1" # additional GAMS arguments, can use {<config>} expansion here
