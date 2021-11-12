@@ -96,7 +96,6 @@ LABEL = "{Sys.Date()}" # label/name for your project/experiment, pick something 
 #
 # In path values, use '/' as directory separator. Paths are relative to
 # the current working directory unless otherwise indicated.
-EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2") # GAMS versions installed on execute hosts
 BUNDLE_INCLUDE = "*" # recursive, what to include in bundle, can be a wildcard
 BUNDLE_INCLUDE_DIRS = c("input") # further directories to include recursively, added to root of bundle, supports wildcards
 BUNDLE_EXCLUDE_DIRS = c(".git", ".svn") # recursive, supports wildcards
