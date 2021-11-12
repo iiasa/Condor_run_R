@@ -70,7 +70,7 @@ rm(list=ls())
 # the config file.
 #
 # To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
-# mandatory configuration settings to a file, give it a .R extension to get nice
+# MANDATORY configuration settings to a file, give it a .R extension to get nice
 # syntax highlighting.
 #
 # BEWARE: with the default GAMS_ARGUMENTS below, an output GDX is produced via
@@ -80,8 +80,8 @@ rm(list=ls())
 # configuration file with a value without a gdx= argument.
 #
 # .......8><....snippy.snappy....8><.........................................
-# Use paths with / as path separator.
-# Unless otherwise specified, paths are relative to the current working directory.
+# In path values, use '/' as directory separator. Paths are relative to
+# the current working directory unless otherwise indicated.
 JOBS = c(0:3,7,10)
 HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
 REQUEST_MEMORY = 7800 # memory (MiB) to reserve for each job
@@ -108,8 +108,11 @@ LABEL = "{Sys.Date()}" # label/name for your project/experiment, pick something 
 #PROJECT = "project_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
 #EXPERIMENT = "experiment_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
 
-# The below configuration parameters can optionally be included in your
-# configuration file but are but are not obligatory.
+# The below configuration parameters are OPTIONAL. Add the ones you need to
+# your configuration file (see above).
+#
+# In path values, use '/' as directory separator. Paths are relative to
+# the current working directory unless otherwise indicated.
 EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2") # optional, GAMS versions installed on execute hosts
 BUNDLE_INCLUDE = "*" # optional, recursive, what to include in bundle, can be a wildcard
 BUNDLE_INCLUDE_DIRS = c() # optional, further directories to include recursively, added to root of bundle, supports wildcards
