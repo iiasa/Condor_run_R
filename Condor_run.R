@@ -122,14 +122,14 @@ MERGE_BIG = NULL # symbol size cutoff beyond which GDXMERGE writes symbols one-b
 MERGE_ID = NULL # comma-separated list of symbols to include in the merge, defaults to all
 MERGE_EXCLUDE = NULL # comma-separated list of symbols to exclude from the merge, defaults to none
 REMOVE_MERGED_GDX_FILES = FALSE
+GET_G00_OUTPUT = FALSE
 G00_OUTPUT_DIR = "" # directory for work/save file. Relative to GAMS_CURDIR both host-side and on the submit machine if G00_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 G00_OUTPUT_DIR_SUBMIT = NULL # directory on the submit machine into where G00 job output files are transferred. Can also be an absolute path. When set to NULL, G00_OUTPUT_DIR will be used instead.
 G00_OUTPUT_FILE = "" # name of work/save file. Host-side, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
-GET_G00_OUTPUT = FALSE
+GET_GDX_OUTPUT = FALSE
 GDX_OUTPUT_DIR = "" # relative to GAMS_CURDIR both host-side and on the submit machine if GDX_OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 GDX_OUTPUT_DIR_SUBMIT = NULL # directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. When set to NULL, GDX_OUTPUT_DIR will be used instead.
 GDX_OUTPUT_FILE = "" # as produced on the host-side by gdx= GAMS parameter or execute_unload, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
-GET_GDX_OUTPUT = FALSE
 SEED_JOB_RELEASES = 0 # number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # number of times to auto-release (retry) held jobs before giving up
 RUN_AS_OWNER = TRUE # if TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.

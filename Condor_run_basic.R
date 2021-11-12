@@ -69,9 +69,6 @@ REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
 LAUNCHER = "Rscript" # interpreter with which to launch the script
 SCRIPT = "my_script.R" # script that comprises your job
 ARGUMENTS = "%1" # arguments to the script
-GET_OUTPUT = TRUE
-OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine it OUTPUT_DIR_SUBMIT is not set, excluded from bundle
-OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
 mandatory_config_names <- ls()
@@ -104,7 +101,10 @@ BUNDLE_EXCLUDE_FILES = c("**/*.log") # supports wildcards
 BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
 RETAIN_BUNDLE = FALSE # retain the bundle in the run's CONDOR_DIR subdirectory when TRUE. Can be useful for locally analyzing host-side issues with jobs.
 CONDOR_DIR = "Condor" # directory where for each run, Condor log files and other run artifacts are stored in subdirectories. Excluded from bundle. Can also be an absolute path. Created when it does not exist.
+GET_OUTPUT = TRUE
+OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine it OUTPUT_DIR_SUBMIT is not set, excluded from bundle
 OUTPUT_DIR_SUBMIT = NULL # directory on the submit machine into where job output files are transferred. Can also be an absolute path. When set to NULL, OUTPUT_DIR will be used instead.
+OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 SEED_JOB_RELEASES = 0 # number of times to auto-release (retry) held seed jobs before giving up
 JOB_RELEASES = 3 # number of times to auto-release (retry) held jobs before giving up
 RUN_AS_OWNER = TRUE # if TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
