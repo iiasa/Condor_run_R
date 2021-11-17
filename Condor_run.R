@@ -195,7 +195,16 @@ BAT_TEMPLATE <- c(
   "touch %bundle_root%\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7z x %bundle_root%\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
-  'C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe "{GAMS_FILE_PATH}" -logOption=3 {ifelse(GAMS_CURDIR != "", str_glue("curDir=\\"{GAMS_CURDIR}\\" "), "")}{ifelse(RESTART_FILE_PATH != "", str_glue("restart=\\"{RESTART_FILE_PATH}\\" "), "")}save="{G00_OUTPUT_DIR}/{g00_prefix}" {str_glue(GAMS_ARGUMENTS)}',
+  paste(
+    'C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe',
+    "{GAMS_FILE_PATH}",
+    '-logOption=3',
+    '{ifelse(GAMS_CURDIR != "", str_glue("curDir=\\"{GAMS_CURDIR}\\" "), "")}',
+    '{ifelse(RESTART_FILE_PATH != "", str_glue("restart=\\"{RESTART_FILE_PATH}\\" "), "")}',
+    '{ifelse(GET_G00_OUTPUT, str_glue("save=\\"", path(G00_OUTPUT_DIR, g00_prefix), "\\""), "")}',
+    '{str_glue(GAMS_ARGUMENTS)}',
+    sep = ' '
+  ),
   "set gams_errorlevel=%errorlevel%",
   "@echo off",
   "if %gams_errorlevel% neq 0 (",
