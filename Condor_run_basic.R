@@ -306,11 +306,15 @@ if (!dir_exists(run_dir)) dir_create(run_dir)
 
 # ---- Define some helper functions ----
 
-# Check and sanitize 7-Zip output and return the overall byte size of the input files
-handle_7zip <- function(out) {
+# Bundle files with 7-zip, check success and output, and return the overall byte size of the input files
+bundle_with_7z <- function(args_for_7z) {
+  out <- system2("7z", stdout=TRUE, stderr=TRUE, args=args_for_7z)
   if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
-    cat(out, sep="\n")
-    stop("7zip compression failed!", call.=FALSE)
+    message("7z failed, likely because of erroneous or too many arguments.\nThe arguments for 7z derived from the BUNDLE_* config options were as follows:")
+    message(paste(args_for_7z, collapse='\n'))
+    message("\nThe invocation of 7z returned:")
+    message(paste(out, collapse='\n'))
+    stop("Bundling failed!", call.=FALSE)
   }
   else {
     cat(out[grep("^Scanning the drive:", out)+1], sep="\n")
@@ -518,7 +522,7 @@ hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machin
 if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
 if (length(hostdoms) == 0) stop("No execute hosts matching HOST_REGEXP are available!")
 
-# ---- Bundle the model ----
+# ---- Bundle the files needed to run the job ----
 
 # Set R-default and platform-specific paths to the bundle
 bundle <- "job_bundle.7z"
@@ -527,32 +531,34 @@ bundle_path <- path(temp_dir_parent, bundle) # Invariant so that it can double-d
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
 if (file_exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing? If so, let that submission end first. If not, delete the file and try again."))
 
-cat("Compressing model files into bundle...\n")
-model_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE,
-  args=unlist(lapply(c("a", "-mx1", "-bb0",
-    unlist(lapply(BUNDLE_INCLUDE_DIRS,  function(p) return(str_glue("-ir!", p)))),
-    unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!", p)))),
-    unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
-    unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!", p)))),
-    "-xr!{CONDOR_DIR}",
-    "-xr!{OUTPUT_DIR}",
-    "{bundle_platform_path}",
-    "{BUNDLE_INCLUDE}"
-  ), str_glue))
-))
+args_for_7z <- unlist(lapply(c(
+  "a",
+  "-mx1",
+  "-bb0",
+  unlist(lapply(BUNDLE_INCLUDE_DIRS,  function(p) return(str_glue("-ir!", p)))),
+  unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!",  p)))),
+  unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
+  unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
+  "-xr!{CONDOR_DIR}",
+  ifelse(OUTPUT_DIR_SUBMIT != "", "-xr!{OUTPUT_DIR_SUBMIT}", ""),
+  "{bundle_platform_path}",
+  "{BUNDLE_INCLUDE}"
+), str_glue))
+cat("Compressing files into bundle...\n")
+byte_size <- bundle_with_7z(args_for_7z)
 cat("\n")
 
 additional_byte_size <- 0
 if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("Bundling additional files...\n")
-  args <- c("a", bundle_platform_path, BUNDLE_ADDITIONAL_FILES)
-  additional_byte_size <- handle_7zip(system2("7z", stdout=TRUE, stderr=TRUE, args=args))
+  args_for_7z <- c("a", bundle_platform_path, BUNDLE_ADDITIONAL_FILES)
+  additional_byte_size <- bundle_with_7z(args_for_7z)
   cat("\n")
 }
 
 # Estimate the amount of disk to request for run, in KiB
 # decompressed bundle content + 2GiB for output files
-request_disk <- ceiling((model_byte_size+additional_byte_size)/1024)+2*1024*1024
+request_disk <- ceiling((byte_size+additional_byte_size)/1024)+2*1024*1024
 
 # Determine the bundle size in KiB
 bundle_size <- floor(file_size(bundle_path)/1024)
