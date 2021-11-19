@@ -159,7 +159,11 @@ JOB_TEMPLATE <- c(
 # a POSIX command distribution to be installed and put on-path.
 # GAMS installations have such commands in the 'gbin' subdirectory.
 BAT_TEMPLATE <- c(
-  "@echo off",
+  '@echo off',
+  'if not "%~1"=="" goto continue',
+  'echo This batch file runs on an execute host with a job number as only argument.',
+  'exit /B 1',
+  ':continue',
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
   'mkdir "{OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
