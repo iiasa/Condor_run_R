@@ -123,10 +123,10 @@ JOB_TEMPLATE <- c(
   "nice_user = {ifelse(NICE_USER, 'True', 'False')}",
   "",
   "# Job log, output, and error files",
-  "log = {run_dir}/{PREFIX}_{LABEL}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
-  "output = {run_dir}/{PREFIX}_{LABEL}_$(cluster).$(job).out",
+  "log = {run_dir}/{PREFIX}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
+  "output = {run_dir}/{PREFIX}_$(cluster).$(job).out",
   "stream_output = True",
-  "error = {run_dir}/{PREFIX}_{LABEL}_$(cluster).$(job).err",
+  "error = {run_dir}/{PREFIX}_$(cluster).$(job).err",
   "stream_error = True",
   "",
   "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
@@ -275,7 +275,7 @@ if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
 if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
 if (!(file_exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
 if (str_detect(SCRIPT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCRIPT has forbidden character(s)!"))
-if (!str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion that must be used for passing the job number with which the job-specific (e.g. scenario) can be selected.")
+if (!str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
 for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file_exists(path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
@@ -708,7 +708,7 @@ rm(hostnames)
 # ---- Prepare files for run ----
 
 # Move the configuration from the temp to the run directory so as to have a persistent reference
-config_file <- path(run_dir, str_glue("_config_{LABEL}_{predicted_cluster}.R"))
+config_file <- path(run_dir, str_glue("_config_{predicted_cluster}.R"))
 tryCatch(
   file_copy(temp_config_file, config_file, overwrite=TRUE),
   error=function(cond) {
@@ -721,7 +721,7 @@ file_delete(temp_config_file)
 
 # Copy the SCRIPT to the run directory for reference
 tryCatch(
-  file_copy(SCRIPT, path(run_dir, str_glue("{script_prefix}_{LABEL}_{predicted_cluster}.{script_extension}")), overwrite=TRUE),
+  file_copy(SCRIPT, path(run_dir, str_glue("{script_prefix}_{predicted_cluster}.{script_extension}")), overwrite=TRUE),
   error=function(cond) {
     file_delete(bundle_path)
     message(cond)
@@ -737,7 +737,7 @@ close(bat_conn)
 rm(bat_conn)
 
 # Apply settings to job template and write the .job file to use for submission
-job_file <- path(run_dir, str_glue("submit_{LABEL}_{predicted_cluster}.job"))
+job_file <- path(run_dir, str_glue("submit_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(JOB_TEMPLATE, str_glue)), job_conn)
 close(job_conn)
@@ -765,7 +765,7 @@ if (cluster != predicted_cluster) {
 # Retain the bundle if so requested, then delete it from temp so that further submissions are no longer blocked
 if (RETAIN_BUNDLE) {
   tryCatch(
-    file_copy(bundle_path, path(run_dir, str_glue("bundle_{LABEL}_{cluster}.7z"))),
+    file_copy(bundle_path, path(run_dir, str_glue("bundle_{cluster}.7z"))),
     error=function(cond) {
       message(cond)
       warning("Could not make a reference copy of bundle as requested via RETAIN_BUNDLE!")
@@ -803,17 +803,17 @@ if (WAIT_FOR_RUN_COMPLETION) {
   file_delete(job_bat)
 
   # Check that result files exist and are not empty, warn otherwise and delete empty files
-  all_exist_and_not_empty(run_dir, "{PREFIX}_{LABEL}_{cluster}.{job}.err", ".err", warn=FALSE)
+  all_exist_and_not_empty(run_dir, "{PREFIX}_{cluster}.{job}.err", ".err", warn=FALSE)
   if (GET_OUTPUT) {
     output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR_SUBMIT, 'output_{LABEL}_{cluster}.{sprintf("%06d", job)}.{output_extension}', output_extension)
   }
 
-  return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{LABEL}_{cluster}.{job}.log"))))
+  return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{cluster}.{job}.log"))))
   if (any(is.na(return_values))) {
-    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{LABEL}_{cluster}.* files in {run_dir}"))
+    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{cluster}.* files in {run_dir}"))
   }
   if (any(return_values != 0)) {
-    stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{LABEL}_{cluster}.* files in {run_dir}"))
+    stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{cluster}.* files in {run_dir}"))
   }
   cat("All jobs are done.\n")
 
@@ -822,7 +822,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   max_memory_job <- -1
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
   for (job in JOBS) {
-    job_lines <- readLines(path(run_dir, str_glue("{PREFIX}_{LABEL}_{cluster}.{job}.log")))
+    job_lines <- readLines(path(run_dir, str_glue("{PREFIX}_{cluster}.{job}.log")))
     memory_use <- as.double(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
@@ -836,7 +836,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
     warning(str_glue("REQUEST_MEMORY ({REQUEST_MEMORY} MiB) is significantly larger than the memory use ({max_memory_use} MiB) of the job ({max_memory_job}) using the most memory, you can request less."))
   }
 
-  # Make a bit of noise to notify the user of completion (works from RScript but not RStudio)
+  # Make a bit of noise to notify the user of completion (works with Rscript but not from RStudio)
   alarm()
   Sys.sleep(1)
   alarm()

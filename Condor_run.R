@@ -148,10 +148,10 @@ JOB_TEMPLATE <- c(
   "nice_user = {ifelse(NICE_USER, 'True', 'False')}",
   "",
   "# Job log, output, and error files",
-  "log = {run_dir}/{PREFIX}_{LABEL}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
-  "output = {run_dir}/{PREFIX}_{LABEL}_$(cluster).$(job).out",
+  "log = {run_dir}/{PREFIX}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
+  "output = {run_dir}/{PREFIX}_$(cluster).$(job).out",
   "stream_output = True",
-  "error = {run_dir}/{PREFIX}_{LABEL}_$(cluster).$(job).err",
+  "error = {run_dir}/{PREFIX}_$(cluster).$(job).err",
   "stream_error = True",
   "",
   "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
@@ -171,7 +171,7 @@ JOB_TEMPLATE <- c(
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
   'transfer_output_files = {str_sub(in_gams_curdir(GAMS_FILE_PATH), 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{in_gams_curdir(G00_OUTPUT_DIR)}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{in_gams_curdir(GDX_OUTPUT_DIR)}/{GDX_OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{str_sub(GAMS_FILE_PATH, 1, -5)}.lst={run_dir}/{PREFIX}_{LABEL}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}_{LABEL}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_output_remaps = "{str_sub(GAMS_FILE_PATH, 1, -5)}.lst={run_dir}/{PREFIX}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}_{LABEL}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -337,7 +337,7 @@ version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
 if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
 if (!(GAMS_VERSION %in% EXECUTE_HOST_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The execute hosts have only these GAMS versions installed: {str_c(EXECUTE_HOST_GAMS_VERSIONS, collapse=" ")}')) # {cat(EXECUTE_HOST_GAMS_VERSIONS)}
 dotless_version <- str_glue(version_match[2], version_match[3])
-if (!str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion that must be used for passing the job number with which the job-specific (e.g. scenario) can be selected.")
+if (!str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
 for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file_exists(path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
@@ -827,7 +827,7 @@ rm(hostnames)
 # ---- Prepare files for run ----
 
 # Move the configuration from the temp to the run directory so as to have a persistent reference
-config_file <- path(run_dir, str_glue("_config_{LABEL}_{predicted_cluster}.R"))
+config_file <- path(run_dir, str_glue("_config_{predicted_cluster}.R"))
 tryCatch(
   file_copy(temp_config_file, config_file, overwrite=TRUE),
   error=function(cond) {
@@ -840,7 +840,7 @@ file_delete(temp_config_file)
 
 # Copy the GAMS_FILE_PATH file to the run directory for reference
 tryCatch(
-  file_copy(in_gams_curdir(GAMS_FILE_PATH), path(run_dir, str_glue("{str_sub(basename(GAMS_FILE_PATH), 1, -5)}_{LABEL}_{predicted_cluster}.gms")), overwrite=TRUE),
+  file_copy(in_gams_curdir(GAMS_FILE_PATH), path(run_dir, str_glue("{str_sub(basename(GAMS_FILE_PATH), 1, -5)}_{predicted_cluster}.gms")), overwrite=TRUE),
   error=function(cond) {
     file_delete(bundle_path)
     message(cond)
@@ -856,7 +856,7 @@ close(bat_conn)
 rm(bat_conn)
 
 # Apply settings to job template and write the .job file to use for submission
-job_file <- path(run_dir, str_glue("submit_{LABEL}_{predicted_cluster}.job"))
+job_file <- path(run_dir, str_glue("submit_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(JOB_TEMPLATE, str_glue)), job_conn)
 close(job_conn)
@@ -921,8 +921,8 @@ if (WAIT_FOR_RUN_COMPLETION) {
   file_delete(job_bat)
 
   # Check that result files exist and are not empty, warn otherwise and delete empty files
-  all_exist_and_not_empty(run_dir, "{PREFIX}_{LABEL}_{cluster}.{job}.err", ".err", warn=FALSE)
-  all_exist_and_not_empty(run_dir, "{PREFIX}_{LABEL}_{cluster}.{job}.lst", ".lst")
+  all_exist_and_not_empty(run_dir, "{PREFIX}_{cluster}.{job}.err", ".err", warn=FALSE)
+  all_exist_and_not_empty(run_dir, "{PREFIX}_{cluster}.{job}.lst", ".lst")
   if (GET_G00_OUTPUT) {
     g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, "{g00_prefix}_{LABEL}_{cluster}.{job}.g00", "work/save (.g00)")
   }
@@ -930,12 +930,12 @@ if (WAIT_FOR_RUN_COMPLETION) {
     gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR_SUBMIT, '{gdx_prefix}_{LABEL}_{cluster}.{sprintf("%06d", job)}.gdx', "GDX")
   }
 
-  return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{LABEL}_{cluster}.{job}.log"))))
+  return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{cluster}.{job}.log"))))
   if (any(is.na(return_values))) {
-    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{LABEL}_{cluster}.* files in {run_dir}"))
+    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{cluster}.* files in {run_dir}"))
   }
   if (any(return_values != 0)) {
-    stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{LABEL}_{cluster}.* files in {run_dir}"))
+    stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{cluster}.* files in {run_dir}"))
   }
   cat("All jobs are done.\n")
 
@@ -944,7 +944,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   max_memory_job <- -1
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
   for (job in JOBS) {
-    job_lines <- readLines(path(run_dir, str_glue("{PREFIX}_{LABEL}_{cluster}.{job}.log")))
+    job_lines <- readLines(path(run_dir, str_glue("{PREFIX}_{cluster}.{job}.log")))
     memory_use <- as.double(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
@@ -992,7 +992,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
       }
     }
   }
-  # Make a bit of noise to notify the user of completion (works from RScript but not RStudio)
+  # Make a bit of noise to notify the user of completion (works with Rscript but not from RStudio)
   alarm()
   Sys.sleep(1)
   alarm()

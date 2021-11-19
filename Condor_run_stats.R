@@ -121,9 +121,9 @@ for (ld in LOG_DIRECTORIES) {
       ld <- path(getwd(), ld)
     }
   }
-  outs <- dir_ls(path=ld, glob=str_glue("*_{experiment}_{CLUSTER}.*.out"))
+  outs <- dir_ls(path=ld, glob=str_glue("*_{CLUSTER}.*.out"))
   out_paths <- c(out_paths, outs)
-  logs <- dir_ls(path=ld, glob=str_glue("*_{experiment}_{CLUSTER}.*.log"))
+  logs <- dir_ls(path=ld, glob=str_glue("*_{CLUSTER}.*.log"))
   log_paths <- c(log_paths, logs)
   experiments <- c(experiments, rep(experiment, length(logs)))
 }
