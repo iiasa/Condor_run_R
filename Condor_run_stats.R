@@ -75,31 +75,44 @@ if (Sys.getenv("RSTUDIO") == "1") {
     } else {
       # It is a file, try to source it as a configuration file
       source(arg, local=TRUE, echo=FALSE)
-      if (exists("EXPERIMENT")) LABEL <- EXPERIMENT # allowed synonym
-      if (exists("NAME")) LABEL <- NAME # allowed synonym
-      if (exists("PROJECT")) LABEL <- PROJECT # allowed synonym
-      if (!exists("LABEL")) {
-        stop(str_glue("None of the synonyms EXPERIMENT/LABEL/NAME/PROJECT is defined in file '{arg}'!"))
+
+      # Accommodate synonym configuration options for LABEL
+      if (exists("LABEL")) {
+        label_from <- "LABEL"
+      } else if (exists("EXPERIMENT")) {
+        label_from <- "EXPERIMENT"
+        LABEL <- EXPERIMENT
+      } else if (exists("NAME")) {
+        label_from <- "NAME"
+        LABEL <- NAME
+      } else if (exists("PROJECT")) {
+        label_from <- "PROJECT"
+        LABEL <- PROJECT
+      } else {
+        stop(str_glue("None of the synonyms EXPERIMENT/LABEL/NAME/PROJECT is defined in  file '{arg}'!"))
       }
-      LABEL <- str_glue(LABEL) # when the job completed past midnight, and the string contains a date expresssion, this will differ from the run
+
       # Construct the path to the experiment log directory from the configuration
       if (exists("CONDOR_DIR")) {
         # The log directory should be under CONDOR_DIR
-        ld <- path(CONDOR_DIR, LABEL)
-        if (!file_exists(ld) || !is_dir(ld)) {
-          stop(str_glue("Could not locate a log directory at '{ld}' as configured in CONDOR_DIR and EXPERIMENT/LABEL/NAME/PROJECT of configuration file '{arg}! Maybe the date is in the experiment name, and the run completed past midnight? If so, just specify the experiment log directory explicitely on the command line.'"))
-        }
-        LOG_DIRECTORIES <- c(LOG_DIRECTORIES, ld)
-        rm(CONDOR_DIR, LABEL)
+        ld <- path(CONDOR_DIR, str_glue(LABEL))
+        default_condor_dir = FALSE
       } else {
         # The experiment log directory should be the default "Condor" directory
-        ld <- path("Condor", LABEL)
-        if (!file_exists(ld) || !is_dir(ld)) {
-          stop(str_glue("Could not locate experiment log directory at '{ld}' in the default CONDOR_DIR='Condor' directory and as configured in EXPERIMENT/LABEL/NAME/PROJECT of configuration file '{arg}!'"))
-        }
-        LOG_DIRECTORIES <- c(LOG_DIRECTORIES, ld)
-        rm(LABEL)
+        ld <- path("Condor", str_glue(LABEL))
+        default_condor_dir = TRUE
       }
+      if (!file_exists(ld) || !is_dir(ld)) {
+        if (str_detect(LABEL, fixed("Sys.Date(")) || str_detect(LABEL, fixed("Sys.time("))) {
+          time_variable_advice <- str_glue(" {label_from} has a time-variable value '{LABEL}' so probably you started the run on an earlier date. To still analyze the run, specify its Condor log directory instead of its configuration file as an argument.")
+        } else {
+          time_variable_advice <- ""
+        }
+        stop(str_glue("Could not locate a log directory at '{ld}' as configured by {ifelse(default_condor_dir, '', 'CONDOR_DIR and ')}{label_from} of configuration file '{arg}!{time_variable_advice}'"))
+      }
+
+      # Add log directory path as determined from config file
+      LOG_DIRECTORIES <- c(LOG_DIRECTORIES, ld)
     }
   }
   # Set PDF filename and use landscape mode for generating the PDF with plots
