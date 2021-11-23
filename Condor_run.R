@@ -191,6 +191,7 @@ BAT_TEMPLATE <- c(
   ':continue',
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
+  "cd",
   '{ifelse(in_gams_curdir(G00_OUTPUT_DIR) == "", "", str_glue("mkdir \\"{in_gams_curdir(G00_OUTPUT_DIR)}\\" 2>NUL"))}',
   '{ifelse(in_gams_curdir(GDX_OUTPUT_DIR) == "", "", str_glue("mkdir \\"{in_gams_curdir(GDX_OUTPUT_DIR)}\\" 2>NUL"))}',
   "set bundle_root=d:\\condor\\bundles",

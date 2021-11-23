@@ -166,6 +166,7 @@ BAT_TEMPLATE <- c(
   ':continue',
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
+  "cd",
   'mkdir "{OUTPUT_DIR}" 2>NUL || exit /b %errorlevel%',
   "set bundle_root=d:\\condor\\bundles",
   "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
