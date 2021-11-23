@@ -107,7 +107,7 @@ When you cannot submit jobs, ensure that:
 - You are using [up-to-date scripts](#updating).
 
 ### None of the above nor below solves my problem
-Try to invoke `Rscript` with the `--vanilla` option. If that does not help, reboot your machine and try to submit again.
+Reboot your machine and try to submit again. If that does not help, try to invoke `Rscript` with the `--vanilla` option.
 
 ### The script does not progress
 The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**.
