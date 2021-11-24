@@ -131,14 +131,16 @@ Otherwise investigate further. Look at the various log files located at `<CONDOR
 3.  `.out` files: these capture the [standard output](https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)) stream of each job as it runs remotely. They grow as jobs run. Errors may be logged here too. For GAMS jobs, these files contain what is normally stored in GAMS log files (which confusingly can have the same file extension as the Condor `.log` files mentioned above) or shown in the system log of GAMS Studio. Look for high-level errors/warnings near the end.
 4.  `.lst` files: these are [GAMS listing files](https://www.gams.com/latest/docs/UG_GAMSOutput.html). They are produced only for GAMS jobs. The `.lst` file is transferred when a job completes or aborts and as such are not available yet while the job is still scheduled. For GAMS, this is the place to look for detailed errors. Search for `****` backwards from the end to locate them.
 
-Should the log files show that an error occurred on the execute host but you cannot figure out why, being able to log in to the execute host and analyse the problem there is helpful. If you have such rights, check which host the job ran on and what its working directory is by examining the start of the `.out` file. As long as the job is on hold, it should be possible to connect to the host and examine that directory. Beware that the job might be released from its hold state for a retry while the `JOB_RELEASES` count has not been exhausted yet.
+Should the log files show that an error occurred on the execute host but you cannot figure out why, being able to log in to the execute host and analyse the problem there is helpful. If you have such rights, check which host the job ran on and what its working directory is by examining the start of the `.out` file. As long as the job is on hold, the working directory will remain in existence. Beware that the job might be released from its hold state for a retry while the `JOB_RELEASES` count has not been exhausted yet.
 
 When you do not have the rights to log in to execute hosts to analyze held jobs in-situ, setting the `RETAIN_BUNDLE` option to `TRUE` can assist. This will preserve a copy of the 7-Zip bundle sent to the execute hosts in the run-specific directory that also holds the log files. Unzip that bundle and try to run the job locally to see if you can reproduce the problem.
 
 If the above does not clarify the problem, execute [`condor_q –analyze`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) and examine the output: it might be something that happened after the job completed, e.g. result files not fitting because your disk is full.
 
+When you are done analyzing the held jobs, use [`condor_rm`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_rm.html) to remove them. This will clean up their working directories on the execute host. 
+
 ### Jobs go on hold without producing matching `.log` files
-When your job produced no `.log` files in a subdirectory of `CONDOR_DIR` there are three likeley causes:
+When your job produced no `.log` files in a subdirectory of `CONDOR_DIR` there are three likely causes:
 
 1. The pool credentials are not stored or outdated. Store the pool password again using [`condor_store_cred -c add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) and retry. Ask your cluster administrator for the pool password.
 
