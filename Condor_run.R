@@ -521,7 +521,8 @@ monitor <- function(clusters) {
     # Warn when there are held jobs for the first time
     if (held > 0 && !warn) {
       clear_line()
-      cat("Jobs are held! These may be automatically released (see SEED_JOB_RELEASES and JOB_RELEASES config settings) or released manually via condor_release. If released jobs keep on returning to the held state, there is a persistent error that should be investigated. You can remove the held jobs using condor_rm.\n")
+      message("Jobs are held!")
+      message("To see what this means please read: https://github.com/iiasa/Condor_run_R/blob/master/README.md#jobs-do-not-run-but-instead-go-on-hold")
       cat(q)
       warn <- TRUE
     }
