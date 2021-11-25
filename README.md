@@ -1,7 +1,7 @@
 ![License](https://img.shields.io/github/license/iiasa/Condor_run_R)
 
 # Condor_run_R
-R scripts to submit and analyse [HT Condor](https://research.cs.wisc.edu/htcondor/) runs
+R scripts to submit and analyse [HT Condor](https://research.cs.wisc.edu/htcondor/htcondor/overview/) runs
 
 ## Author
 Albert Brouwer
@@ -21,7 +21,7 @@ ___
 - [Configuring execute hosts](#configuring-execute-hosts)
 
 ## Introduction
-This repository provides R scripts for submitting a Condor *run* (a set of jobs) to a cluster of execute hosts and analysing performance statistics. Four scripts are provided:
+This repository provides R scripts for submitting a *run* (a set of jobs) to a HT Condor cluster, and for analysing run performance statistics. Four scripts are provided:
 1. `Condor_run_basic.R`: generic submit script.
 2. `Condor_run.R`: submit script with enhanced functionality for [GAMS](https://www.gams.com/) jobs.
 3. `Condor_run_stats.R`: analyse and plot run performance statistics.
