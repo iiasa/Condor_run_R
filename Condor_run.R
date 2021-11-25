@@ -442,7 +442,7 @@ monitor <- function(clusters) {
     if (held > 0 && !warn) {
       clear_line()
       message("Jobs are held!")
-      message("To see what this means please read: https://github.com/iiasa/Condor_run_R/blob/master/README.md#jobs-do-not-run-but-instead-go-on-hold")
+      message("To see what this means please read: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold")
       cat(q)
       warn <- TRUE
     }
@@ -715,7 +715,7 @@ rm(return_values, err_file_sizes)
 # Check whether seed jobs failed
 if (all(failed_seeds)) {
   file_delete(bundle_path)
-  stop(str_glue("All seeding jobs failed! For details, see the _seed_* files in {run_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/README.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
+  stop(str_glue("All seeding jobs failed! For details, see the _seed_* files in {run_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
 }
 if (any(failed_seeds)) {
   if (length(failed_seeds[failed_seeds == TRUE]) == 1) {
