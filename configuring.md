@@ -1,6 +1,6 @@
 # Configuring the Condor submit scripts
 
-This page lists the configuration parameters of the `Condor_run_basic.R` and `Condor_run.R` submit scripts. To quickly find the documentation of a particular parameter, dlick on the headings selection and filter drop down menu button located just to the top left of this text when displayed on GitHub. This smallish button looks like three stacked horizontal lines with leading bullets.
+This page lists the configuration parameters of the `Condor_run_basic.R` and `Condor_run.R` submit scripts. To quickly find the documentation of a particular parameter, click on the headings selection and filter drop down menu button located just to the top left of this text when displayed on GitHub. This smallish button looks like three stacked horizontal lines with leading bullets.
 
 To set up a configuration file, copy the code block between *snippy snappy* lines from the chosen submit script (either `Condor_run_basic.R` or `Condor_run.R`) into your clipboard, and save it to a file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or RStudio. Please carefully read the comments for each setting and customize as required.
 
@@ -48,7 +48,7 @@ Default value: `"{Sys.Date()}"`
 
 Synonyms: NAME, EXPERIMENT, PROJECT
 
-The run to be submitted can be given a short descriptive label. This label will be used to rename output files such that they do not overwrite output files from other runs. It is also used to create a subdirectory of CONDOR_DIR where run managment artifacts such a log files are placed. The LABEL should therefore be short and contain only characters that are valid in file names. You can use `{}` expansions as part of the label.
+Label/name of your project/experiment that is conducted by performing the run. This label will be used to rename output files such that they do not overwrite output files from other runs. It is also used to create a subdirectory of CONDOR_DIR where run managment artifacts such a log files are placed. The LABEL should therefore be short and contain only characters that are valid in file names. You can use `{}` expansions as part of the label.
 
 Note that a unique sequence number (the Condor "cluster" number) will also be used to (re)name the output files and artifacts so that name collisions are also avoided when using the same label for multiple runs.
 
