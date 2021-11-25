@@ -2,62 +2,12 @@
 # Submit a Condor run (a set of jobs). Expanded version for GAMS jobs. Can
 # be configured to monitor progress and merge gdx output on completion.
 #
-# Usage: invoke this script via Rscript, or, on Linux/MacOS, you can
-# invoke the script directly if its execute flag is set. The working
-# directory must contain the configured files and directories. To use
-# non-default config settings, pass a path to a configuration file as
-# an argument to this script. The format of the configuration file is
-# shown in the "Default run config settings section" below.
-#
-# The above means that you can invoke this script with something like
-#
-# Rscript Condor_run.R my_config.R
-#
-# either from the command prompt, shell, via the GAMS $call or execute
-# facilities, or using whatever your language of choice supports for
-# command invocation.
-#
-# When invoking this script, the working directory (current directory)
-# must contain the files to be bundled up with 7-zip. The bundle is
-# sent over to the remote execute hosts and is unpacked there at the
-# start of each job. The GAMS file to run for a job should be contained
-# in the bundle and configured with GAMS_FILE_PATH. If this GAMS file
-# must run from a different working directory, set the GAMS_CURDIR config
-# option accordingly.
-#
-# If you cannot invoke Rscript, you will need to add where the R binaries
-# reside to your PATH environment variable. On Windows, this is typically
-# C:\Program Files\R\R-x.y.z\bin\x64 (where x.y.z is the R version).
-#
-# A recent Condor version >= 8.7.2 is required to be installed on your
-# submit machine.
-#
-# Also, 7z should be on-path. On Windows, this typically requires
-# C:\Program Files\7-Zip to be added to your PATH environment variable.
-# Use a recent 7-Zip version that can compress in parallel and supports
-# the latest command line parameters. The execute hosts that you submit
-# to should also have 7-Zip on-path. This is the case for the limpopo
-# machines.
-#
-# When using MERGE_GDX_OUTPUT=TRUE, the gdxmerge executable should be
-# on-path. This can be done by adding your local GAMS installation
-# directory to PATH.
-#
-# This script requires you to have a recent version of Condor installed.
-# On Windows, the installer adds the Condor/bin directory to the PATH
-# system environment variable, thus making the Condor commands available.
-#
-# BEWARE: gdxmerge is limited. It sometimes gives "Symbol is too large"
-# errors, and neither the big= (MERGE_BIG configuration setting) nor
-# running gdxmerge on a large-memory machine can avoid that. Moreover,
-# no non-zero return code results in case of such errors.
+# Installation: https://github.com/iiasa/Condor_run_R#installation
+# Usage: https://github.com/iiasa/Condor_run_R#use
 #
 # Author: Albert Brouwer
 # Based on: GLOBIOM-limpopo scripts by David Leclere
 # Repository: https://github.com/iiasa/Condor_run_R
-#
-# Todo:
-# - Parse errors from gdxmerge output to work around 0 return code.
 
 # ---- Configuration parameters, see https://github.com/iiasa/Condor_run_R/blob/master/configuring.md ----
 
