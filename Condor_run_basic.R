@@ -94,7 +94,7 @@ LABEL = "{Sys.Date()}" # label/name for your project/experiment, pick something 
 # In path values, use '/' as directory separator. Paths are relative to
 # the current working directory unless otherwise indicated.
 BUNDLE_INCLUDE = "*" # recursive, what to include in bundle, can be a wildcard
-BUNDLE_INCLUDE_DIRS = c("input") # further directories to include recursively, added to root of bundle, supports wildcards
+BUNDLE_INCLUDE_DIRS = c() # further directories to include recursively, added to root of bundle, supports wildcards
 BUNDLE_EXCLUDE_DIRS = c(".git", ".svn") # recursive, supports wildcards
 BUNDLE_INCLUDE_FILES = c() # supports wildcards
 BUNDLE_EXCLUDE_FILES = c("**/*.log") # supports wildcards
