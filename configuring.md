@@ -171,7 +171,7 @@ Default value: `"output.RData"`
 
 Name of output file as produced by a job on the execute host side. Will be renamed with `LABEL` and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
 
-## `Condor_run.R`-specufuc optional configuration parameters
+## `Condor_run.R`-specific optional configuration parameters
 
 ### EXECUTE_HOST_GAMS_VERSIONS
 Default value: `c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2")`
@@ -229,7 +229,7 @@ Directory on the submit machine into where `.g00` job work/save files are transf
 ### G00_OUTPUT_FILE
 Default value: `""`
 
-Name of work/save file produced by a job on the execute host side via the [`save=` GAMS parameter]](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with `LABEL` and cluster/job numbers to avoid name collisions when transferred to the submit machine.
+Name of work/save file produced by a job on the execute host side via the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with `LABEL` and cluster/job numbers to avoid name collisions when transferred to the submit machine.
 
 ### GET_GDX_OUTPUT
 Default value: `FALSE`
