@@ -152,7 +152,7 @@ Default value: see `Condor_run.R` or `Condor_run_basic.R`.
 
 Template for the `.bat` file that specifies what should be run on the execute host side for each job. This default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory.
 
-## Optional configuration for `Condor_run_basic.R` only
+## Optional configuration parameters specific to `Condor_run_basic.R`
 
 ### OUTPUT_DIR
 Default value: `"output"`
@@ -169,7 +169,7 @@ Default value: `"output.RData"`
 
 Name of output file as produced by a job on the execute host side. Will be renamed with `LABEL` and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
 
-## Optional configuration for `Condor_run.R` only
+## Optional configuration parameters specific to `Condor_run.R`
 
 ### EXECUTE_HOST_GAMS_VERSIONS
 Default value: `c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2")`
