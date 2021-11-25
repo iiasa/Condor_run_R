@@ -1,4 +1,19 @@
 # Troubleshooting
+When you have an issue with getting your jobs to run or retrieving output, please see if your problem is listed below. As a default solution, reboot your submit machine: it often helps.
+
+- [Cannot submit jobs](#cannot-submit-jobs)
+- [The script does not progress](#the-script-does-not-progress)
+- [You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials](#you-get-error-no-credential-stored-for-userdomain-but-did-store-your-credentials)
+- [When transferring the bundle, jobs stay in the running state indefinitely](#when-transferring-the-bundle-jobs-stay-in-the-running-state-indefinitely)
+- [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
+- [Jobs go on hold without producing matching `.log` files](#jobs-go-on-hold-without-producing-matching-log-files)
+- [Jobs run but at the end fail to send and write output files](#jobs-run-but-at-the-end-fail-to-send-and-write-output-files)
+- [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
+- [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
+- [None of the above solves my problem](#none-of-the-above-solves-my-problem)
+- [Further information](#further-information)
+
+## Cannot submit jobs
 When you cannot submit jobs, ensure that:
 - You have reviewed the output of the submit script for causes and solutions.
 - You have obtained access to the Condor cluster from the cluster administrator.
@@ -8,25 +23,8 @@ When you cannot submit jobs, ensure that:
   * Type [`condor_store_cred -c add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) and, when prompted, enter the condor pool password (ask your administrator).
 - Issuing the command [`condor_status`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) tabulates the cluster status.
 - Issuing the command [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) results in a summary of queued jobs.
-- When jobs are held, issuing [`condor_q -held`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) shows the reason why.
 - The [templates are adapted to your cluster](README.md#adapting-templates-to-your-cluster).
 - You are using [up-to-date scripts](README.md#updating).
-___
-
-- [None of the above nor below solves my problem](#none-of-the-above-nor-below-solves-my-problem)
-- [The script does not progress](#the-script-does-not-progress)
-- [You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials](#you-get-error-no-credential-stored-for-userdomain-but-did-store-your-credentials)
-- [When transferring the bundle, jobs stay in the running state indefinately](#when-transferring-the-bundle-jobs-stay-in-the-running-state-indefinately)
-- [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
-- [Jobs go on hold without producing matching `.log` files](#jobs-go-on-hold-without-producing-matching-log-files)
-- [Jobs run but at the end fail to send and write output files](#jobs-run-but-at-the-end-fail-to-send-and-write-output-files)
-- [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
-- [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
-- [Further information](#further-information)
-
-
-## None of the above nor below solves my problem
-Reboot your machine and try to submit again. If that does not help, try to invoke `Rscript` with the `--vanilla` option.
 
 ## The script does not progress
 The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**.
@@ -36,7 +34,7 @@ Try to submit again. It might be a transient error.
 
 If not, you may have recently changed your password and need to store your user credentials again with [`condor_store_cred add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) (see above).
 
-## When transferring the bundle, jobs stay in the running state indefinately
+## When transferring the bundle, jobs stay in the running state indefinitely
 This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke [`condor_restart -schedd`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_restart.html), and try to submit again. You will be asked to delete the bundle first.
 
 If the resubmission also stays stuck in the running state when transferring the bundle, stop the script, reboot, and then try to submit again. If your temp directory survives reboots, you will again be asked to delete the bundle first.
@@ -83,6 +81,9 @@ The crude way to restart Condor is to reboot the submit machine. The better way 
 
 ## Jobs are idle and do not run, or only some do
 The cluster may be busy. To see who else has submitted jobs, issue [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue [`condor_userprio`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_userprio.html). Large numbers mean low priority. Your cluster administrator can set your priority.
+
+## None of the above solves my problem
+Reboot your machine and try to submit again. If that does not help, try to invoke `Rscript` with the `--vanilla` option.
 
 ## Further information
 For further information, see the [why is the job not running?](https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#why-is-the-job-not-running) section of the HTCondor manual.
