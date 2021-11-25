@@ -1,5 +1,11 @@
 # Configuring the Condor submit scripts
 
+To set up a configuration file, copy the code block between *snippy snappy* lines from the chosen submit script (either `Condor_run_basic.R` or `Condor_run.R`) into your clipboard, and save it to a file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or RStudio. Please carefully read the comments for each setting and customize as required.
+
+Note that further optional configuration settings exist (below the *snippy snappy* block in the submit script) that you may wish to add to your configuration file and adjust to your requirements. These concern configuration settings with default values that will work for most people.
+
+IIASA GLOBIOM developers should instead start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R`. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`. For more information, see the GLOBIOM wiki [here](https://github.com/iiasa/GLOBIOM/wiki/Running-scenarios-in-parallel-on-Limpopo#configuration).
+
 In path values, use '/' as directory separator. Paths are relative to
 the current working directory unless otherwise indicated.
 
@@ -51,12 +57,12 @@ Default value: `"{Sys.Date()}"`
 
 Synonyms: NAME, EXPERIMENT, PROJECT
 
-The run to be submitted can be given a short descriptive label. This label will be used to rename
-output files such that they do not overwrite output files from other runs.
-It is also used to create a subdirectory of CONDOR_DIR where run managment
-artifacts such a log files are placed. The LABEL should therefore be short
-and contain only characters that are valid in file names. You can use `{}`
-expansions as part of the label.
+The run to be submitted can be given a short descriptive label. This label
+will be used to rename output files such that they do not overwrite output
+files from other runs. It is also used to create a subdirectory of
+CONDOR_DIR where run managment artifacts such a log files are placed. The
+LABEL should therefore be short and contain only characters that are valid
+in file names. You can use `{}` expansions as part of the label.
 
 Note that a unique sequence number (the Condor "cluster" number) will also
 be used to (re)name the output files and artifacts so that name collisions are

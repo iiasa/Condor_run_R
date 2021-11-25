@@ -8,14 +8,15 @@ Albert Brouwer
 
 ___
 
-* [Introduction](#introduction)
-* [Installation](#installation)
-* [Test](#test)
-* [Updating](#updating)
-* [Use](#use)
-* [Function of submit scripts](#function-of-submit-scripts)
-* [Job output](#job-output)
-* [Troubleshooting](#troubleshooting)
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Test](#test)
+- [Updating](#updating)
+- [Use](#use)
+  + [Configuring](configuring.md)
+- [Function of submit scripts](#function-of-submit-scripts)
+- [Job output](#job-output)
+- [Troubleshooting](#troubleshooting)
   + [None of the above nor below solves my problem](#none-of-the-above-nor-below-solves-my-problem)
   + [The script does not progress](#the-script-does-not-progress)
   + [You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials](#you-get-error-no-credential-stored-for-userdomain-but-did-store-your-credentials)
@@ -26,8 +27,8 @@ ___
   + [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
   + [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
   + [But why?](#but-why)
-* [Adapting templates to your cluster](#adapting-templates-to-your-cluster)
-* [Configuring execute hosts](#configuring-execute-hosts)
+- [Adapting templates to your cluster](#adapting-templates-to-your-cluster)
+- [Configuring execute hosts](#configuring-execute-hosts)
 
 ## Introduction
 This repository provides R scripts for submitting a Condor *run* (a set of jobs) to a cluster of execute hosts and analysing performance statistics. Four scripts are provided:
@@ -58,11 +59,8 @@ If you have made customizations to your R installation via site, profile or user
 
 `Rscript --vanilla Condor_run.R config.R`
 
-The submit scripts take as command line argument the name of a file with configuration settings. To set up a configuration file, copy the code block between *snippy snappy* lines from the chosen submit script into your clipboard, and save it to a file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or RStudio. Please carefully read the comments for each setting and customize as required.
-
-Note that further optional configuration settings exist (below the *snippy snappy* block in the submit script) that you may wish to add to your configuration file and adjust to your requirements. These concern configuration settings with default values that will work for most people. 
-
-IIASA GLOBIOM developers should instead start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R`. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`. For more information, see the GLOBIOM wiki [here](https://github.com/iiasa/GLOBIOM/wiki/Running-scenarios-in-parallel-on-Limpopo#configuration).
+The submit scripts take as command line argument the name of a file with configuration settings. See the [documentation on configuring](configuring.md)
+to learn more.
 
 After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. When run from the command line, the plots are written to a PDF in the current working directory.
 
@@ -98,7 +96,7 @@ When you cannot submit jobs, ensure that:
 - You have obtained access to the Condor cluster from the cluster administrator.
 - You stored the necessary credentials via [`condor_store_cred add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html):
   * Type [`condor_store_cred add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) on the command line and, when prompted, enter your login password to allow Condor to schedule jobs as you.
-    + **Note**: you will need to do this again after changing your password. 
+    + **Note**: you will need to do this again after changing your password.
   * Type [`condor_store_cred -c add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) and, when prompted, enter the condor pool password (ask your administrator).
 - Issuing the command [`condor_status`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) tabulates the cluster status.
 - Issuing the command [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) results in a summary of queued jobs.
@@ -137,7 +135,7 @@ When you do not have the rights to log in to execute hosts to analyze held jobs 
 
 If the above does not clarify the problem, execute [`condor_q –analyze`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) and examine the output: it might be something that happened after the job completed, e.g. result files not fitting because your disk is full.
 
-When you are done analyzing the held jobs, use [`condor_rm`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_rm.html) to remove them. This will clean up their working directories on the execute host. 
+When you are done analyzing the held jobs, use [`condor_rm`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_rm.html) to remove them. This will clean up their working directories on the execute host.
 
 ### Jobs go on hold without producing matching `.log` files
 When your job produced no `.log` files in a subdirectory of `CONDOR_DIR` there are three likely causes:
