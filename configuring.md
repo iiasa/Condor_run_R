@@ -29,7 +29,7 @@ Number of hardware threads to reserve for each job.
 ### WAIT_FOR_RUN_COMPLETION
 Wait for the run to complete while displaying montiring information.
 
-## Mandatory for `Condor_run.R` only
+## `Condor_run.R`-specific mandatory configuration parameters
 
 ### GAMS_FILE_PATH
 Path to GAMS file to run for each job, relative to `GAMS_CURDIR`.
@@ -154,7 +154,7 @@ Default value: see `Condor_run.R` or `Condor_run_basic.R`.
 
 Template for the `.bat` file that specifies what should be run on the execute host side for each job. This default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory.
 
-## Optional configuration parameters specific to `Condor_run_basic.R`
+## `Condor_run_basic.R`-specific optional configuration parameters
 
 ### OUTPUT_DIR
 Default value: `"output"`
@@ -171,7 +171,7 @@ Default value: `"output.RData"`
 
 Name of output file as produced by a job on the execute host side. Will be renamed with `LABEL` and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
 
-## Optional configuration parameters specific to `Condor_run.R`
+## `Condor_run.R`-specufuc optional configuration parameters
 
 ### EXECUTE_HOST_GAMS_VERSIONS
 Default value: `c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2")`
