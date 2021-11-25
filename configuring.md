@@ -11,7 +11,9 @@ In path values, use '/' as directory separator. Paths are relative to the curren
 ## Mandatory configuration parameters
 
 ### JOBS
-Specify the number of the jobs to submit. Jobs are numbered starting at 0. For example configuring `c(0:3,7,10)` will start jobs 0, 1, 2, 3, 7, and 10.
+Specify the job numbers of the jobs to submit. Jobs numbers start at 0. For example configuring `c(0:3,7,10)` will start jobs 0, 1, 2, 3, 7, and 10.
+
+Typically, the script that is run when your jobs are started accepts the job number as an argument so that it knows which variant of the calculation to run. For example, a script that runs a model scenario might map the job number to a particular scenario so that submitting with `JOS = c(0:9)` will run the first ten scenarios in parallel on the cluster.
 
 ## HOST_REGEXP
 A regular expression to select execute hosts from the cluster by hostname.
