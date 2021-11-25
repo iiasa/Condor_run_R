@@ -29,13 +29,27 @@ Number of hardware threads to reserve for each job.
 ### WAIT_FOR_RUN_COMPLETION
 Wait for the run to complete while displaying montiring information.
 
+## `Condor_run_basic.R`-specific mandatory configuration parameters
+
+### LAUNCHER
+
+Interpreter with which to launch the script.
+
+### SCRIPT
+
+Script that comprises your job.
+
+### ARGUMENTS
+
+Arguments to the script. Should include `%1` which expands to the job number.
+
 ## `Condor_run.R`-specific mandatory configuration parameters
 
 ### GAMS_FILE_PATH
 Path to GAMS file to run for each job, relative to `GAMS_CURDIR`.
 
 ### GAMS_ARGUMENTS
-Additional GAMS arguments, can use {<config>} expansion here. `%1` expands the job number.
+Additional GAMS arguments, can use {<config>} expansion here. Should include `%1` which expands to the job number.
 
 ### GAMS_VERSION
 GAMS version to run the job with. Must be installed on all selected execute hosts.
