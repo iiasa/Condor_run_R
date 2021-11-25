@@ -47,74 +47,50 @@
 # Based on: GLOBIOM-limpopo scripts by David Leclere
 # Repository: https://github.com/iiasa/Condor_run_R
 
-# ---- Default run config settings ----
+# ---- Configuration parameters, see https://github.com/iiasa/Condor_run_R/blob/master/configuring.md ----
 
 # Remove any objects from active environment so that below it will contain only the default config
 rm(list=ls())
 
-# Override the default config settings via a run-config file passed as a first
-# argument to this script. Lines with settings like the ones just below can be
-# used in the config file.
-#
-# To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
-# MANDATORY configuration settings to a file, give it a .R extension to get nice
-# syntax highlighting.
+# Mandatory configuration parameters.
+# Add all of these to your configuration file.
 # .......8><....snippy.snappy....8><.........................................
-# In path values, use '/' as directory separator. Paths are relative to
-# the current working directory unless otherwise indicated.
+# See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 JOBS = c(0:3,7,10)
-HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
-REQUEST_MEMORY = 7800 # memory (MiB) to reserve for each job
-REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
-LAUNCHER = "Rscript" # interpreter with which to launch the script
-SCRIPT = "my_script.R" # script that comprises your job
-ARGUMENTS = "%1" # arguments to the script
+HOST_REGEXP = "^limpopo"
+REQUEST_MEMORY = 7800
+REQUEST_CPUS = 1
+LAUNCHER = "Rscript"
+SCRIPT = "my_script.R"
+ARGUMENTS = "%1"
 WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
 mandatory_config_names <- ls()
 
-# The run can be labeled. The label will be used to name log files and other
-# artifacts produced by the run and group them in a separate sub directory of
-# CONDOR_DIR. The LABEL should therefore be short and contain only characters
-# that are valid in file names. You can use {} expansions as part of the label.
-#
-# A unique sequence number (the Condor "cluster" number) will also be used in
-# the artifact file names so that name collisions are avoided when using the
-# same label for multiple runs.
-#
-# NAME, EXPERIMENT, and PROJECT are synonyms for LABEL.
-LABEL = "{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
-#NAME = "name_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
-#PROJECT = "project_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
-#EXPERIMENT = "experiment_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
-
-# The below configuration parameters are OPTIONAL. Add the ones you need to
-# your configuration file (see above).
-#
-# In path values, use '/' as directory separator. Paths are relative to
-# the current working directory unless otherwise indicated.
-BUNDLE_INCLUDE = "*" # recursive, what to include in bundle, can be a wildcard
-BUNDLE_INCLUDE_DIRS = c() # further directories to include recursively, added to root of bundle, supports wildcards
-BUNDLE_EXCLUDE_DIRS = c(".git", ".svn") # recursive, supports wildcards
-BUNDLE_INCLUDE_FILES = c() # supports wildcards
-BUNDLE_EXCLUDE_FILES = c("**/*.log") # supports wildcards
-BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
-RETAIN_BUNDLE = FALSE # retain the bundle in the run's CONDOR_DIR subdirectory when TRUE. Can be useful for locally analyzing host-side issues with jobs.
-CONDOR_DIR = "Condor" # directory where for each run, Condor log files and other run artifacts are stored in subdirectories. Excluded from bundle. Can also be an absolute path. Created when it does not exist.
+# Optional configuration parameters.
+# Review and add those that you need to your configuration file.
+LABEL = "{Sys.Date()}"
+BUNDLE_INCLUDE = "*"
+BUNDLE_INCLUDE_DIRS = c()
+BUNDLE_EXCLUDE_DIRS = c(".git", ".svn")
+BUNDLE_INCLUDE_FILES = c()
+BUNDLE_EXCLUDE_FILES = c("**/*.log")
+BUNDLE_ADDITIONAL_FILES = c()
+RETAIN_BUNDLE = FALSE
+CONDOR_DIR = "Condor"
 GET_OUTPUT = TRUE
-OUTPUT_DIR = "output" # relative to working dir both host-side and on the submit machine it OUTPUT_DIR_SUBMIT is not set, excluded from bundle
-OUTPUT_DIR_SUBMIT = NULL # directory on the submit machine into where job output files are transferred. Can also be an absolute path. When set to NULL, OUTPUT_DIR will be used instead.
-OUTPUT_FILE = "output.RData" # as produced by a job on the execute-host, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
-SEED_JOB_RELEASES = 0 # number of times to auto-release (retry) held seed jobs before giving up
-JOB_RELEASES = 3 # number of times to auto-release (retry) held jobs before giving up
-RUN_AS_OWNER = TRUE # if TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
-NOTIFICATION = "Never" # when to send notification emails. Alternatives are "Complete": job completes; "Error": job errors or goes on hold; "Always": job completes or reaches checkpoint.
-EMAIL_ADDRESS = NULL # set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
-NICE_USER = FALSE # be nice, give jobs of other users priority
-CLUSTER_NUMBER_LOG = "" # path of log file for capturing cluster number, empty == none.
-CLEAR_LINES = TRUE # clear status monitoring lines so as to show only the last status, set to FALSE when this does not work, e.g. when the output goes into the chunk output of an RMarkdown notebook. 
-PREFIX = "job" # prefix for per-job .err, log, and .out file names
-# Template of the Condor .job file to submit the run with
+OUTPUT_DIR = "output"
+OUTPUT_DIR_SUBMIT = NULL
+OUTPUT_FILE = "output.RData"
+SEED_JOB_RELEASES = 0
+JOB_RELEASES = 3
+RUN_AS_OWNER = TRUE
+NOTIFICATION = "Never"
+EMAIL_ADDRESS = NULL
+NICE_USER = FALSE
+CLUSTER_NUMBER_LOG = ""
+CLEAR_LINES = TRUE
+PREFIX = "job"
 JOB_TEMPLATE <- c(
   "executable = {job_bat}",
   "arguments = $(job)",
@@ -153,16 +129,11 @@ JOB_TEMPLATE <- c(
   "",
   "queue job in ({str_c(JOBS,collapse=',')})"
 )
-# Template for the .bat file that specifies what should be run on the
-# execute host side for each job. This default uses POSIX commands
-# which are not normally available on Windows execute hosts and require
-# a POSIX command distribution to be installed and put on-path.
-# GAMS installations have such commands in the 'gbin' subdirectory.
 BAT_TEMPLATE <- c(
   '@echo off',
   'if not "%~1"=="" goto continue',
   'echo This batch file runs on an execute host with a job number as only argument.',
-  'exit /B 1',
+  'exit /b 1',
   ':continue',
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",

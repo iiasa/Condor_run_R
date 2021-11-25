@@ -59,87 +59,62 @@
 # Todo:
 # - Parse errors from gdxmerge output to work around 0 return code.
 
-# ---- Default run config settings ----
+# ---- Configuration parameters, see https://github.com/iiasa/Condor_run_R/blob/master/configuring.md ----
 
 # Remove any objects from active environment so that below it will contain only the default config
 rm(list=ls())
 
-# Override the default config settings via a run-config file passed as a first
-# argument to this script. Lines with settings like the ones just below can be
-# used in the config file.
-#
-# To set up an initial config file, just copy-and-paste (DO NOT CUT) the below
-# MANDATORY configuration settings to a file, give it a .R extension to get nice
-# syntax highlighting.
-#
+# Mandatory configuration parameters.
+# Add all of these to your configuration file.
 # .......8><....snippy.snappy....8><.........................................
-# In path values, use '/' as directory separator. Paths are relative to
-# the current working directory unless otherwise indicated.
+# See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 JOBS = c(0:3,7,10)
-HOST_REGEXP = "^limpopo" # a regular expression to select execute hosts from the cluster
-REQUEST_MEMORY = 7800 # memory (MiB) to reserve for each job
-REQUEST_CPUS = 1 # number of hardware threads to reserve for each job
-GAMS_FILE_PATH = "6_scenarios_limpopo.gms" # path to GAMS file to run for each job, relative to GAMS_CURDIR
-GAMS_ARGUMENTS = "//job_number=%1 checkErrorLevel=1" # additional GAMS arguments, can use {<config>} expansion here
-GAMS_VERSION = "32.2" # must be installed on all execute hosts
+HOST_REGEXP = "^limpopo"
+REQUEST_MEMORY = 7800
+REQUEST_CPUS = 1
+GAMS_FILE_PATH = "6_scenarios_limpopo.gms"
+GAMS_ARGUMENTS = "//job_number=%1 checkErrorLevel=1"
+GAMS_VERSION = "32.2"
 WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
 mandatory_config_names <- ls()
 
-# The run can be labeled. The label will be used to name log files and other
-# artifacts produced by the run and group them in a separate sub directory of
-# CONDOR_DIR. The LABEL should therefore be short and contain only characters
-# that are valid in file names. You can use {} expansions as part of the label.
-#
-# A unique sequence number (the Condor "cluster" number) will also be used in
-# the artifact file names so that name collisions are avoided when using the
-# same label for multiple runs.
-#
-# NAME, EXPERIMENT, and PROJECT are synonyms for LABEL.
-LABEL = "{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
-#NAME = "name_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
-#PROJECT = "project_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
-#EXPERIMENT = "experiment_{Sys.Date()}" # label/name for your project/experiment, pick something short but descriptive without spaces and valid as part of a filename, can use {<config>} expansion here
-
-# The below configuration parameters are OPTIONAL. Add the ones you need to
-# your configuration file (see above).
-#
-# In path values, use '/' as directory separator. Paths are relative to
-# the current working directory unless otherwise indicated.
-EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2") # GAMS versions installed on execute hosts
-BUNDLE_INCLUDE = "*" # recursive, what to include in bundle, can be a wildcard
-BUNDLE_INCLUDE_DIRS = c() # further directories to include recursively, added to root of bundle, supports wildcards
-BUNDLE_EXCLUDE_DIRS = c(".git", ".svn", "225*") # recursive, supports wildcards
-BUNDLE_INCLUDE_FILES = c() # supports wildcards
-BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst") # supports wildcards
-BUNDLE_ADDITIONAL_FILES = c() # additional files to add to root of bundle, can also use an absolute path for these
-RETAIN_BUNDLE = FALSE # retain the bundle in the run's CONDOR_DIR subdirectory when TRUE. Can be useful for locally analyzing host-side issues with jobs.
-CONDOR_DIR = "Condor" # directory where for each run, Condor log files and other run artifacts are stored in subdirectories. Excluded from bundle. Can also be an absolute path. Created when it does not exist.
-GAMS_CURDIR = "" # working directory for GAMS and its arguments relative to working directory, "" defaults to the working directory
-RESTART_FILE_PATH = "" # path relative to GAMS_CURDIR pointing to the work/restart file to launch GAMS with on the host side. Included in bundle if set.
-MERGE_GDX_OUTPUT = FALSE # uses GDXMERGE (https://www.gams.com/latest/docs/T_GDXMERGE.html)
-MERGE_BIG = NULL # symbol size cutoff beyond which GDXMERGE writes symbols one-by-one to avoid running out of memory (see https://www.gams.com/latest/docs/T_GDXMERGE.html)
-MERGE_ID = NULL # comma-separated list of symbols to include in the merge, defaults to all
-MERGE_EXCLUDE = NULL # comma-separated list of symbols to exclude from the merge, defaults to none
+# Optional configuration parameters.
+# Review and add those that you need to your configuration file.
+LABEL = "{Sys.Date()}"
+EXECUTE_HOST_GAMS_VERSIONS = c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2")
+BUNDLE_INCLUDE = "*"
+BUNDLE_INCLUDE_DIRS = c()
+BUNDLE_EXCLUDE_DIRS = c(".git", ".svn", "225*")
+BUNDLE_INCLUDE_FILES = c()
+BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst")
+BUNDLE_ADDITIONAL_FILES = c()
+RETAIN_BUNDLE = FALSE
+CONDOR_DIR = "Condor"
+GAMS_CURDIR = ""
+RESTART_FILE_PATH = ""
+MERGE_GDX_OUTPUT = FALSE
+MERGE_BIG = NULL
+MERGE_ID = NULL
+MERGE_EXCLUDE = NULL
 REMOVE_MERGED_GDX_FILES = FALSE
 GET_G00_OUTPUT = FALSE
-G00_OUTPUT_DIR = "" # directory for work/save file. Relative to GAMS_CURDIR both host-side and on the submit machine if G00_OUTPUT_DIR_SUBMIT is not set, In that case, the directory is excluded form the bundle.
-G00_OUTPUT_DIR_SUBMIT = NULL # directory on the submit machine into where G00 job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to NULL, G00_OUTPUT_DIR will be used instead.
-G00_OUTPUT_FILE = "" # name of work/save file. Host-side, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
+G00_OUTPUT_DIR = ""
+G00_OUTPUT_DIR_SUBMIT = NULL
+G00_OUTPUT_FILE = ""
 GET_GDX_OUTPUT = FALSE
-GDX_OUTPUT_DIR = "" # directory for GDX output files. Relative to GAMS_CURDIR both host-side and on the submit machine if GDX_OUTPUT_DIR_SUBMIT is not set. In that case, the directory is excluded form the bundle.
-GDX_OUTPUT_DIR_SUBMIT = NULL # directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to NULL, GDX_OUTPUT_DIR will be used instead.
-GDX_OUTPUT_FILE = "" # as produced on the host-side by gdx= GAMS parameter or execute_unload, will be remapped with LABEL and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
-SEED_JOB_RELEASES = 0 # number of times to auto-release (retry) held seed jobs before giving up
-JOB_RELEASES = 3 # number of times to auto-release (retry) held jobs before giving up
-RUN_AS_OWNER = TRUE # if TRUE, jobs will run as you and have access to your account-specific environment. If FALSE, jobs will run under a functional user account.
-NOTIFICATION = "Never" # when to send notification emails. Alternatives are "Complete": job completes; "Error": job errors or goes on hold; "Always": job completes or reaches checkpoint.
-EMAIL_ADDRESS = NULL # set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
-NICE_USER = FALSE # be nice, give jobs of other users priority
-CLUSTER_NUMBER_LOG = "" # path of log file for capturing cluster number, empty == none.
-CLEAR_LINES = TRUE # clear status monitoring lines so as to show only the last status, set to FALSE when this does not work, e.g. when the output goes into the chunk output of an RMarkdown notebook. 
-PREFIX = "job" # prefix for per-job .err, log, and .out file names
-# Template of the Condor .job file to submit the run with
+GDX_OUTPUT_DIR = ""
+GDX_OUTPUT_DIR_SUBMIT = NULL
+GDX_OUTPUT_FILE = ""
+SEED_JOB_RELEASES = 0
+JOB_RELEASES = 3
+RUN_AS_OWNER = TRUE
+NOTIFICATION = "Never"
+EMAIL_ADDRESS = NULL
+NICE_USER = FALSE
+CLUSTER_NUMBER_LOG = ""
+CLEAR_LINES = TRUE
+PREFIX = "job"
 JOB_TEMPLATE <- c(
   "executable = {job_bat}",
   "arguments = $(job)",
@@ -178,16 +153,11 @@ JOB_TEMPLATE <- c(
   "",
   "queue job in ({str_c(JOBS,collapse=',')})"
 )
-# Template for the .bat file that specifies what should be run on the
-# execute host side for each job. This default uses POSIX commands
-# which are not normally available on Windows execute hosts and require
-# a POSIX command distribution to be installed and put on-path.
-# GAMS installations have such commands in the 'gbin' subdirectory.
 BAT_TEMPLATE <- c(
   '@echo off',
   'if not "%~1"=="" goto continue',
   'echo This batch file runs on an execute host with a job number as only argument.',
-  'exit /B 1',
+  'exit /b 1',
   ':continue',
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
   "echo _CONDOR_SLOT = %_CONDOR_SLOT%",
