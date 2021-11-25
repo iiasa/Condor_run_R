@@ -202,7 +202,9 @@ Path relative to `GAMS_CURDIR` pointing to the work/restart file to launch GAMS 
 ### MERGE_GDX_OUTPUT
 Default value: `FALSE`
 
-Use [GDXMERGE](https://www.gams.com/latest/docs/T_GDXMERGE.html) if `TRUE` when the run completes. Requires that `WAIT_FOR_RUN_COMPLETION = TRUE`.
+If `TRUE`, use [GDXMERGE](https://www.gams.com/latest/docs/T_GDXMERGE.html) on the GDX output files when all jobs in the run are done. Requires that the GDXMERGE executable (located in the GAMS system directory) is on-path and that `WAIT_FOR_RUN_COMPLETION = TRUE`.
+
+**Beware:** GDXMERGE is limited. It sometimes gives "Symbol is too large" errors, and neither the `big=` (via the `MERGE_BIG` configuration setting below) nor running GDXMERGE on a large-memory machine can avoid that. Moreover, no non-zero return code results in case of such errors, so silent failures are possible. This may or may not have improved in more recent versions of GDXMERGE.
 
 ### MERGE_BIG
 Default value: `NULL`
