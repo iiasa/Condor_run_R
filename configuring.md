@@ -1,5 +1,7 @@
 # Configuring the Condor submit scripts
 
+This page lists the configuration parameters of the `Condor_run_basic.R` and `Condor_run.R` submit scripts. To quickly find the documentation of a particular parameter, dlick on the headings selection and filter drop down menu button located just to the top left of this text when displayed on GitHub. This smallish button looks like three stacked horizontal lines with leading bullets.
+
 To set up a configuration file, copy the code block between *snippy snappy* lines from the chosen submit script (either `Condor_run_basic.R` or `Condor_run.R`) into your clipboard, and save it to a file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or RStudio. Please carefully read the comments for each setting and customize as required.
 
 Note that further optional configuration settings exist (below the *snippy snappy* block in the submit script) that you may wish to add to your configuration file and adjust to your requirements. These concern configuration settings with default values that will work for most people.
