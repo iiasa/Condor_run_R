@@ -52,7 +52,11 @@ If you have made customizations to your R installation via site, profile or user
 The submit scripts take as command line argument the name of a file with configuration settings. See the [documentation on configuring](configuring.md)
 to learn more.
 
-After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. When run from the command line, the plots are written to a PDF in the current working directory.
+After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. The command line arguments of the script tell it which runs to analyse. These arguments can either be submit configuration `.R` files or paths to directories containing run artefacts. An example invocation is:
+
+`Rscript Condor_run_stats.R Condor/2021-11-25 config.R`
+
+When invoked from the the command line, the generated plots are written to a PDF in the current working directory.
 
 ## Troubleshooting
 When your cannot submit or a problem occurs at a later stage, please explore the [troubleshooting documentation](troubleshooting.md) for solutions.
