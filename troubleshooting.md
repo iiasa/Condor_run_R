@@ -9,8 +9,8 @@ When you cannot submit jobs, ensure that:
 - Issuing the command [`condor_status`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) tabulates the cluster status.
 - Issuing the command [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) results in a summary of queued jobs.
 - When jobs are held, issuing [`condor_q -held`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) shows the reason why.
-- The [templates are adapted to your cluster](#adapting-templates-to-your-cluster).
-- You are using [up-to-date scripts](#updating).
+- The [templates are adapted to your cluster](README.md#adapting-templates-to-your-cluster).
+- You are using [up-to-date scripts](README.md#updating).
 ___
 
 - [None of the above nor below solves my problem](#none-of-the-above-nor-below-solves-my-problem)
@@ -75,7 +75,7 @@ There are two likely causes:
 2. The permissions on the directory pointed to by `[G00_|GDX_]OUTPUT_DIR[_SUBMIT]` prevent access by the locally running Condor daemon/service. Either change the permissions on that directory to give Condor access or reconfigure the Condor daemon/service to run from a different account or with additional rights as needed to gain access.
 
 ## All seeding jobs remain idle and then abort through the PeriodicRemove expression
-It may be that the entire cluster is unavailable, but that is somewhat unlikely. It may be that the entire cluster is fully occupied and the execute hosts have not been [properly configured to always accept seeding jobs](#configuring-execute-hosts) by the Condor administrator. Use [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) to check availability and occuppation.
+It may be that the entire cluster is unavailable, but that is somewhat unlikely. It may be that the entire cluster is fully occupied and the execute hosts have not been [properly configured to always accept seeding jobs](README.md#configuring-execute-hosts) by the Condor administrator. Use [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) to check availability and occuppation.
 
 Alternatively, the machine you submit from announcing itself with a wrong domain is a possible cause. It has been seen to happen that submit machines announce themselves with the `local` domain, which is not valid for remote access so that jobs cannot be collected. To check whether the submit machine has announced itself wrongly, issue the [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) command. The output should contain the hostname and domain of your machine. If the domain is `local` the issue is likely present and can be resolved by restarting the Condor background processes on the submit machine.
 
