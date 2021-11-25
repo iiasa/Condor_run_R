@@ -2,9 +2,9 @@
 
 This page lists the configuration parameters of the `Condor_run_basic.R` and `Condor_run.R` submit scripts. To quickly find the documentation of a particular parameter, click on the headings selection and filter drop down menu button located just to the top left of this text when displayed on GitHub. This smallish button looks like three stacked horizontal lines with leading bullets.
 
-To set up a configuration file, copy the code block between *snippy snappy* lines from the chosen submit script (either `Condor_run_basic.R` or `Condor_run.R`) into your clipboard, and save it to a file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or RStudio. Please carefully read the comments for each setting and customize as required.
+To set up an initial configuration file, copy (do *not* cut) the code block with mandatory configuration parameters located between the *snippy snappy* comments from the chosen submit script (either `Condor_run_basic.R` or `Condor_run.R`) and paste it into a new file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or RStudio. Please carefully read the comments for each setting and customize as required.
 
-Note that further optional configuration settings exist (below the *snippy snappy* block in the submit script) that you may wish to add to your configuration file and adjust to your requirements. These concern configuration settings with default values that will work for most people.
+You may also wish to add some of the optional configuration settings. Their defaults are located below the last *snippy snappy* comme. These concern configuration settings with default values that will work for most people.
 
 IIASA GLOBIOM developers should instead start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R`. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`. For more information, see the GLOBIOM wiki [here](https://github.com/iiasa/GLOBIOM/wiki/Running-scenarios-in-parallel-on-Limpopo#configuration).
 
@@ -32,15 +32,12 @@ Wait for the run to complete while displaying montiring information.
 ## `Condor_run_basic.R`-specific mandatory configuration parameters
 
 ### LAUNCHER
-
 Interpreter with which to launch the script.
 
 ### SCRIPT
-
 Script that comprises your job.
 
 ### ARGUMENTS
-
 Arguments to the script. Should include `%1` which expands to the job number.
 
 ## `Condor_run.R`-specific mandatory configuration parameters
