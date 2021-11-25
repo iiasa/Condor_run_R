@@ -25,15 +25,15 @@ Number of hardware threads to reserve for each job.
 ### WAIT_FOR_RUN_COMPLETION
 Wait for the run to complete while displaying montiring information.
 
-### Mandatory for `Condor_run.R` only
+## Mandatory for `Condor_run.R` only
 
-#### GAMS_FILE_PATH
+### GAMS_FILE_PATH
 Path to GAMS file to run for each job, relative to `GAMS_CURDIR`.
 
-#### GAMS_ARGUMENTS
+### GAMS_ARGUMENTS
 Additional GAMS arguments, can use {<config>} expansion here. `%1` expands the job number.
 
-#### GAMS_VERSION
+### GAMS_VERSION
 GAMS version to run the job with. Must be installed on all selected execute hosts.
 
 ## Optional configuration parameters
@@ -168,58 +168,58 @@ Default value: `FALSE`
 
 Use [GDXMERGE](https://www.gams.com/latest/docs/T_GDXMERGE.html) if `TRUE` when the run completes. Requires that `WAIT_FOR_RUN_COMPLETION = TRUE`.
 
-#### MERGE_BIG
+### MERGE_BIG
 Default value: `NULL`
 
 Symbol size cutoff beyond which GDXMERGE writes symbols one-by-one to avoid running out of memory (see https://www.gams.com/latest/docs/T_GDXMERGE.html).
 
-#### MERGE_ID
+### MERGE_ID
 Default value: `NULL`
 
 Comma-separated list of symbols to include in the merge. String-valued. The `NULL` default includes all symbols.
 
-#### MERGE_EXCLUDE
+### MERGE_EXCLUDE
 Default value: `NULL`
 
 Comma-separated list of symbols to exclude from the merge. String-valued. The `NULL` default excludes no symbols.
 
-#### REMOVE_MERGED_GDX_FILES
+### REMOVE_MERGED_GDX_FILES
 Default value: `FALSE`
 
 When `TRUE`, remove per-job GDX output files after having been merged.
 
-#### GET_G00_OUTPUT
+### GET_G00_OUTPUT
 Default value: `FALSE`
 
-#### G00_OUTPUT_DIR
+### G00_OUTPUT_DIR
 Default value: `""`
 
 Directory for work/save files. Relative to `GAMS_CURDIR` both host-side and on the submit machine if `G00_OUTPUT_DIR_SUBMIT` is not set. In that case, the directory is excluded from the bundle.
 
-#### G00_OUTPUT_DIR_SUBMIT
+### G00_OUTPUT_DIR_SUBMIT
 Default value: `NULL`
 
 Directory on the submit machine into where `.g00` job work/save files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, `G00_OUTPUT_DIR` will be used instead.
 
-#### G00_OUTPUT_FILE
+### G00_OUTPUT_FILE
 Default value: `""`
 
 Name of work/save file. Host-side, will be remapped with `LABEL` and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
 
-#### GET_GDX_OUTPUT
+### GET_GDX_OUTPUT
 Default value: `FALSE`
 
-#### GDX_OUTPUT_DIR
+### GDX_OUTPUT_DIR
 Default value: `""`
 
 Directory for GDX output files. Relative to `GAMS_CURDIR` both host-side and on the submit machine if `GDX_OUTPUT_DIR_SUBMIT` is not set. In that case, the directory is excluded form the bundle.
 
-#### GDX_OUTPUT_DIR_SUBMIT
+### GDX_OUTPUT_DIR_SUBMIT
 Default value: `NULL`
 
 Directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, `GDX_OUTPUT_DIR` will be used instead.
 
-#### GDX_OUTPUT_FILE
+### GDX_OUTPUT_FILE
 Default value: `""`
 
-As produced on the host-side by `gdx=` GAMS parameter or `execute_unload`, will be remapped with `LABE`L and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
+As produced on the host-side by `gdx=` GAMS parameter or `execute_unload`, will be remapped with `LABEL` and cluster/job numbers to avoid name collisions when transferring back to the submit machine.
