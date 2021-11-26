@@ -4,11 +4,15 @@ This page lists the configuration parameters of the `Condor_run_basic.R` and `Co
 
 To set up an initial configuration file, copy (do *not* cut) the code block with mandatory configuration parameters located between the *snippy snappy* comments from the chosen submit script (see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L19) and [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L19)) and paste it into a new file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension will provide syntax highlighting if you are using a good text editor or RStudio. Please carefully read the comments for each setting and customize as required.
 
-You may also wish to add some of the optional configuration settings. Their defaults are located below the last *snippy snappy* comme. These concern configuration settings with default values that will work for most people.
+You may also wish to add some of the optional configuration settings. Their defaults are located below the last *snippy snappy* comment. These concern configuration settings with default values that will work for most people.
 
 IIASA GLOBIOM developers should instead start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R`. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`. For more information, see the GLOBIOM wiki [here](https://github.com/iiasa/GLOBIOM/wiki/Running-scenarios-in-parallel-on-Limpopo#configuration).
 
-In path values, use '/' as directory separator. Paths are relative to the current working directory unless otherwise indicated.
+## Path handling
+
+Several configuration parameters specify paths to files or directories. **Use only `/`** as directory separator in path values. Paths are relative to the current working directory unless otherwise indicated in the description of the configuration parameter. Things are easiest to configure when you use the root of the file tree of your project as current working directory when submitting. This root will typically be the directory where you clone/checked-out the repository holding your project files.
+
+This approach allows you to test jobs on your submit machine, and then easily use the submit script to bundle up your project's file tree via 7-Zip for transfer to and execution on the cluster. The `BUNDLE_*` parameters detailed below control which files are added to the bundle. For some examples of how to set this up, see [the tests](tests/tests.md)
 
 ## Mandatory configuration parameters
 
