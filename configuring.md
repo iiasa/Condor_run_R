@@ -19,7 +19,7 @@ This approach allows you to test jobs on your submit machine, and then easily us
 ### JOBS
 Specify the job numbers of the jobs to submit. Jobs numbers start at 0. For example configuring `c(0:3,7,10)` will start jobs 0, 1, 2, 3, 7, and 10.
 
-Typically, the script that is run when your jobs are started accepts the job number as an argument so that it knows which variant of the calculation to run. For example, a script that runs a model scenario might map the job number to a particular scenario so that submitting with `JOS = c(0:9)` will run the first ten scenarios in parallel on the cluster.
+Typically, the script that is run when your jobs are started accepts the job number as an argument so that it knows which variant of the calculation to run. For example, a script that runs a model scenario might map the job number to a particular scenario so that submitting with `JOBS = c(0:9)` will run the first ten scenarios in parallel on the cluster.
 
 ## HOST_REGEXP
 A regular expression to select execute hosts from the cluster by hostname.
@@ -47,7 +47,7 @@ Arguments to the script. Should include `%1` which expands to the job number.
 ## `Condor_run.R`-specific mandatory configuration parameters
 
 ### GAMS_FILE_PATH
-Path to GAMS file to run for each job, relative to `GAMS_CURDIR`.
+Path to GAMS file to run for each job, relative to [`GAMS_CURDIR`](#gams_curdir).
 
 ### GAMS_ARGUMENTS
 Additional GAMS arguments, can use {<config>} expansion here. Should include `%1` which expands to the job number.
@@ -104,7 +104,7 @@ Files to add to root of bundle during an additional invocation of 7-Zip. Can als
 ### RETAIN_BUNDLE
 Default value: `FALSE`
 
-Retain the bundle in the run's `CONDOR_DIR` subdirectory when `TRUE`. Can be useful for locally analyzing host-side issues with jobs.
+Retain the bundle in the run's [`CONDOR_DIR`](#condor_dir) subdirectory when `TRUE`. Can be useful for locally analyzing host-side issues with jobs.
 
 ### CONDOR_DIR
 Default value: `"Condor"`
@@ -157,7 +157,7 @@ Clear status monitoring lines so as to show only the last status, set to FALSE w
 ### PREFIX
 Default value: `"job"`
 
-Prefix for per-job `.err`, `.log`, `.lst` and `.out` artifact file names stored in a subdirectory of `CONDOR_DIR`.
+Prefix for per-job `.err`, `.log`, `.lst` and `.out` artifact file names stored in a subdirectory of [`CONDOR_DIR`](#condor_dir).
 
 ### JOB_TEMPLATE
 Default value: see  [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L56) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L68).
@@ -174,17 +174,17 @@ Template for the `.bat` file that specifies what should be run on the execute ho
 ### OUTPUT_DIR
 Default value: `"output"`
 
-Directory for output files. Relative to the current working directory both on the execute host side and also on the submit machine if `OUTPUT_DIR_SUBMIT` is not set. In that case, the directory is excluded form the bundle.
+Directory for output files. Relative to the current working directory both on the execute host side and also on the submit machine if [`OUTPUT_DIR_SUBMIT`](#output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
 
 ### OUTPUT_DIR_SUBMIT
 Default value: `NULL`
 
-Directory on the submit machine into where job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, `OUTPUT_DIR` will be used instead.
+Directory on the submit machine into where job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`OUTPUT_DIR`](#output_dir) will be used instead.
 
 ### OUTPUT_FILE
 Default value: `"output.RData"`
 
-Name of output file as produced by a job on the execute host side. Will be renamed with `LABEL` and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
+Name of output file as produced by a job on the execute host side. Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
 
 ## `Condor_run.R`-specific optional configuration parameters
 
@@ -201,14 +201,14 @@ Working directory for GAMS and its arguments relative to the current working dir
 ### RESTART_FILE_PATH
 Default value: `""`
 
-Path relative to `GAMS_CURDIR` pointing to the work/restart file to launch GAMS with on the execute host side. Included in bundle if set.
+Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the work/restart file to launch GAMS with on the execute host side. Included in bundle if set.
 
 ### MERGE_GDX_OUTPUT
 Default value: `FALSE`
 
-If `TRUE`, use [GDXMERGE](https://www.gams.com/latest/docs/T_GDXMERGE.html) on the GDX output files when all jobs in the run are done. Requires that the GDXMERGE executable (located in the GAMS system directory) is on-path and that `WAIT_FOR_RUN_COMPLETION = TRUE`.
+If `TRUE`, use [GDXMERGE](https://www.gams.com/latest/docs/T_GDXMERGE.html) on the GDX output files when all jobs in the run are done. Requires that the GDXMERGE executable (located in the GAMS system directory) is on-path and that [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`.
 
-**Beware:** GDXMERGE is limited. It sometimes gives "Symbol is too large" errors, and neither the `big=` (via the `MERGE_BIG` configuration setting below) nor running GDXMERGE on a large-memory machine can avoid that. Moreover, no non-zero return code results in case of such errors, so silent failures are possible. This may or may not have improved in more recent versions of GDXMERGE.
+**Beware:** GDXMERGE is limited. It sometimes gives "Symbol is too large" errors, and neither the `big=` (via the [`MERGE_BIG`](#merge_big) configuration setting below) nor running GDXMERGE on a large-memory machine can avoid that. Moreover, no non-zero return code results in case of such errors, so silent failures are possible. This may or may not have improved in more recent versions of GDXMERGE.
 
 ### MERGE_BIG
 Default value: `NULL`
@@ -236,17 +236,17 @@ Default value: `FALSE`
 ### G00_OUTPUT_DIR
 Default value: `""`
 
-Directory for work/save files. Relative to `GAMS_CURDIR` both execute host side and also on the submit machine if `G00_OUTPUT_DIR_SUBMIT` is not set. In that case, the directory is excluded from the bundle.
+Directory for work/save files. Relative to [`GAMS_CURDIR`](#gams_curdir) both execute host side and also on the submit machine if [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
 
 ### G00_OUTPUT_DIR_SUBMIT
 Default value: `NULL`
 
-Directory on the submit machine into where `.g00` job work/save files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, `G00_OUTPUT_DIR` will be used instead.
+Directory on the submit machine into where `.g00` job work/save files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`G00_OUTPUT_DIR`](#g00_output_dir) will be used instead.
 
 ### G00_OUTPUT_FILE
 Default value: `""`
 
-Name of work/save file produced by a job on the execute host side via the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with `LABEL` and cluster/job numbers to avoid name collisions when transferred to the submit machine.
+Name of work/save file produced by a job on the execute host side via the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
 
 ### GET_GDX_OUTPUT
 Default value: `FALSE`
@@ -254,14 +254,14 @@ Default value: `FALSE`
 ### GDX_OUTPUT_DIR
 Default value: `""`
 
-Directory for GDX output files. Relative to `GAMS_CURDIR` both on the execute host side and also on the submit machine if `GDX_OUTPUT_DIR_SUBMIT` is not set. In that case, the directory is excluded form the bundle.
+Directory for GDX output files. Relative to [`GAMS_CURDIR`](#gams_curdir) both on the execute host side and also on the submit machine if [`GDX_OUTPUT_DIR_SUBMIT`](#gdx_output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
 
 ### GDX_OUTPUT_DIR_SUBMIT
 Default value: `NULL`
 
-Directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, `GDX_OUTPUT_DIR` will be used instead.
+Directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`GDX_OUTPUT_DIR`](#gdx_output_dir) will be used instead.
 
 ### GDX_OUTPUT_FILE
 Default value: `""`
 
-Name of the GDX output file produced by a job on the execute host side via the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with `LABEL` and cluster/job numbers to avoid name collisions when transferred to the submit machine.
+Name of the GDX output file produced by a job on the execute host side via the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
