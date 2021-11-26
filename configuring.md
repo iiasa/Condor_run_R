@@ -160,12 +160,12 @@ Default value: `"job"`
 Prefix for per-job `.err`, `.log`, `.lst` and `.out` artifact file names stored in a subdirectory of `CONDOR_DIR`.
 
 ### JOB_TEMPLATE
-Default value: see `Condor_run.R` or `Condor_run_basic.R`.
+Default value: see  [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L56) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L68).
 
 Template of the Condor `.job` file to submit the run with. A copy of the `.job` file produced with this template is stored together with the artifacts of the run.
 
 ### BAT_TEMPLATE
-Default value: see `Condor_run.R` or `Condor_run_basic.R`.
+Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L94) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L106).
 
 Template for the `.bat` file that specifies what should be run on the execute host side for each job. This default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory.
 
