@@ -25,13 +25,15 @@ Typically, the script that is run when your jobs are started accepts the job num
 A regular expression to select execute hosts from the cluster by hostname.
 
 ### REQUEST_MEMORY
-Amount of memory (MiB) to reserve for each job.
+An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execute host when the sum of their memory requests exceeds the memory allocated to the execution slot of on the host. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the execute host at risk of running out of memory, which can endanger other jobs as well.
+
+It is therefore important to configure a good estimate. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs after they complete and produce a warning when the `REQUEST_MEMORY` estimate is significantly wrong. Use this warning to imrpove the estimate.
 
 ### REQUEST_CPUS
-Number of hardware threads to reserve for each job.
+Number of hardware threads to reserve for each job. Set this to at least 1. If you know that your job involves considerable multiprocessing, set this value to an estimate of the average number of in-use threads.
 
 ### WAIT_FOR_RUN_COMPLETION
-Wait for the run to complete while displaying montiring information.
+If `TRUE`, wait for the run to complete while displaying montiring information.
 
 ## `Condor_run_basic.R`-specific mandatory configuration parameters
 
