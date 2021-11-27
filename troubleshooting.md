@@ -1,5 +1,5 @@
 # Troubleshooting
-When you have an issue with getting your jobs to run or retrieving output, please see if your problem is listed below. As a default solution, reboot your submit machine: it often helps.
+When you have an issue with getting your jobs to run or with retrieving output, please see if your problem is listed below. As a default solution, reboot your submit machine: it often helps.
 
 - [Cannot submit jobs](#cannot-submit-jobs)
 - [The script does not progress](#the-script-does-not-progress)
