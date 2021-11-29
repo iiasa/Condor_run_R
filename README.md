@@ -70,14 +70,13 @@ When your cannot submit or a problem occurs at a later stage, please explore the
 1. Bundle up the job files using 7-Zip.
 2. Submit the bundle once to each of the execute hosts.
    - The execute hosts are made to cache the bundle in a separate directory.
-3. Submit jobs.
-   - When a submitted job is scheduled, the allocated execute host unpacks the cached bundle.
+3. Submit the jobs.
 4. Optionally wait for the jobs to finish
 5. Optionally merge GAMS GDX results files (`Condor_run.R`)
 
-By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized and the submit machine (which might be a laptop) can be disconnected from the cluster or shut down on completion of submission. Without a connected submit machine, idle (queued) jobs can still be scheduled because the cached bundle suffices and no further transfer of input data from the submit machine is needed. The submit machine will receive the output data when it reconnects to the cluster.
+By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized and the submit machine (which might be a laptop) can be disconnected from the cluster or shut down on completion of submission. Without a connected submit machine, idle (queued) jobs will still be scheduled because the cached bundle suffices and no further transfer of input data from the submit machine is needed. A disconnected submit machine will receive the output data after it reconnects to the cluster.
 
-By passing the job number to the main script of the job, each job in the run can customize the calculation, e.g. by selecting one out of a collection of scenarios.
+By passing the job number to the main script of the job, each job in the run can customize the calculation even though it is given the same bundle as input, e.g. by selecting one out of a collection of scenarios.
 
 **Beware:** only after the jobs are submitted can a further parallel submission be performed. The script notifies you thereof as follows:
 
