@@ -3,34 +3,9 @@
 # performed with Condor_run_basic.R or Condor_run.R. For assessing job run
 # times and cluster performance behaviour.
 #
-# Note that in the below, EXPERIMENT refers to the label of the run as set
-# via one of the synonymous EXPERIMENT/LABEL/NAME/PROJECT Condor_run[_basic].R
-# configuration settings.
-#
-# Option 1: source this script from RStudio.
-# Before sourcing this script from RStudio, set the first instance of
-# LOG_DIRECTORIES to the path or paths of one or more directories containing
-# Condor run log files to be analysed.
-#
-# Option 2: invoke the script from the command line.
-# Usage:
-# > [Rscript] [<path>/]Condor_run_stat.R <config_file|log_dir> ...
-# where  the arguments can be one or more of either:
-# - a path to a configuration file as used for Condor_run[_basic].R
-# - a path to a directory holding Condor run log files.
-#
-# If you pass a configuration file as argument and its CONDOR_DIR configuration
-# setting holds a relative path or is absent and therefore has its default
-# relative path setting, the current working directory must be the same as was
-# the case when invoking Condor_run.R or Condor_run_basic.R with that
-# configuration file because otherwise the log directory cannot be located.
-#
-# On Linux/MacOS you can invoke the script directly without Rscript. This
-# works provided that the execute flag is set and carriage returns have been
-# removed using e.g. dos2unix.
-#
-# Invoking this script from the command line causes plots to be output to a PDF.
-#
+# Installation: https://github.com/iiasa/Condor_run_R#installation
+# Usage: https://github.com/iiasa/Condor_run_R#use
+##
 # Author: Albert Brouwer
 # Repository: https://github.com/iiasa/Condor_run_R
 

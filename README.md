@@ -41,7 +41,7 @@ This repository includes [tests](tests/tests.md). To check your setup, run the [
 It is recommended to always update to the [latest release of the scripts](https://github.com/iiasa/Condor_run_R/releases) so that you have the latest fixes and features. Releases are typically backwards compatible and should work with your existing run configurations. Before updating, read the release notes. Automatic notification of new releases can be enabled by going to the [main repository page](https://github.com/iiasa/Condor_run_R), clicking on the Watch/Unwatch drop down menu button at the top right of the page, and check marking Custom → Releases. You need to be signed in to GitHub for this to work.
 
 ## Use
-Invoke the submit script via `Rscript`, or, on Linux/MacOS, you can invoke the script directly if its execute flag is set and the script has been converted to Unix format using e.g. [`dos2unix`](https://manpages.debian.org/bullseye/dos2unix/dos2unix.1.en.html) (removing the carriage returns from the line breaks). Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. A typical invocation command line is therefore:
+Invoke the submit script via `Rscript`. Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. A typical invocation command line is therefore:
 
 `Rscript Condor_run_basic.R config.R`
 
@@ -52,11 +52,17 @@ If you have made customizations to your R installation via site, profile or user
 The submit scripts take as command line argument the name of a file with configuration settings. See the [documentation on configuring](configuring.md)
 to learn more.
 
-After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. The command line arguments of the script tell it which runs to analyse. These arguments can either be submit configuration `.R` files or paths to directories containing run artefacts. An example invocation is:
+After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. The command line arguments specify which runs to analyse and can either be submit configuration `.R` files or paths to directories containing run log files and other artefacts.
+
+When passing a configuration file as one of the arguments to `Condor_run_stats.R`, and the [`CONDOR_DIR`](configuring.md#condor_dir) configuration setting holds a relative path or is absent and therefore has its default relative path setting, the current working directory must be the same as was the case when invoking `Condor_run.R` or `Condor_run_basic.R` with that configuration file because otherwise the log directory cannot be located.
+
+An example command line invocation is:
 
 `Rscript Condor_run_stats.R Condor/2021-11-25 config.R`
 
-When invoked from the the command line, the generated plots are written to a PDF in the current working directory.
+This produces a PDF with plots in the current working directory. When invoking `Condor_run_stats.R` from RStudio by sourcing the script, set the first instance of LOG_DIRECTORIES to the path or paths of one or more directories containing Condor run log files to be analysed.
+
+On Linux/MacOS, all three scripts can also be invoked directly without a leading `Rscript` on the command line ([shebang invocation](https://en.wikipedia.org/wiki/Shebang_(Unix))).
 
 ## Troubleshooting
 When your cannot submit or a problem occurs at a later stage, please explore the [troubleshooting documentation](troubleshooting.md) for solutions.
