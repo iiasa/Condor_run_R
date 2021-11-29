@@ -41,7 +41,7 @@ This repository includes [tests](tests/tests.md). To check your setup, run the [
 It is recommended to always update to the [latest release of the scripts](https://github.com/iiasa/Condor_run_R/releases) so that you have the latest fixes and features. Releases are typically backwards compatible and should work with your existing run configurations. Before updating, read the release notes. Automatic notification of new releases can be enabled by going to the [main repository page](https://github.com/iiasa/Condor_run_R), clicking on the Watch/Unwatch drop down menu button at the top right of the page, and check marking Custom → Releases. You need to be signed in to GitHub for this to work.
 
 ## Use
-Invoke the submit script via `Rscript`. Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. A typical invocation command line is therefore:
+Invoke the submit script via `Rscript`. Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. Both take a `.R` configuratoin file as only argument. An example invocation is:
 
 `Rscript Condor_run_basic.R config.R`
 
@@ -49,8 +49,7 @@ If you have made customizations to your R installation via site, profile or user
 
 `Rscript --vanilla Condor_run.R config.R`
 
-The submit scripts take as command line argument the name of a file with configuration settings. See the [documentation on configuring](configuring.md)
-to learn more.
+To learn how to set up a configuration file, see the [documentation on configuring](configuring.md).
 
 After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. The command line arguments specify which runs to analyse and can either be submit configuration `.R` files or paths to directories containing run log files and other artefacts.
 
