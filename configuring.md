@@ -111,7 +111,7 @@ Retain the bundle in the run's [`CONDOR_DIR`](#condor_dir) subdirectory when `TR
 ### CONDOR_DIR
 Default value: `"Condor"`
 
-Directory where for each run, Condor log files and other run artifacts are stored in a subdirectory. Excluded from bundle. Can also be an absolute path. Created when it does not exist.
+Directory where for each run, Condor and job log files and other run artifacts are stored in a subdirectory that is named via [`LABEL`](#label). Excluded from the bundle. Can also be an absolute path. Created when it does not exist, ditto for the subdirectory.
 
 ### SEED_JOB_RELEASES
 Default value: `0`
