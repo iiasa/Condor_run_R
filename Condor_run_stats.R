@@ -61,7 +61,7 @@ if (Sys.getenv("RSTUDIO") == "1") {
 } else {
   args <- commandArgs(trailingOnly=TRUE)
   if (length(args) == 0) {
-    stop("No configuration file or log directory argument(s) supplied!")
+    stop("No configuration file or log directory argument(s) supplied! For usage information, see: https://github.com/iiasa/Condor_run_R#use")
   }
   # From each argument passed on the command line, collect the log directory
   LOG_DIRECTORIES <- c()
