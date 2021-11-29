@@ -163,7 +163,7 @@ temp_dir_parent <- dirname(temp_dir) # Move up from the R-session-specific rando
 # Read config file if specified via an argument, check presence and types.
 args <- commandArgs(trailingOnly=TRUE)
 if (length(args) == 0) {
-  warning("No config file argument supplied, using default run settings.")
+  stop("No configuration file argument supplied. For usage information, see: https://github.com/iiasa/Condor_run_R#use")
 } else if (length(args) == 1) {
   # Check that the specified config file exists
   config_file_arg <- args[1]
@@ -192,7 +192,7 @@ if (length(args) == 0) {
     ) stop(str_glue("{name} set to wrong type in {config_file_arg}, type should be {config_types[[i]]}"))
   }
 } else {
-  stop("Multiple arguments provided! Expecting at most a single config file argument.")
+  stop("Multiple arguments provided! Expecting at most a single configuration file argument.")
 }
 
 # Copy/write configuration to a file in the temp directory for reference early to minimize the risk of it being edited in the mean time
