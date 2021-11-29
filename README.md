@@ -51,7 +51,7 @@ If you have made customizations to your R installation via site, profile or user
 
 To learn how to set up a configuration file, see the [documentation on configuring](configuring.md).
 
-After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. The command line arguments specify which runs to analyse and can either be a submit configuration `.R` file or a pats to a [directory containing run log files and other artefacts](configuring.md#condor_dir).
+After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. The command line arguments specify which runs to analyse and can either be a submit configuration `.R` file or a paths to a [directory containing run log files and other artefacts](configuring.md#condor_dir).
 
 When passing a configuration file as one of the arguments to `Condor_run_stats.R`, and the [`CONDOR_DIR`](configuring.md#condor_dir) configuration setting holds a relative path or is absent and therefore has its default relative path setting, the current working directory must be the same as was the case when invoking `Condor_run.R` or `Condor_run_basic.R` with that configuration file because otherwise the log directory cannot be located.
 
@@ -70,16 +70,16 @@ When your cannot submit or a problem occurs at a later stage, please explore the
 1. Bundle up the job files using 7-Zip.
 2. Submit the bundle once to each of the execute hosts.
    - The execute hosts are made to cache the bundle in a separate directory.
-3. Submit jobs to all of the execute hosts.
-   - For each job, the allocated execute host unpacks the bundle.
+3. Submit jobs.
+   - When a submitted job is scheduled, the allocated execute host unpacks the cached bundle.
 4. Optionally wait for the jobs to finish
 5. Optionally merge GAMS GDX results files (`Condor_run.R`)
 
-By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized.
+By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized and the submit machine (which might be a laptop) can be disconnected from the cluster or shut down on completion of submission. Without a connected submit machine, idle (queued) jobs can still be scheduled because the cached bundle suffices and no further transfer of input data from the submit machine is needed. The submit machine will receive the output data when it reconnects to the cluster.
 
 By passing the job number to the main script of the job, each job in the run can customize the calculation, e.g. by selecting one out of a collection of scenarios.
 
-**Beware:** only after completing step 3 can a further parallel submission be performed. The script notifies you thereof as follows:
+**Beware:** only after the jobs are submitted can a further parallel submission be performed. The script notifies you thereof as follows:
 
 `Run "test" has been submitted, it is now possible to submit additional runs while waiting for it to complete.`
 
