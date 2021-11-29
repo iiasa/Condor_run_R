@@ -136,6 +136,8 @@ Specify when to send notification emails. Alternatives are:
 - `"Error"`, when a job errors or goes on hold.
 - `"Always"`, when a job completes or reaches checkpoint.
 
+**Beware:** when your run has many jobs, selecting anything other than `"Never"` will be very spammy.
+
 ### EMAIL_ADDRESS
 Default value: `NULL`
 
