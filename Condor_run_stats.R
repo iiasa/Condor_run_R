@@ -54,26 +54,26 @@ if (Sys.getenv("RSTUDIO") == "1") {
       # Accommodate synonym configuration options for LABEL
       if (exists("LABEL")) {
         label_from <- "LABEL"
-      } else if (exists("EXPERIMENT")) {
-        label_from <- "EXPERIMENT"
-        LABEL <- EXPERIMENT
       } else if (exists("NAME")) {
         label_from <- "NAME"
         LABEL <- NAME
       } else if (exists("PROJECT")) {
         label_from <- "PROJECT"
         LABEL <- PROJECT
+      } else if (exists("EXPERIMENT")) {
+        label_from <- "EXPERIMENT"
+        LABEL <- EXPERIMENT
       } else {
-        stop(str_glue("None of the synonyms EXPERIMENT/LABEL/NAME/PROJECT is defined in  file '{arg}'!"))
+        stop(str_glue("None of the synonyms LABEL/NAME/PROJECT/EXPERIMENT is defined in  file '{arg}'!"))
       }
 
-      # Construct the path to the experiment log directory from the configuration
+      # Construct the path to the run's log directory from the configuration
       if (exists("CONDOR_DIR")) {
         # The log directory should be under CONDOR_DIR
         log_dir <- path(CONDOR_DIR, str_glue(LABEL))
         default_condor_dir = FALSE
       } else {
-        # The experiment log directory should be the default "Condor" directory
+        # The parent log directory should be the default "Condor" directory
         log_dir <- path("Condor", str_glue(LABEL))
         default_condor_dir = TRUE
       }
@@ -94,14 +94,14 @@ if (Sys.getenv("RSTUDIO") == "1") {
   pdf(paper = "a4r", width=11.7, height=8.3, file=str_c(str_c(lapply(LOG_DIRECTORIES, basename), collapse="_"), ".pdf"))
 }
 
-# ---- Preload the .out and .log files from the given experiment log directories ----
+# ---- Preload the .out and .log files from the given log directories ----
 
 # Alphabetically list the .out and .log files resulting from the Condor run and check that they match up
 out_paths <- c()
 log_paths <- c()
-experiments <- list() # expanded to a per-job list
+labels <- list() # expanded to a per-job list
 for (log_dir in LOG_DIRECTORIES) {
-  experiment <- basename(log_dir)
+  label <- basename(log_dir)
   if (!is_absolute_path(log_dir)) {
     if (Sys.getenv("RSTUDIO") == "1") {
       log_dir <- path(dirname(rstudioapi::getActiveDocumentContext()$path), log_dir)
@@ -113,8 +113,9 @@ for (log_dir in LOG_DIRECTORIES) {
   out_paths <- c(out_paths, outs)
   logs <- dir_ls(path=log_dir, glob=str_glue("*_{CLUSTER}.*.log"))
   log_paths <- c(log_paths, logs)
-  experiments <- c(experiments, rep(experiment, length(logs)))
+  labels <- c(labels, rep(label, length(logs)))
 }
+rm(label)
 if (length(out_paths)!=length(log_paths)) stop(str_glue("The number of .out ({length(out_paths)}) and .log ({length(log_paths)}) files should be equal!"))
 if (length(out_paths)==0) stop(str_glue("No output files for CLUSTER {CLUSTER} found in {log_dir}!"))
 
@@ -137,7 +138,7 @@ for (i in seq_along(roots)) {
 }
 for (i in indices_of_aborted_jobs) {
   roots[[i]] = NULL
-  experiments[[i]] = NULL
+  labels[[i]] = NULL
 }
 if (length(roots) == 0) stop("No jobs left to analyze!")
 
@@ -155,9 +156,9 @@ close(pb)
 
 # ---- Extract lists of jobs data from the loaded output ----
 
-# Extract the experiment cluster strings and job numbers
+# Extract th cluster strings and job numbers of the runs
 clusters <- c()
-runs <- c() # {experiment}_{cluster} labels for plotting
+runs <- c() # {label}_{cluster} run names for plotting
 job_numbers <- c()
 for (i in seq_along(roots)) {
   mat <- str_match(roots[[i]], ".*_([0-9]+)[.]([0-9]+)$")
@@ -165,7 +166,7 @@ for (i in seq_along(roots)) {
   prstr <- mat[3]
   if (is.na(clstr) | is.na(prstr)) stop(str_glue("Cannot extract cluster and job numbers from path {r}! Format should be *_<cluster number>.<job number>.[log|out]"))
   clusters  <- c(clusters , clstr)
-  runs <- c(runs, str_glue("{experiments[i]}_{clstr}"))
+  runs <- c(runs, str_glue("{labels[i]}_{clstr}"))
   job_numbers <- c(job_numbers, as.integer(prstr))
 }
 
@@ -313,7 +314,7 @@ rm(out_files)
 # ---- Collect the jobs data in a tibble / data frame -----
 
 # Create a tibble with the collected jobs data
-jobs <- tibble(experiment=unlist(experiments),
+jobs <- tibble(label=unlist(labels),
                cluster=clusters,
                run=runs,
                job=job_numbers,
@@ -394,9 +395,9 @@ if (any(!is.nan(unlist(jobs["total CPLEX time [min]"])))) {
 
 # Summarize
 jobs %>%
-select(experiment, cluster, submitted, `latency [min]`, `duration [min]`, `latency [h]`, `duration [h]`, `running_at_start`) %>%
+select(label, cluster, submitted, `latency [min]`, `duration [min]`, `latency [h]`, `duration [h]`, `running_at_start`) %>%
 group_by(cluster) %>%
-summarize(experiment=dplyr::first(experiment),
+summarize(label=dplyr::first(label),
           submitted=min(submitted),
           `jobs`=n(),
           `max running`=max(`running_at_start`),
@@ -409,16 +410,16 @@ summarize(experiment=dplyr::first(experiment),
           `throughput [jobs/h]`=n()/max(`latency [h]` + `duration [h]`)) %>%
 arrange(cluster) -> summary
 print(summary)
-print(ggplot(summary, aes(x=jobs/5, y=`mean [min]`, color=str_glue("{experiment}_{cluster}"))) + geom_errorbar(aes(ymin=`mean [min]`-`stdev [min]`, ymax=`mean [min]`+`stdev [min]`), width=1) + geom_point(size=3) + xlab("jobs/limpopo") + ylab("mean job time [min]") + scale_color_discrete(name = "run") + ggtitle("contention") + theme_grey(base_size=20))
-print(ggplot(summary, aes(x=jobs, y=`throughput [jobs/h]`, color=str_glue("{experiment}_{cluster}"))) + geom_point(size=3) + scale_x_continuous(trans='log10') + xlab("jobs/run") + ylab("jobs/h") + scale_color_discrete(name = "run") + ggtitle("throughput") + theme_grey(base_size=20))
+print(ggplot(summary, aes(x=jobs/5, y=`mean [min]`, color=str_glue("{label}_{cluster}"))) + geom_errorbar(aes(ymin=`mean [min]`-`stdev [min]`, ymax=`mean [min]`+`stdev [min]`), width=1) + geom_point(size=3) + xlab("jobs/limpopo") + ylab("mean job time [min]") + scale_color_discrete(name = "run") + ggtitle("contention") + theme_grey(base_size=20))
+print(ggplot(summary, aes(x=jobs, y=`throughput [jobs/h]`, color=str_glue("{label}_{cluster}"))) + geom_point(size=3) + scale_x_continuous(trans='log10') + xlab("jobs/run") + ylab("jobs/h") + scale_color_discrete(name = "run") + ggtitle("throughput") + theme_grey(base_size=20))
 
 options(tibble.print_max = Inf)
 
 # Print summary grouped by job cluster and host
 print(jobs %>%
-      select(experiment, cluster, host, submitted, `duration [min]`) %>%
+      select(label, cluster, host, submitted, `duration [min]`) %>%
       group_by(cluster,host) %>%
-      summarize(experiment=dplyr::first(experiment),
+      summarize(label=dplyr::first(label),
                 submitted=min(submitted),
                 `jobs`=n(),
                 `mean [min]`=mean(`duration [min]`),
