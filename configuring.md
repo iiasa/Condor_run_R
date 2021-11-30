@@ -60,14 +60,24 @@ GAMS version to run the job with. Must be installed on all selected execute host
 ## Optional configuration parameters
 The below configuration parameters are optional. Add the ones you need to your configuration file (see above).
 
+### CONDOR_DIR
+Default value: `"Condor"`
+
+Parent directory to hold the log directory of the run. The log directory is named via [`LABEL`](#label). Condor and job log files and other run artifacts are stored in the log directory. Excluded from the bundle. Can also be an absolute path. Created when it does not exist, as so too is the log directory.
+
 ### LABEL
 Default value: `"{Sys.Date()}"`
 
 Synonyms: NAME, EXPERIMENT, PROJECT
 
-Label/name of your project/experiment that is conducted by performing the run. This label will be used to rename output files such that they do not overwrite output files from other runs. It is also used to create a subdirectory of CONDOR_DIR where run managment artifacts such a log files are placed. The LABEL should therefore be short and contain only characters that are valid in file names. You can use `{}` expansions as part of the label.
+Label/name of your project/experiment that is conducted by performing the run. This label will be used to rename output files such that they do not overwrite output files from other runs. It is also used to name the [log directory of the run](#condor_dir). The LABEL should therefore be short and contain only characters that are valid in file names. You can use `{}` expansions as part of the label.
 
-Note that a unique sequence number (the Condor "cluster" number) will also be used to (re)name the output files and artifacts so that name collisions are also avoided when using the same label for multiple runs.
+Note that in addition a unique sequence number (the Condor "cluster" number) will be used to (re)name the output files, log files, and other run artifacts so that name collisions are avoided when using the same label for multiple runs. It is therefore handy to have an easy means to obtain the cluster number when in need of performing automated processing of output files after run completion. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
+
+### CLUSTER_NUMBER_LOG
+Default value: `""`
+
+Path of log file for capturing cluster number. No such file is written when set to an empty string.
 
 ### BUNDLE_INCLUDE
 Default value: `"*"`
@@ -107,11 +117,6 @@ Files to add to root of bundle during an additional invocation of 7-Zip. Can als
 Default value: `FALSE`
 
 Retain the bundle in the run's [`CONDOR_DIR`](#condor_dir) subdirectory when `TRUE`. Can be useful for locally analyzing host-side issues with jobs.
-
-### CONDOR_DIR
-Default value: `"Condor"`
-
-Directory where for each run, Condor and job log files and other run artifacts are stored in a subdirectory that is named via [`LABEL`](#label). Excluded from the bundle. Can also be an absolute path. Created when it does not exist, ditto for the subdirectory.
 
 ### SEED_JOB_RELEASES
 Default value: `0`
@@ -166,12 +171,12 @@ Prefix for per-job `.err`, `.log`, `.lst` and `.out` artifact file names stored 
 ### JOB_TEMPLATE
 Default value: see  [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L56) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L68).
 
-Template of the Condor `.job` file to submit the run with. A copy of the `.job` file produced with this template is stored together with the artifacts of the run.
+Template of the Condor `.job` file to submit the run with. The `.job` file produced with this template is preserved in the [log directory of the run](#condor_dir).
 
 ### BAT_TEMPLATE
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L94) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L106).
 
-Template for the `.bat` file that specifies what should be run on the execute host side for each job. This default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory.
+Template for the `.bat` file that specifies what should be run on the execute host side for each job. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir).
 
 ## `Condor_run_basic.R`-specific optional configuration parameters
 
