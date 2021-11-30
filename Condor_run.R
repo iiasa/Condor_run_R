@@ -435,6 +435,7 @@ monitor <- function(clusters) {
       clear_line()
       q <- new_q
       cat(q)
+      flush.console()
 
       changes_since_reschedule <- TRUE
     }
@@ -444,6 +445,7 @@ monitor <- function(clusters) {
       message("Jobs are held!")
       message("To see what this means please read: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold")
       cat(q)
+      flush.console()
       warn <- TRUE
     }
     # Request rescheduling early
@@ -463,6 +465,7 @@ monitor <- function(clusters) {
           clear_line()
           warning(str_c(c("Invocation of condor_reschedule failed with the following output:", outerr), collapse='\n'), call.=FALSE)
           cat(q)
+          flush.console()
         }
       }
       reschedule_invocations <- reschedule_invocations-1
@@ -477,6 +480,7 @@ monitor <- function(clusters) {
     # Stop if all jobs done
     if (jobs == 0) {
       clear_line()
+      flush.console()
       break
     }
   }
