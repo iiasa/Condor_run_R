@@ -76,6 +76,11 @@ Label/name of your project/experiment that is conducted by performing the run. T
 
 Note that in addition a unique sequence number (the Condor "cluster" number) will be used to (re)name the output files, log files, and other run artifacts so that name collisions are avoided when using the same label for multiple runs. It is therefore handy to have an easy means to obtain the cluster number when in need of performing automated processing of output files after run completion. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
 
+### PREFIX
+Default value: `"job"`
+
+Prefix for the file names of the per-job `.err`, `.log`, `.lst` and `.out` log files written to the [log directory of the run](#condor_dir).
+
 ### CLUSTER_NUMBER_LOG
 Default value: `""`
 
@@ -164,11 +169,6 @@ Path of log file for capturing cluster number. No such file is written when set 
 Default value: `TRUE`
 
 Clear status monitoring lines so as to show only the last status, set to FALSE when this does not work, e.g. when the output goes into the chunk output of an RMarkdown notebook.
-
-### PREFIX
-Default value: `"job"`
-
-Prefix for per-job `.err`, `.log`, `.lst` and `.out` artifact file names stored in a subdirectory of [`CONDOR_DIR`](#condor_dir).
 
 ### JOB_TEMPLATE
 Default value: see  [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L56) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L68).
