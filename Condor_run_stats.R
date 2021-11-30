@@ -70,24 +70,24 @@ if (Sys.getenv("RSTUDIO") == "1") {
       # Construct the path to the experiment log directory from the configuration
       if (exists("CONDOR_DIR")) {
         # The log directory should be under CONDOR_DIR
-        ld <- path(CONDOR_DIR, str_glue(LABEL))
+        log_dir <- path(CONDOR_DIR, str_glue(LABEL))
         default_condor_dir = FALSE
       } else {
         # The experiment log directory should be the default "Condor" directory
-        ld <- path("Condor", str_glue(LABEL))
+        log_dir <- path("Condor", str_glue(LABEL))
         default_condor_dir = TRUE
       }
-      if (!file_exists(ld) || !is_dir(ld)) {
+      if (!file_exists(log_dir) || !is_dir(log_dir)) {
         if (str_detect(LABEL, fixed("Sys.Date(")) || str_detect(LABEL, fixed("Sys.time("))) {
           time_variable_advice <- str_glue(" {label_from} has a time-variable value '{LABEL}' so probably you started the run on an earlier date. To still analyze the run, specify its Condor log directory instead of its configuration file as an argument.")
         } else {
           time_variable_advice <- ""
         }
-        stop(str_glue("Could not locate a log directory at '{ld}' as configured by {ifelse(default_condor_dir, '', 'CONDOR_DIR and ')}{label_from} of configuration file '{arg}!{time_variable_advice}'"))
+        stop(str_glue("Could not locate a log directory at '{log_dir}' as configured by {ifelse(default_condor_dir, '', 'CONDOR_DIR and ')}{label_from} of configuration file '{arg}!{time_variable_advice}'"))
       }
 
       # Add log directory path as determined from config file
-      LOG_DIRECTORIES <- c(LOG_DIRECTORIES, ld)
+      LOG_DIRECTORIES <- c(LOG_DIRECTORIES, log_dir)
     }
   }
   # Set PDF filename and use landscape mode for generating the PDF with plots
@@ -100,18 +100,18 @@ if (Sys.getenv("RSTUDIO") == "1") {
 out_paths <- c()
 log_paths <- c()
 experiments <- list() # expanded to a per-job list
-for (ld in LOG_DIRECTORIES) {
-  experiment <- basename(ld)
-  if (!is_absolute_path(ld)) {
+for (log_dir in LOG_DIRECTORIES) {
+  experiment <- basename(log_dir)
+  if (!is_absolute_path(log_dir)) {
     if (Sys.getenv("RSTUDIO") == "1") {
-      ld <- path(dirname(rstudioapi::getActiveDocumentContext()$path), ld)
+      log_dir <- path(dirname(rstudioapi::getActiveDocumentContext()$path), log_dir)
     } else {
-      ld <- path(getwd(), ld)
+      log_dir <- path(getwd(), log_dir)
     }
   }
-  outs <- dir_ls(path=ld, glob=str_glue("*_{CLUSTER}.*.out"))
+  outs <- dir_ls(path=log_dir, glob=str_glue("*_{CLUSTER}.*.out"))
   out_paths <- c(out_paths, outs)
-  logs <- dir_ls(path=ld, glob=str_glue("*_{CLUSTER}.*.log"))
+  logs <- dir_ls(path=log_dir, glob=str_glue("*_{CLUSTER}.*.log"))
   log_paths <- c(log_paths, logs)
   experiments <- c(experiments, rep(experiment, length(logs)))
 }

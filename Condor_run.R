@@ -73,10 +73,10 @@ JOB_TEMPLATE <- c(
   "nice_user = {ifelse(NICE_USER, 'True', 'False')}",
   "",
   "# Job log, output, and error files",
-  "log = {run_dir}/{PREFIX}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
-  "output = {run_dir}/{PREFIX}_$(cluster).$(job).out",
+  "log = {log_dir}/{PREFIX}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
+  "output = {log_dir}/{PREFIX}_$(cluster).$(job).out",
   "stream_output = True",
-  "error = {run_dir}/{PREFIX}_$(cluster).$(job).err",
+  "error = {log_dir}/{PREFIX}_$(cluster).$(job).err",
   "stream_error = True",
   "",
   "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
@@ -96,7 +96,7 @@ JOB_TEMPLATE <- c(
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
   'transfer_output_files = {str_sub(in_gams_curdir(GAMS_FILE_PATH), 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{in_gams_curdir(G00_OUTPUT_DIR)}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{in_gams_curdir(GDX_OUTPUT_DIR)}/{GDX_OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{str_sub(GAMS_FILE_PATH, 1, -5)}.lst={run_dir}/{PREFIX}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}_{LABEL}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_output_remaps = "{str_sub(GAMS_FILE_PATH, 1, -5)}.lst={log_dir}/{PREFIX}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}_{LABEL}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -339,10 +339,10 @@ username <- Sys.getenv("USERNAME")
 if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
-# Ensure that the run directory to hold the .out/.err/.log and so on results exists
+# Ensure that a log directory to hold the .log/.err/.out files and other artifacts exists for the run
 if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
-run_dir <- path(CONDOR_DIR, LABEL)
-if (!dir_exists(run_dir)) dir_create(run_dir)
+log_dir <- path(CONDOR_DIR, LABEL)
+if (!dir_exists(log_dir)) dir_create(log_dir)
 
 # ---- Define some helper functions ----
 
@@ -483,11 +483,11 @@ monitor <- function(clusters) {
 }
 
 # Get the return values of job log files, or NA when a job did not terminate normally.
-get_return_values <- function(log_directory, log_file_names) {
+get_return_values <- function(log_dir, log_file_names) {
   return_values <- c()
   return_value_regexp <- "\\(1\\) Normal termination \\(return value (\\d+)\\)"
   for (name in log_file_names) {
-    loglines <- readLines(path(log_directory, name))
+    loglines <- readLines(path(log_dir, name))
     return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
     return_values <- c(return_values, return_value)
   }
@@ -645,9 +645,9 @@ for (hostdom in hostdoms) {
     "universe = vanilla",
     "",
     "# Job log, stdout, and stderr files",
-    "log = {run_dir}/_seed_{hostname}.log",
-    "output = {run_dir}/_seed_{hostname}.out",
-    "error = {run_dir}/_seed_{hostname}.err",
+    "log = {log_dir}/_seed_{hostname}.log",
+    "output = {log_dir}/_seed_{hostname}.out",
+    "error = {log_dir}/_seed_{hostname}.err",
     "",
     "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
     "",
@@ -680,9 +680,9 @@ for (hostdom in hostdoms) {
   rm(seed_job_template, seed_job_conn)
 
   # Delete any job output left over from an aborted prior run
-  delete_if_exists(run_dir, str_glue("_seed_{hostname}.log"))
-  delete_if_exists(run_dir, str_glue("_seed_{hostname}.out"))
-  delete_if_exists(run_dir, str_glue("_seed_{hostname}.err"))
+  delete_if_exists(log_dir, str_glue("_seed_{hostname}.log"))
+  delete_if_exists(log_dir, str_glue("_seed_{hostname}.out"))
+  delete_if_exists(log_dir, str_glue("_seed_{hostname}.err"))
 
   outerr <- system2("condor_submit", args=seed_job_file, stdout=TRUE, stderr=TRUE)
   if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
@@ -707,15 +707,15 @@ monitor(clusters)
 rm(clusters)
 
 # Determine which seed jobs failed
-return_values <- get_return_values(run_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
-err_file_sizes <-  lapply(hostnames, function(hostname) return(file_size(path(run_dir, str_glue("_seed_{hostname}.err")))))
+return_values <- get_return_values(log_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
+err_file_sizes <-  lapply(hostnames, function(hostname) return(file_size(path(log_dir, str_glue("_seed_{hostname}.err")))))
 failed_seeds <- is.na(return_values) | return_values != 0 | err_file_sizes != 0
 rm(return_values, err_file_sizes)
 
 # Check whether seed jobs failed
 if (all(failed_seeds)) {
   file_delete(bundle_path)
-  stop(str_glue("All seeding jobs failed! For details, see the _seed_* files in {run_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
+  stop(str_glue("All seeding jobs failed! For details, see the _seed_* files in {log_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
 }
 if (any(failed_seeds)) {
   if (length(failed_seeds[failed_seeds == TRUE]) == 1) {
@@ -732,9 +732,9 @@ rm(failed_seeds)
 file_delete(seed_bat)
 for (hostname in hostnames) {
   delete_if_exists(temp_dir, str_glue("_seed_{hostname}.job"))
-  delete_if_exists(run_dir, str_glue("_seed_{hostname}.log"))
-  delete_if_exists(run_dir, str_glue("_seed_{hostname}.out"))
-  delete_if_exists(run_dir, str_glue("_seed_{hostname}.err"))
+  delete_if_exists(log_dir, str_glue("_seed_{hostname}.log"))
+  delete_if_exists(log_dir, str_glue("_seed_{hostname}.out"))
+  delete_if_exists(log_dir, str_glue("_seed_{hostname}.err"))
 }
 
 # Report that seeding is done
@@ -748,37 +748,37 @@ rm(hostnames)
 
 # ---- Prepare files for run ----
 
-# Move the configuration from the temp to the run directory so as to have a persistent reference
-config_file <- path(run_dir, str_glue("_config_{predicted_cluster}.R"))
+# Move the configuration from the temp to the log directory so as to have a persistent reference
+config_file <- path(log_dir, str_glue("_config_{predicted_cluster}.R"))
 tryCatch(
   file_copy(temp_config_file, config_file, overwrite=TRUE),
   error=function(cond) {
     file_delete(bundle_path)
     message(cond)
-    stop(str_glue("Cannot copy the configuration from {temp_config_file} to {run_dir}!"))
+    stop(str_glue("Cannot copy the configuration from {temp_config_file} to {log_dir}!"))
   }
 )
 file_delete(temp_config_file)
 
-# Copy the GAMS_FILE_PATH file to the run directory for reference
+# Copy the GAMS_FILE_PATH file to the log directory for reference
 tryCatch(
-  file_copy(in_gams_curdir(GAMS_FILE_PATH), path(run_dir, str_glue("{str_sub(basename(GAMS_FILE_PATH), 1, -5)}_{predicted_cluster}.gms")), overwrite=TRUE),
+  file_copy(in_gams_curdir(GAMS_FILE_PATH), path(log_dir, str_glue("{str_sub(basename(GAMS_FILE_PATH), 1, -5)}_{predicted_cluster}.gms")), overwrite=TRUE),
   error=function(cond) {
     file_delete(bundle_path)
     message(cond)
-    stop(str_glue("Cannot copy the configured GAMS_FILE_PATH file to {run_dir}"))
+    stop(str_glue("Cannot copy the configured GAMS_FILE_PATH file to {log_dir}"))
   }
 )
 
 # Apply settings to BAT_TEMPLATE and write the batch file / shell script to launch jobs with
-bat_path <- path(run_dir, str_glue("launch_{predicted_cluster}.bat"))
+bat_path <- path(log_dir, str_glue("launch_{predicted_cluster}.bat"))
 bat_conn<-file(bat_path, open="wt")
 writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
 
 # Apply settings to job template and write the .job file to use for submission
-job_file <- path(run_dir, str_glue("submit_{predicted_cluster}.job"))
+job_file <- path(log_dir, str_glue("submit_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(JOB_TEMPLATE, str_glue)), job_conn)
 close(job_conn)
@@ -806,7 +806,7 @@ if (cluster != predicted_cluster) {
 # Retain the bundle if so requested, then delete it from temp so that further submissions are no longer blocked
 if (RETAIN_BUNDLE) {
   tryCatch(
-    file_copy(bundle_path, path(run_dir, str_glue("bundle_{cluster}.7z"))),
+    file_copy(bundle_path, path(log_dir, str_glue("bundle_{cluster}.7z"))),
     error=function(cond) {
       message(cond)
       warning("Could not make a reference copy of bundle as requested via RETAIN_BUNDLE!")
@@ -839,8 +839,8 @@ if (WAIT_FOR_RUN_COMPLETION) {
   monitor(cluster)
 
   # Check that result files exist and are not empty, warn otherwise and delete empty files
-  all_exist_and_not_empty(run_dir, "{PREFIX}_{cluster}.{job}.err", ".err", warn=FALSE)
-  all_exist_and_not_empty(run_dir, "{PREFIX}_{cluster}.{job}.lst", ".lst")
+  all_exist_and_not_empty(log_dir, "{PREFIX}_{cluster}.{job}.err", ".err", warn=FALSE)
+  all_exist_and_not_empty(log_dir, "{PREFIX}_{cluster}.{job}.lst", ".lst")
   if (GET_G00_OUTPUT) {
     g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, "{g00_prefix}_{LABEL}_{cluster}.{job}.g00", "work/save (.g00)")
   }
@@ -848,12 +848,12 @@ if (WAIT_FOR_RUN_COMPLETION) {
     gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR_SUBMIT, '{gdx_prefix}_{LABEL}_{cluster}.{sprintf("%06d", job)}.gdx', "GDX")
   }
 
-  return_values <- get_return_values(run_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{cluster}.{job}.log"))))
+  return_values <- get_return_values(log_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{cluster}.{job}.log"))))
   if (any(is.na(return_values))) {
-    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{cluster}.* files in {run_dir}"))
+    stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{cluster}.* files in {log_dir}"))
   }
   if (any(return_values != 0)) {
-    stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{cluster}.* files in {run_dir}"))
+    stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{cluster}.* files in {log_dir}"))
   }
   cat("All jobs are done.\n")
 
@@ -862,7 +862,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   max_memory_job <- -1
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
   for (job in JOBS) {
-    job_lines <- readLines(path(run_dir, str_glue("{PREFIX}_{cluster}.{job}.log")))
+    job_lines <- readLines(path(log_dir, str_glue("{PREFIX}_{cluster}.{job}.log")))
     memory_use <- as.double(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
