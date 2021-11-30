@@ -116,8 +116,8 @@ for (log_dir in LOG_DIRECTORIES) {
   labels <- c(labels, rep(label, length(logs)))
 }
 rm(label)
+if (length(out_paths)==0) stop(str_glue("No output files for CLUSTER {CLUSTER} in any of the log directories!"))
 if (length(out_paths)!=length(log_paths)) stop(str_glue("The number of .out ({length(out_paths)}) and .log ({length(log_paths)}) files should be equal!"))
-if (length(out_paths)==0) stop(str_glue("No output files for CLUSTER {CLUSTER} found in {log_dir}!"))
 
 # Reduce the list of .out and .log file paths to extensionless root paths of these job output files and check that they are the same
 for (i in seq_along(out_paths))
