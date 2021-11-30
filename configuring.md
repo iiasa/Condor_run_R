@@ -183,7 +183,9 @@ Template for the `.bat` file that specifies what should be run on the execute ho
 ### OUTPUT_DIR
 Default value: `"output"`
 
-Directory for output files. Relative to the current working directory both on the execute host side and also on the submit machine if [`OUTPUT_DIR_SUBMIT`](#output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
+Directory for output files. Relative to the current working directory on the execute host side and also on the submit machine when [`OUTPUT_DIR_SUBMIT`](#output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
+
+When `OUTPUT_DIR` does not exist on the execute host side, the default [`JOB_BAT`](#job_bat) of `Condor_run_basic.R` will create it.
 
 ### OUTPUT_DIR_SUBMIT
 Default value: `NULL`
@@ -245,7 +247,9 @@ Default value: `FALSE`
 ### G00_OUTPUT_DIR
 Default value: `""`
 
-Directory for work/save files. Relative to [`GAMS_CURDIR`](#gams_curdir) both execute host side and also on the submit machine if [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
+When set (changed from its `""` default), this configures the directory for storing work/save output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute host and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
+
+When set and when `G00_OUTPUT_DIR` does not exist on the execute host side, the default [`JOB_BAT`](#job_bat) of `Condor_run.R` will create it.
 
 ### G00_OUTPUT_DIR_SUBMIT
 Default value: `NULL`
@@ -263,7 +267,9 @@ Default value: `FALSE`
 ### GDX_OUTPUT_DIR
 Default value: `""`
 
-Directory for GDX output files. Relative to [`GAMS_CURDIR`](#gams_curdir) both on the execute host side and also on the submit machine if [`GDX_OUTPUT_DIR_SUBMIT`](#gdx_output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
+When set (changed from its `""` default), this sets the directory for storing GDX output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute host side and also on the submit machine side when [`GDX_OUTPUT_DIR_SUBMIT`](#gdx_output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
+
+When set and when `GDX_OUTPUT_DIR` does not exist on the execute host side, the default [`JOB_BAT`](#job_bat) of `Condor_run.R` will create it.
 
 ### GDX_OUTPUT_DIR_SUBMIT
 Default value: `NULL`
