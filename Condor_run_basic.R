@@ -54,7 +54,7 @@ CLUSTER_NUMBER_LOG = ""
 CLEAR_LINES = TRUE
 PREFIX = "job"
 JOB_TEMPLATE <- c(
-  "executable = {job_bat}",
+  "executable = {bat_path}",
   "arguments = $(job)",
   "universe = vanilla",
   "",
@@ -461,7 +461,7 @@ hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machin
 if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
 if (length(hostdoms) == 0) stop("No execute hosts matching HOST_REGEXP are available!")
 
-# ---- Bundle the files needed to run the job ----
+# ---- Bundle the files needed to run the jobs ----
 
 # Set R-default and platform-specific paths to the bundle
 bundle <- "job_bundle.7z"
@@ -664,9 +664,9 @@ tryCatch(
   }
 )
 
-# Apply settings to seed bat template and write the batch file / shell script
-job_bat <- path(temp_dir_parent, str_glue("job_{LABEL}_{predicted_cluster}.bat"))
-bat_conn<-file(job_bat, open="wt")
+# Apply settings to BAT_TEMPLATE and write the batch file / shell script to launch jobs with
+bat_path <- path(run_dir, str_glue("launch_{predicted_cluster}.bat"))
+bat_conn<-file(bat_path, open="wt")
 writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
@@ -718,24 +718,12 @@ if (CLUSTER_NUMBER_LOG != "") {
   readr::write_file(str_glue("{cluster}"), CLUSTER_NUMBER_LOG)
 }
 
-# Delete dated job batch files that are almost certainly no longer in use (older than 10 days)
-# Needed because Windows does not periodically clean up TEMP and because the current job batch
-# file is not deleted unless you make this script wait for the run to complete.
-for (bat_path in dir_ls(path=temp_dir_parent, regexp="job_.*_\\d+.bat")) {
-  if (difftime(Sys.time(), file_info(bat_path)$birth_time, unit="days") > 10) file_delete(bat_path)
-}
-
 # ---- Handle run results ----
 
 if (WAIT_FOR_RUN_COMPLETION) {
   # Monitor the run until it completes
   cat(str_glue('Waiting for run "{LABEL}" to complete...'), sep="\n")
   monitor(cluster)
-
-  # Delete the job batch file. This is done after waiting for the run to complete
-  # because jobs can continue to be scheduled well after the initial submission when
-  # there are more jobs in the run than available slot partitions.
-  file_delete(job_bat)
 
   # Check that result files exist and are not empty, warn otherwise and delete empty files
   all_exist_and_not_empty(run_dir, "{PREFIX}_{cluster}.{job}.err", ".err", warn=FALSE)

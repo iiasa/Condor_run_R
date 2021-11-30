@@ -66,7 +66,7 @@ CLUSTER_NUMBER_LOG = ""
 CLEAR_LINES = TRUE
 PREFIX = "job"
 JOB_TEMPLATE <- c(
-  "executable = {job_bat}",
+  "executable = {bat_path}",
   "arguments = $(job)",
   "universe = vanilla",
   "",
@@ -563,7 +563,7 @@ hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machin
 if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
 if (length(hostdoms) == 0) stop("No execute hosts matching HOST_REGEXP are available!")
 
-# ---- Bundle the files needed to run the job ----
+# ---- Bundle the files needed to run the jobs ----
 
 # Set R-default and platform-specific paths to the bundle
 bundle <- "job_bundle.7z"
@@ -576,16 +576,16 @@ args_for_7z <- unlist(lapply(c(
   "a",
   "-mx1",
   "-bb0",
-   unlist(lapply(BUNDLE_INCLUDE_DIRS,  function(p) return(str_glue("-ir!", p)))),
-   unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!",  p)))),
-   unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
-   unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
-   "-xr!{CONDOR_DIR}",
+  unlist(lapply(BUNDLE_INCLUDE_DIRS,  function(p) return(str_glue("-ir!", p)))),
+  unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!",  p)))),
+  unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
+  unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
+  "-xr!{CONDOR_DIR}",
    ifelse(G00_OUTPUT_DIR_SUBMIT != "", "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
    ifelse(G00_OUTPUT_DIR_SUBMIT != "", "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
   "-xr!{GDX_OUTPUT_DIR_SUBMIT}",
-   "{bundle_platform_path}",
-   "{BUNDLE_INCLUDE}"
+  "{bundle_platform_path}",
+  "{BUNDLE_INCLUDE}"
 ), str_glue))
 cat("Compressing files into bundle...\n")
 byte_size <- bundle_with_7z(args_for_7z)
@@ -770,9 +770,9 @@ tryCatch(
   }
 )
 
-# Apply settings to bat template and write the .bat file
-job_bat <- path(temp_dir_parent, str_glue("job_{LABEL}_{predicted_cluster}.bat"))
-bat_conn<-file(job_bat, open="wt")
+# Apply settings to BAT_TEMPLATE and write the batch file / shell script to launch jobs with
+bat_path <- path(run_dir, str_glue("launch_{predicted_cluster}.bat"))
+bat_conn<-file(bat_path, open="wt")
 writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
@@ -806,7 +806,7 @@ if (cluster != predicted_cluster) {
 # Retain the bundle if so requested, then delete it from temp so that further submissions are no longer blocked
 if (RETAIN_BUNDLE) {
   tryCatch(
-    file_copy(bundle_path, path(run_dir, str_glue("bundle_{LABEL}_{cluster}.7z"))),
+    file_copy(bundle_path, path(run_dir, str_glue("bundle_{cluster}.7z"))),
     error=function(cond) {
       message(cond)
       warning("Could not make a reference copy of bundle as requested via RETAIN_BUNDLE!")
@@ -837,10 +837,6 @@ if (WAIT_FOR_RUN_COMPLETION) {
   # Monitor the run until it completes
   cat(str_glue('Waiting for run "{LABEL}" to complete...'), sep="\n")
   monitor(cluster)
-  # Delete the job batch file. This is done after waiting for the run to complete
-  # because jobs can continue to be scheduled well after the initial submission when
-  # there are more jobs in the run than available slot partitions.
-  file_delete(job_bat)
 
   # Check that result files exist and are not empty, warn otherwise and delete empty files
   all_exist_and_not_empty(run_dir, "{PREFIX}_{cluster}.{job}.err", ".err", warn=FALSE)
