@@ -48,14 +48,16 @@ Arguments to the script. Should include `%1` which expands to the job number.
 
 ## `Condor_run.R`-specific mandatory configuration parameters
 
+### GAMS_VERSION
+GAMS version to run the job with. Must be installed on all selected execute hosts.
+
+Available GAMS versions are configured by  [`EXECUTE_HOST_GAMS_VERSIONS`](#execute_host_gams_versions).
+
 ### GAMS_FILE_PATH
 Path to GAMS file to run for each job, relative to [`GAMS_CURDIR`](#gams_curdir).
 
 ### GAMS_ARGUMENTS
 Additional GAMS arguments, can use {<config>} expansion here. Should include `%1` which expands to the job number.
-
-### GAMS_VERSION
-GAMS version to run the job with. Must be installed on all selected execute hosts.
 
 ## Optional configuration parameters
 The below configuration parameters are optional. Add the ones you need to your configuration file (see above).
