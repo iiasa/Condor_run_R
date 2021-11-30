@@ -185,7 +185,7 @@ Default value: `"output"`
 
 Directory for output files. Relative to the current working directory on the execute host side and also on the submit machine when [`OUTPUT_DIR_SUBMIT`](#output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
 
-When `OUTPUT_DIR` does not exist on the execute host side, the default [`JOB_BAT`](#job_bat) of `Condor_run_basic.R` will create it.
+When `OUTPUT_DIR` does not exist on the execute host side, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run_basic.R` will create it.
 
 ### OUTPUT_DIR_SUBMIT
 Default value: `NULL`
@@ -198,6 +198,46 @@ Default value: `"output.RData"`
 Name of output file as produced by a job on the execute host side. Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
 
 ## `Condor_run.R`-specific optional configuration parameters
+
+### GET_G00_OUTPUT
+Default value: `FALSE`
+
+### G00_OUTPUT_DIR
+Default value: `""`
+
+When set (changed from its `""` default), this configures the directory for storing work/save output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute host and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
+
+When set and when `G00_OUTPUT_DIR` does not exist on the execute host side, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` will create it.
+
+### G00_OUTPUT_DIR_SUBMIT
+Default value: `NULL`
+
+Directory on the submit machine into where `.g00` job work/save files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`G00_OUTPUT_DIR`](#g00_output_dir) will be used instead.
+
+### G00_OUTPUT_FILE
+Default value: `""`
+
+Name of work/save file produced by a job on the execute host side via the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
+
+### GET_GDX_OUTPUT
+Default value: `FALSE`
+
+### GDX_OUTPUT_DIR
+Default value: `""`
+
+When set (changed from its `""` default), this sets the directory for storing GDX output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute host side and also on the submit machine side when [`GDX_OUTPUT_DIR_SUBMIT`](#gdx_output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
+
+When set and when `GDX_OUTPUT_DIR` does not exist on the execute host side, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` will create it.
+
+### GDX_OUTPUT_DIR_SUBMIT
+Default value: `NULL`
+
+Directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`GDX_OUTPUT_DIR`](#gdx_output_dir) will be used instead.
+
+### GDX_OUTPUT_FILE
+Default value: `""`
+
+Name of the GDX output file produced by a job on the execute host side via the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
 
 ### EXECUTE_HOST_GAMS_VERSIONS
 Default value: `c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2")`
@@ -240,43 +280,3 @@ Comma-separated list of symbols to exclude from the merge. String-valued. The `N
 Default value: `FALSE`
 
 When `TRUE`, remove per-job GDX output files after having been merged.
-
-### GET_G00_OUTPUT
-Default value: `FALSE`
-
-### G00_OUTPUT_DIR
-Default value: `""`
-
-When set (changed from its `""` default), this configures the directory for storing work/save output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute host and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
-
-When set and when `G00_OUTPUT_DIR` does not exist on the execute host side, the default [`JOB_BAT`](#job_bat) of `Condor_run.R` will create it.
-
-### G00_OUTPUT_DIR_SUBMIT
-Default value: `NULL`
-
-Directory on the submit machine into where `.g00` job work/save files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`G00_OUTPUT_DIR`](#g00_output_dir) will be used instead.
-
-### G00_OUTPUT_FILE
-Default value: `""`
-
-Name of work/save file produced by a job on the execute host side via the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
-
-### GET_GDX_OUTPUT
-Default value: `FALSE`
-
-### GDX_OUTPUT_DIR
-Default value: `""`
-
-When set (changed from its `""` default), this sets the directory for storing GDX output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute host side and also on the submit machine side when [`GDX_OUTPUT_DIR_SUBMIT`](#gdx_output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
-
-When set and when `GDX_OUTPUT_DIR` does not exist on the execute host side, the default [`JOB_BAT`](#job_bat) of `Condor_run.R` will create it.
-
-### GDX_OUTPUT_DIR_SUBMIT
-Default value: `NULL`
-
-Directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`GDX_OUTPUT_DIR`](#gdx_output_dir) will be used instead.
-
-### GDX_OUTPUT_FILE
-Default value: `""`
-
-Name of the GDX output file produced by a job on the execute host side via the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
