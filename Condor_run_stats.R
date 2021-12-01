@@ -32,7 +32,7 @@ options(tibble.width = Inf)
 
 if (Sys.getenv("RSTUDIO") == "1") {
   # Paths to one or more directories containing log files of runs to analyse.
-  LOG_DIRECTORIES <- c("tests/basic/Condor/basic_2021-11-08")
+  LOG_DIRECTORIES <- c("tests/basic/Condor/basic_2021-12-01")
 } else {
   args <- commandArgs(trailingOnly=TRUE)
   if (length(args) == 0) {
@@ -156,7 +156,7 @@ close(pb)
 
 # ---- Extract lists of jobs data from the loaded output ----
 
-# Extract th cluster strings and job numbers of the runs
+# Extract the cluster strings and job numbers of the runs
 clusters <- c()
 runs <- c() # {label}_{cluster} run names for plotting
 job_numbers <- c()
