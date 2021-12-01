@@ -10,6 +10,7 @@ When you have an issue with getting your jobs to run or with retrieving output, 
 - [Jobs run but at the end fail to send and write output files](#jobs-run-but-at-the-end-fail-to-send-and-write-output-files)
 - [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
 - [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
+- [`Condor_run_stats.R` produces empty plots](#condor_run_statsr-produces-empty-plots)
 - [None of the above solves my problem](#none-of-the-above-solves-my-problem)
 - [Further information](#further-information)
 
@@ -83,10 +84,10 @@ The crude way to restart Condor is to reboot the submit machine. The better way 
 The cluster may be busy. To see who else has submitted jobs, issue [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue [`condor_userprio`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_userprio.html). Large numbers mean low priority. Your cluster administrator can set your priority.
 
 ## `Condor_run_stats.R` produces empty plots
-When running `Condor_run_stats.R`, the console output probably contained something like:
+When running `Condor_run_stats.R` and some of the resulting plots are empty, the console output probably contained something like:
 ```
 Warning message:
-Cannot extract submit time from Condor event log (e.g.~/Condor_run_R/tests/basic/Condor/basic_2021-12-01/job_570.0.log). Unable to determine latency between job submission and start time. Latency results and plots will be partially or fully unavailable.
+Cannot extract submit time from Condor event log (e.g.~/Condor_run_R/tests/basic/Condor/basic/job_570.0.log). Unable to determine latency between job submission and start time. Latency results and plots will be partially or fully unavailable.
 ```
 This results from  one or more the per-job `.log` files lacking a line identifying the source and time of submission. This line should normally be present. This problems appears to be transient and specific to the submit machine. It is unknown what triggers it or resolves it.
 
