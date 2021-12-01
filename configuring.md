@@ -170,15 +170,29 @@ Default value: `TRUE`
 
 Clear status monitoring lines so as to show only the last status, set to FALSE when this does not work. This might be the case when the output goes into the chunk output of an RMarkdown notebook in RStudio while [this RStudio issue](https://github.com/rstudio/rstudio/issues/8040) is not yet resolved in the RStudio version that you are using.
 
+## Submission and launch optional templates
+
+The template parameters below allow you to ovverride ho Condor `.job` files and job launch scripts that run on the execute-host side are to be generated. The template strings can use `{}` expansion.
+
 ### JOB_TEMPLATE
-Default value: see  [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L56) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L68).
+Default value: see  [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L63) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L75).
 
 Template of the Condor `.job` file to submit the run with. The `.job` file produced with this template is preserved in the [log directory of the run](#condor_dir).
 
 ### BAT_TEMPLATE
-Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L94) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L106).
+Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L103) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L113).
 
-Template for the `.bat` file that specifies what should be run on the execute host side for each job. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir).
+Template for the `.bat` file that launches jobs on the execute host side. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir).
+
+### SEED_JOB_TEMPLATE
+Default value: see  [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L125) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L180).
+
+Template of the Condor `.job` file to submit the bundle seed jobs with. The `.job` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
+
+### SEED_BAT_TEMPLATE
+Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L156) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L149).
+
+Template for the `.bat` file that caches the bundle on the execute host side for a seeding job. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
 
 ## `Condor_run_basic.R`-specific optional configuration parameters
 
