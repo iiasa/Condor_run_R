@@ -9,13 +9,13 @@
 # Based on: GLOBIOM-limpopo scripts by David Leclere
 # Repository: https://github.com/iiasa/Condor_run_R
 
-# ---- Configuration parameters, see https://github.com/iiasa/Condor_run_R/blob/master/configuring.md ----
+# ---- Configuration parameters, mandatory ----
 
-# Remove any objects from active environment so that below it will contain only the default config
+# Remove any objects from active environment so that below it will contain only the default configuration
 rm(list=ls())
 
-# Mandatory configuration parameters.
 # Add all of these to your configuration file.
+# See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 # .......8><....snippy.snappy....8><.........................................
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 JOBS = c(0:3,7,10)
@@ -29,8 +29,10 @@ WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
 mandatory_config_names <- ls()
 
-# Optional configuration parameters.
-# Review and add those that you need to your configuration file.
+# ---- Configuration parameters, optional ----
+
+# Review and add any optional parameters that you need to your configuration file.
+# See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 LABEL = "{Sys.Date()}"
 BUNDLE_INCLUDE = "*"
 BUNDLE_INCLUDE_DIRS = c()
@@ -53,6 +55,11 @@ NICE_USER = FALSE
 CLUSTER_NUMBER_LOG = ""
 CLEAR_LINES = TRUE
 PREFIX = "job"
+
+# ---- Configuration parameters, optional templates ----
+
+# When customizing how jobs are submitted and how execute hosts launch them,
+# you may need to add adapted versions of these to your configuration file.
 JOB_TEMPLATE <- c(
   "executable = {bat_path}",
   "arguments = $(job)",
@@ -115,6 +122,48 @@ BAT_TEMPLATE <- c(
   "sleep 1", # Make it less likely that the .out file is truncated.
   "exit /b %script_errorlevel%"
 )
+SEED_JOB_TEMPLATE <- c(
+  "executable = {seed_bat}",
+  "universe = vanilla",
+  "",
+  "# Job log, stdout, and stderr files",
+  "log = {log_dir}/_seed_{hostname}.log",
+  "output = {log_dir}/_seed_{hostname}.out",
+  "error = {log_dir}/_seed_{hostname}.err",
+  "",
+  "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
+  "",
+  "requirements = \\",
+  '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
+  '  ( (OpSys == "WINDOWS")||(OpSys == "WINNT61") ) && \\',
+  "  ( GLOBIOM =?= True ) && \\",
+  '  ( TARGET.Machine == "{hostdom}" )',
+  "",
+  "periodic_remove = (JobStatus == 1) && (CurrentTime - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute host is not responding
+  "",
+  "request_memory = 0",
+  "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
+  "request_disk = {2*bundle_size+500}", # KiB, twice needed for move, add some for the extra files
+  "",
+  '+IIASAGroup = "ESM"',
+  "run_as_owner = False",
+  "",
+  "should_transfer_files = YES",
+  'transfer_input_files = {bundle_path}',
+  "",
+  "queue 1"
+)
+SEED_BAT_TEMPLATE <- c(
+  "@echo off",
+  "set bundle_root=d:\\condor\\bundles",
+  "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
+  "set bundle_dir=%bundle_root%\\{username}",
+  "if not exist %bundle_dir%\\ mkdir %bundle_dir% || exit /b %errorlevel%",
+  "@echo on",
+  "move /Y {bundle} %bundle_dir%\\{unique_bundle}"
+)
+
+# ---- Get set ----
 
 # Collect the names and types of the default config settings
 config_names <- ls()
@@ -122,9 +171,7 @@ config_names <- config_names[!(config_names %in% "mandatory_config_names")]
 if (length(config_names) == 0) {stop("Default configuration is absent! Please restore the default configuration. It is required for configuration checking, also when providing a separate configuration file.")}
 config_types <- lapply(lapply(config_names, get), typeof)
 
-# ---- Get set ----
-
-# Required packages
+# Load required packages
 library(fs)
 library(stringr)
 
@@ -508,22 +555,12 @@ bundle_size <- floor(file_size(bundle_path)/1024)
 
 # ---- Seed available execute hosts with the bundle ----
 
-# Define the template for the batch file / shell script that caches the transferred bundle on the execute host side
-seed_bat_template <- c(
-  "@echo off",
-  "set bundle_root=d:\\condor\\bundles",
-  "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
-  "set bundle_dir=%bundle_root%\\{username}",
-  "if not exist %bundle_dir%\\ mkdir %bundle_dir% || exit /b %errorlevel%",
-  "@echo on",
-  "move /Y {bundle} %bundle_dir%\\{unique_bundle}"
-)
-
-# Apply settings to the template and write the batch file / shell script
+# Apply settings to  template and write batch file / shell script that launches jobs on the execute host side 
 seed_bat <- path(temp_dir, str_glue("_seed.bat"))
 bat_conn<-file(seed_bat, open="wt")
-writeLines(unlist(lapply(seed_bat_template, str_glue)), bat_conn)
+writeLines(unlist(lapply(SEED_BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
+rm(bat_conn)
 
 # Transfer bundle to each available execute host
 # Execute-host-side automated bundle cleanup is assumed to be active:
@@ -537,45 +574,12 @@ for (hostdom in hostdoms) {
   hostnames <- c(hostnames, hostname)
   cat(str_glue("Starting transfer of bundle to {hostname}."), sep="\n")
 
-  # Define the Condor .job file template for bundle seeding
-  seed_job_template <- c(
-    "executable = {seed_bat}",
-    "universe = vanilla",
-    "",
-    "# Job log, stdout, and stderr files",
-    "log = {log_dir}/_seed_{hostname}.log",
-    "output = {log_dir}/_seed_{hostname}.out",
-    "error = {log_dir}/_seed_{hostname}.err",
-    "",
-    "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
-    "",
-    "requirements = \\",
-    '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
-    '  ( (OpSys == "WINDOWS")||(OpSys == "WINNT61") ) && \\',
-    "  ( GLOBIOM =?= True ) && \\",
-    '  ( TARGET.Machine == "{hostdom}" )',
-    "",
-    "periodic_remove = (JobStatus == 1) && (CurrentTime - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute host is not responding
-    "",
-    "request_memory = 0",
-    "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
-    "request_disk = {2*bundle_size+500}", # KiB, twice needed for move, add some for the extra files
-    "",
-    '+IIASAGroup = "ESM"',
-    "run_as_owner = False",
-    "",
-    "should_transfer_files = YES",
-    'transfer_input_files = {bundle_path}',
-    "",
-    "queue 1"
-  )
-
   # Apply settings to seed job template and write the .job file to use for submission
   seed_job_file <- path(temp_dir, str_glue("_seed_{hostname}.job"))
   seed_job_conn<-file(seed_job_file, open="wt")
-  writeLines(unlist(lapply(seed_job_template, str_glue)), seed_job_conn)
+  writeLines(unlist(lapply(SEED_JOB_TEMPLATE, str_glue)), seed_job_conn)
   close(seed_job_conn)
-  rm(seed_job_template, seed_job_conn)
+  rm(seed_job_conn)
 
   # Delete any job output left over from an aborted prior run
   delete_if_exists(log_dir, str_glue("_seed_{hostname}.log"))
@@ -588,6 +592,7 @@ for (hostdom in hostdoms) {
     file_delete(bundle_path)
     stop("Submission of bundle seed job failed!")
   }
+  rm(seed_job_file)
   cluster <- as.integer(str_match(tail(grep(cluster_regexp, outerr, value=TRUE), 1), cluster_regexp)[2])
   if (is.na(cluster)) {
     file_delete(bundle_path)
@@ -628,6 +633,7 @@ rm(failed_seeds)
 
 # Delete seeding log files of normally terminated seed jobs
 file_delete(seed_bat)
+rm(seed_bat)
 for (hostname in hostnames) {
   delete_if_exists(temp_dir, str_glue("_seed_{hostname}.job"))
   delete_if_exists(log_dir, str_glue("_seed_{hostname}.log"))
