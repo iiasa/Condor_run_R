@@ -1,7 +1,7 @@
 ![License](https://img.shields.io/github/license/iiasa/Condor_run_R)
 
 # Condor_run_R
-R scripts to submit and analyse [HT Condor](https://research.cs.wisc.edu/htcondor/htcondor/overview/) runs
+R scripts to conveniently and quickly submit and analyse [HT Condor](https://research.cs.wisc.edu/htcondor/htcondor/overview/) jobs requiring many files and/or much input data.
 
 ## Author
 Albert Brouwer
@@ -21,11 +21,17 @@ ___
 - [Configuring execute hosts](#configuring-execute-hosts)
 
 ## Introduction
-This repository provides R scripts for submitting a *run* (a set of jobs) to a HT Condor cluster, and for analysing run performance statistics. Four scripts are provided:
-1. `Condor_run_basic.R`: generic submit script.
+This repository provides R scripts for submitting a *run* (a set of jobs) to a HT Condor  cluster, and for analysing run performance statistics. Four scripts are provided:
+1. `Condor_run_basic.R`: generic submit script suitable for any kind of job.
 2. `Condor_run.R`: submit script with enhanced functionality for [GAMS](https://www.gams.com/) jobs.
 3. `Condor_run_stats.R`: analyse and plot run performance statistics.
 4. `restart_version.R`: displays the GAMS version with which a specified restart file was saved.
+
+The advantages of using these scripts over using the [`condor_submit`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html) directly are:
+- Conveniently collect many files into a submit bundle.
+- The submit bundle is compressed and takes less time to send to an execute host.
+- Execute hosts can cache the bundle so that it needs to be sent over only once per host instead of once per job, avoiding network contention.
+- Can monitor jobs and wait for their completion so that it becomes easy to automate handling of run output.
 
 ## Installation
 Download the latest release [here](https://github.com/iiasa/Condor_run_R/releases) and unpack the archive. The R scripts in the root directory are self-contained and hence can be copied to a place conviently co-located with your model/project files. Of course, you need to have [R](https://www.r-project.org/) installed to be able to run the scripts. All packages that are required and not installed with R by default are from the [tidyverse](https://www.tidyverse.org/) package collection. Please ensure that you have the tidyverse installed.
