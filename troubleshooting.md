@@ -89,7 +89,11 @@ When running `Condor_run_stats.R` and some of the resulting plots are empty, the
 Warning message:
 Cannot extract submit time from Condor event log (e.g.~/Condor_run_R/tests/basic/Condor/basic/job_570.0.log). Unable to determine latency between job submission and start time. Latency results and plots will be partially or fully unavailable.
 ```
-This results from  one or more of the per-job `.log` files lacking a line identifying the source and time of submission. This line should normally be present. This problems appears to be transient and specific to the submit machine. It is unknown what triggers it or resolves it.
+This results from  one or more of the per-job `.log` files lacking a line identifying the source and time of submission. Exanine the SchedLog entries on your submit machine at the time of the submission, e.g. via:
+```
+condor_fetchlog localhost SCHEDD
+```
+There you should find error messages that will help you resolve the problem.
 
 ## None of the above solves my problem
 Reboot your machine and try to submit again. If that does not help, try to invoke `Rscript` with the `--vanilla` option.
