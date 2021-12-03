@@ -27,8 +27,9 @@ This repository provides R scripts for submitting a *run* (a set of jobs) to a H
 3. `Condor_run_stats.R`: analyse and plot run performance statistics.
 4. `restart_version.R`: displays the GAMS version with which a specified restart file was saved.
 
-The advantages of using these scripts over using the [`condor_submit`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html) directly are:
+The advantages of using these scripts over using [`condor_submit`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html) directly are:
 - Conveniently collect many files into a submit bundle.
+- Easily replicate a file tree on your submit machine to the remote scratch directory on the machine where a job is executed (execute host).
 - The submit bundle is compressed and takes less time to send to an execute host.
 - Execute hosts can cache the bundle so that it needs to be sent over only once per host instead of once per job, avoiding network contention.
 - Can monitor jobs and wait for their completion so that it becomes easy to automate handling of run output.
@@ -82,7 +83,7 @@ When your cannot submit or a problem occurs at a later stage, please explore the
 
 By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized and the submit machine (which might be a laptop) can be disconnected from the cluster or shut down on completion of submission. Without a connected submit machine, idle (queued) jobs will still be scheduled because the cached bundle suffices and no further transfer of input data from the submit machine is needed. A disconnected submit machine will receive the output data after it reconnects to the cluster.
 
-By passing the job number to the main script of the job, each job in the run can customize the calculation even though it is given the same bundle as input, e.g. by selecting one out of a collection of scenarios.
+When a job is run on an execute host, the cached bundle is decompressed in a scratch directory. This creates the file tree that the job needs to run. By passing the job number to the main script of the job, each job in the run can customize the calculation even though it is using the same bundle as input, e.g. by using the job number to select one scenario out of a collection of scenarios.
 
 **Beware:** only after the jobs are submitted can a further parallel submission be performed. The script notifies you thereof as follows:
 
