@@ -617,7 +617,7 @@ if (length(hostdoms) == 0) stop("No execute hosts matching HOST_REGEXP are avail
 # ---- Bundle the files needed to run the jobs ----
 
 # Set R-default and platform-specific paths to the bundle
-bundle <- "job_bundle.7z"
+bundle <- "_bundle.7z"
 unique_bundle <- str_glue('bundle_{str_replace_all(Sys.time(), "[- :]", "")}.7z') # To keep multiple cached bundles separate
 bundle_path <- path(temp_dir_parent, bundle) # Invariant so that it can double-duty as a lock file blocking interfering parallel submissions
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
@@ -772,7 +772,7 @@ file_delete(temp_config_file)
 
 # Copy the GAMS_FILE_PATH file to the log directory for reference
 tryCatch(
-  file_copy(in_gams_curdir(GAMS_FILE_PATH), path(log_dir, str_glue("{str_sub(basename(GAMS_FILE_PATH), 1, -5)}_{predicted_cluster}.gms")), overwrite=TRUE),
+  file_copy(in_gams_curdir(GAMS_FILE_PATH), path(log_dir, str_glue("_{str_sub(basename(GAMS_FILE_PATH), 1, -5)}_{predicted_cluster}.gms")), overwrite=TRUE),
   error=function(cond) {
     file_delete(bundle_path)
     message(cond)
@@ -781,14 +781,14 @@ tryCatch(
 )
 
 # Apply settings to BAT_TEMPLATE and write the batch file / shell script to launch jobs with
-bat_path <- path(log_dir, str_glue("launch_{predicted_cluster}.bat"))
+bat_path <- path(log_dir, str_glue("_launch_{predicted_cluster}.bat"))
 bat_conn<-file(bat_path, open="wt")
 writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
 
 # Apply settings to job template and write the .job file to use for submission
-job_file <- path(log_dir, str_glue("submit_{predicted_cluster}.job"))
+job_file <- path(log_dir, str_glue("_submit_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
 writeLines(unlist(lapply(JOB_TEMPLATE, str_glue)), job_conn)
 close(job_conn)
@@ -816,7 +816,7 @@ if (cluster != predicted_cluster) {
 # Retain the bundle if so requested, then delete it from temp so that further submissions are no longer blocked
 if (RETAIN_BUNDLE) {
   tryCatch(
-    file_copy(bundle_path, path(log_dir, str_glue("bundle_{cluster}.7z"))),
+    file_copy(bundle_path, path(log_dir, str_glue("_bundle_{cluster}.7z"))),
     error=function(cond) {
       message(cond)
       warning("Could not make a reference copy of bundle as requested via RETAIN_BUNDLE!")
