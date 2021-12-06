@@ -17,8 +17,6 @@ ___
 - [Troubleshooting](troubleshooting.md)
 - [Function of submit scripts](#function-of-submit-scripts)
 - [Job output](#job-output)
-- [Adapting templates to your cluster](#adapting-templates-to-your-cluster)
-- [Configuring execute hosts](#configuring-execute-hosts)
 
 ## Introduction
 This repository provides R scripts for submitting a *run* (a set of jobs) to a HT Condor  cluster, and for analysing run performance statistics. Four scripts are provided:
