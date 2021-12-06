@@ -7,7 +7,7 @@ You may also wish to add some of the optional configuration settings. Their defa
 
 IIASA GLOBIOM developers should instead start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R`. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`. For more information, see the GLOBIOM wiki [here](https://github.com/iiasa/GLOBIOM/wiki/Running-scenarios-in-parallel-on-Limpopo#configuration).
 
-When you want to use the submit scripts with a different Condor cluster, please read the section on [configuring templates for a different cluster](#configuring-templates-for-a-different-cluster)
+When you want to use the submit scripts with a different Condor cluster, please read the section on [configuring templates for a different cluster](#configuring-templates-for-a-different-cluster).
 
 ## Path handling
 Several configuration parameters specify paths to files or directories. **Use only `/`** as directory separator in path values. Paths are relative to the current working directory unless otherwise indicated in the description of the configuration parameter. Things are easiest to configure when you use the root of the file tree of your project as current working directory when submitting. This root will typically be the directory where you cloned/checked-out the repository holding your project files.
@@ -156,7 +156,7 @@ Default value: `NULL`
 Set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
 
 ### NICE_USER
-Default value: `FALSE`
+Default value: `length(JOBS) > 100`
 
 Be nice, give jobs of other users priority by setting this to `TRUE`.
 
