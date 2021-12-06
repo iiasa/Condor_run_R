@@ -27,9 +27,10 @@ This repository provides R scripts for submitting a *run* (a set of jobs) to a H
 
 The advantages of using these scripts over using [`condor_submit`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html) directly are:
 - Conveniently collect many files into a submit bundle.
-- Easily replicate a file tree on your submit machine to the remote scratch directory on the machine where a job is executed (execute host).
+  * For jobs using many source and/or data files.
+- Replicate the project file tree on your submit machine to the remote scratch directory on the machine where a job is executed (execute host).
 - The submit bundle is compressed and takes less time to send to an execute host.
-- Execute hosts can cache the bundle so that it needs to be sent over only once per host instead of once per job, avoiding network contention.
+- Execute hosts can cache the bundle so that it needs to be sent over only once per host instead of once per job, avoiding network contention or the hassle of instead setting up a shared network-accessible filesystem.
 - Can monitor jobs and wait for their completion so that it becomes easy to automate handling of run output.
 
 ## Installation
