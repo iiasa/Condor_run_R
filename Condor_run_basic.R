@@ -718,7 +718,9 @@ if (RETAIN_BUNDLE) {
   )
 }
 file_delete(bundle_path) # Deleting the bundle unblocks this script for another submission
-cat(str_glue('Run "{LABEL}" with cluster number {cluster} has been submitted, it is now possible to submit additional runs while waiting for it to complete.'), sep="\n")
+message(str_glue('Run "{LABEL}" with cluster number {cluster} has been submitted.'))
+message(str_glue("Run log directory: {path_abs(log_dir)}"))
+message("It is now possible to submit additional runs.")
 
 # Log the cluster number if requested. If you parse the above stdout, you can parse out the cluster number.
 # If you cannot capture the stdout, you can request the cluster number to be logged by specifying a log file
