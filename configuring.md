@@ -172,6 +172,9 @@ Clear status monitoring lines so as to show only the last status, set to FALSE w
 
 ## `Condor_run_basic.R`-specific optional configuration parameters
 
+### GET_OUTPUT
+Default value: `TRUE`
+
 ### OUTPUT_DIR
 Default value: `"output"`
 
