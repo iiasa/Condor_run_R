@@ -20,10 +20,10 @@ ___
 
 ## Introduction
 This repository provides R scripts for submitting a *run* (a set of jobs) to a HT Condor  cluster, and for analysing run performance statistics. Four scripts are provided:
-1. `Condor_run_basic.R`: generic submit script suitable for any kind of job.
-2. `Condor_run.R`: submit script with enhanced functionality for [GAMS](https://www.gams.com/) jobs.
-3. `Condor_run_stats.R`: analyse and plot run performance statistics.
-4. `restart_version.R`: displays the GAMS version with which a specified restart file was saved.
+1. [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R): generic submit script suitable for any kind of job.
+2. [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R): submit script with enhanced functionality for [GAMS](https://www.gams.com/) jobs.
+3. [`Condor_run_stats.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_stats.R): analyse and plot run performance statistics.
+4. [`restart_version.R`](https://github.com/iiasa/Condor_run_R/blob/master/restart_version.R): displays the GAMS version with which a specified restart file was saved.
 
 The advantages of using these scripts over using [`condor_submit`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html) directly are:
 - Conveniently collect many files into a submit bundle.
