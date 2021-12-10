@@ -244,7 +244,11 @@ Working directory for GAMS and its arguments relative to the current working dir
 ### RESTART_FILE_PATH
 Default value: `""`
 
-Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the work/restart file to launch GAMS with on the execute host side. Included in bundle if set.
+Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the [work/restart file](https://www.gams.com/latest/docs/UG_SaveRestart.html) to launch GAMS with on the execute host side. Included in bundle if set.
+
+**Beware:** the restart file will not work if the GAMS version on the execute host side (see [GAMS_VERSION](#gams_version)) is older than the GAMS version used to generated it. The `Condor_run.R` submit script will throw an explanatory error in that case to prevent the run's jobs from later going on hold for this somewhat obscure reason.
+
+If you are unsure which GAMS version a restart file was generated with, you can determine that by using the [`restart_version.R`](https://github.com/iiasa/Condor_run_R/blob/master/restart_version.R) script.
 
 ### MERGE_GDX_OUTPUT
 Default value: `FALSE`
