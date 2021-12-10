@@ -33,7 +33,9 @@ It is therefore important to configure a good estimate. When you use [`WAIT_FOR_
 Number of hardware threads to reserve for each job. Set this to at least 1. If you know that your job involves considerable multiprocessing, set this value to an estimate of the average number of in-use threads.
 
 ### WAIT_FOR_RUN_COMPLETION
-If `TRUE`, wait for the run to complete while displaying montiring information.
+If `TRUE`, wait for the run to complete while displaying monitoring information and, on completion, check the presence of output files and prune empty log files. When submitting a GAMS job through `Condor_run.R`, also perform a merge of the GDX ouput when [`MERGE_GDX_OUTPUT`](#merge_gdx_output)`= TRUE`.
+
+Also useful for custom-scripted processing of output, with processing steps placed subsequent to the [submission invocation](https://github.com/iiasa/Condor_run_R/#use).
 
 ## `Condor_run_basic.R`-specific mandatory configuration parameters
 
