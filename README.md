@@ -84,11 +84,11 @@ By transferring the bundle once for each execute host instead of once for each j
 
 When a job is run on an execute host, the cached bundle is decompressed in a scratch directory. This creates the file tree that the job needs to run. By passing the job number to the main script of the job, each job in the run can customize the calculation even though it is using the same bundle as input, e.g. by using the job number to select one scenario out of a collection of scenarios.
 
-**Beware:** only after the jobs are submitted can a further parallel submission be performed. The script notifies you thereof as follows:
+**Beware:** only when the jobs of the run are queued can an additional run be submitted. This is after the submit script prints the message
 
-`Run "test" has been submitted, it is now possible to submit additional runs while waiting for it to complete.`
+`It is now possible to submit additional runs.`
 
-The submit script enforces this by using the bundle as a lock file until step 3 completes. If you abort the script or an error occurs before then, you will need to remove the bundle to free the lock. The script will throw an explanatory error until you do.
+The submit script enforces this by using the bundle as a lock file. If you abort the script or an error occurs before the above message appears, you will need to remove the bundle to free the lock. The script will throw an explanatory error until you do.
 
 ## Job output
 Each job will typically produce some kind of output. For R jobs this might be an `.RData` file. For GAMS jobs this is likely to be a GDX or a restart file. There are many ways to produce output. In R, objects can be saved to `.RData` files with the [`save()`](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/save) function. In GAMS, GDX files of everything can be dumped at the end of execution via the [GDX](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) command line option, or selectively written at run time using [execute_unload](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION). Restart (`.g00`) files can be saved with the [save](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave) command line option. And so on.
