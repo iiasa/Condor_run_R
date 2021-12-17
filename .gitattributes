@@ -1,2 +1,6 @@
-# Set the default behavior, in case people don't have core.autocrlf set.
 * text=auto
+*.bat text eol=crlf
+*.sh  text eol=lf
+*.gms text eol=lf
+*.R   text eol=lf
+*.md  text eol=lf
