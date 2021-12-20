@@ -30,9 +30,9 @@ options(tibble.width = Inf)
 
 # ---- Handle arguments and set up plotting for RStudio or command line ----
 
-if (Sys.getenv("RSTUDIO") == "1") {
+if (interactive()) {
   # Paths to one or more directories containing log files of runs to analyse.
-  LOG_DIRECTORIES <- c("tests/basic/Condor/basic_2021-12-01")
+  LOG_DIRECTORIES <- c(dir_ls("tests/basic/Condor"))
 } else {
   args <- commandArgs(trailingOnly=TRUE)
   if (length(args) == 0) {
