@@ -374,6 +374,7 @@ jobs %>%
 
 # Tabulate summary, and summary grouped by job cluster and host
 display_table(summary)
+print(ggplot() + theme)
 display_table(jobs %>%
                 select(label, cluster, host, submitted, `duration [min]`) %>%
                 group_by(cluster,host) %>%
