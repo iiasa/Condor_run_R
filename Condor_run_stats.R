@@ -24,9 +24,9 @@ hostname_map <- c("147.125.99.211"="limpopo1",
 
 # Required packages
 options(tidyverse.quiet=TRUE)
+library(gridExtra)
 library(tidyverse)
 library(fs)
-library(gridExtra)
 
 # Setup
 options(tibble.width = Inf)
