@@ -363,7 +363,8 @@ jobs %>%
             `min [min]`=min(`duration [min]`),
             `max [min]`=max(`duration [min]`),
             `overall [min]`=max(`latency [min]` + `duration [min]`),
-            `throughput [jobs/h]`=n()/max(`latency [h]` + `duration [h]`)) %>%
+            `throughput [jobs/h]`=n()/max(`latency [h]` + `duration [h]`),
+            .groups="keep") %>%
   arrange(cluster) -> summary
 
 # Summarize and group by cluster and host
@@ -377,7 +378,8 @@ jobs %>%
             `stderr [min]`=sd(`duration [min]`)/sqrt(jobs),
             `stdev [min]`=sd(`duration [min]`),
             `min [min]`=min(`duration [min]`),
-            `max [min]`=max(`duration [min]`)) %>%
+            `max [min]`=max(`duration [min]`),
+            .groups="keep") %>%
   arrange(host, cluster) -> summary_grouped
 
 # Tabulate summary, and summary grouped by job cluster and host
