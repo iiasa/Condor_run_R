@@ -32,7 +32,10 @@ options(tibble.width = Inf)
 
 if (interactive()) {
   # Paths to one or more directories containing log files of runs to analyse.
-  LOG_DIRECTORIES <- c(dir_ls("tests/basic/Condor"))
+  LOG_DIRECTORIES <- dir_ls("tests/basic/Condor")
+  if (length(LOG_DIRECTORIES) == 0) {
+    stop("No LOG_DIRECTORIES provided!")
+  }
 } else {
   args <- commandArgs(trailingOnly=TRUE)
   if (length(args) == 0) {
