@@ -26,7 +26,16 @@ hostname_map <- c("147.125.99.211"="limpopo1",
 options(tidyverse.quiet=TRUE)
 library(tidyverse)
 library(fs)
+library(gridExtra)
+gridExtra_loaded <- require(gridExtra, quietly=TRUE) # optional, use when installed
+
+# Setup
 options(tibble.width = Inf)
+if (gridExtra_loaded) {
+  display_table <- grid.table
+} else {
+  display_table <- print
+}
 
 # ---- Handle arguments and set up plotting for RStudio or command line ----
 
@@ -412,14 +421,14 @@ summarize(label=dplyr::first(label),
           `overall [min]`=max(`latency [min]` + `duration [min]`),
           `throughput [jobs/h]`=n()/max(`latency [h]` + `duration [h]`)) %>%
 arrange(cluster) -> summary
-print(summary)
+display_table(summary)
 print(ggplot(summary, aes(x=jobs/5, y=`mean [min]`, color=str_glue("{label}_{cluster}"))) + geom_errorbar(aes(ymin=`mean [min]`-`stdev [min]`, ymax=`mean [min]`+`stdev [min]`), width=1) + geom_point(size=3) + xlab("jobs/limpopo") + ylab("mean job time [min]") + scale_color_discrete(name = "run") + ggtitle("contention") + theme_grey(base_size=20))
 print(ggplot(summary, aes(x=jobs, y=`throughput [jobs/h]`, color=str_glue("{label}_{cluster}"))) + geom_point(size=3) + scale_x_continuous(trans='log10') + xlab("jobs/run") + ylab("jobs/h") + scale_color_discrete(name = "run") + ggtitle("throughput") + theme_grey(base_size=20))
 
 options(tibble.print_max = Inf)
 
 # Print summary grouped by job cluster and host
-print(jobs %>%
+display_table(jobs %>%
       select(label, cluster, host, submitted, `duration [min]`) %>%
       group_by(cluster,host) %>%
       summarize(label=dplyr::first(label),
