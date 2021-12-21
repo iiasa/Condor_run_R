@@ -31,6 +31,7 @@ gridExtra_loaded <- require(gridExtra, quietly=TRUE) # optional, use when instal
 
 # Setup
 options(tibble.width = Inf)
+options(tibble.print_max = Inf)
 if (gridExtra_loaded) {
   display_table <- grid.table
 } else {
@@ -354,8 +355,40 @@ for (name in names(jobs)) {
 
 # ---- Analyse jobs data ----
 
-# Plot, print() needed for sourcing because of https://yihui.name/en/2017/06/top-level-r-expressions/
+# Summarize
+jobs %>%
+  select(label, cluster, submitted, `latency [min]`, `duration [min]`, `latency [h]`, `duration [h]`, `running_at_start`) %>%
+  group_by(cluster) %>%
+  summarize(label=dplyr::first(label),
+            submitted=min(submitted),
+            `jobs`=n(),
+            `max running`=max(`running_at_start`),
+            `mean [min]`=mean(`duration [min]`),
+            `stderr [min]`=sd(`duration [min]`)/sqrt(jobs),
+            `stdev [min]`=sd(`duration [min]`),
+            `min [min]`=min(`duration [min]`),
+            `max [min]`=max(`duration [min]`),
+            `overall [min]`=max(`latency [min]` + `duration [min]`),
+            `throughput [jobs/h]`=n()/max(`latency [h]` + `duration [h]`)) %>%
+  arrange(cluster) -> summary
 
+# Tabulate summary, and summary grouped by job cluster and host
+display_table(summary)
+display_table(jobs %>%
+                select(label, cluster, host, submitted, `duration [min]`) %>%
+                group_by(cluster,host) %>%
+                summarize(label=dplyr::first(label),
+                          submitted=min(submitted),
+                          `jobs`=n(),
+                          `mean [min]`=mean(`duration [min]`),
+                          `stderr [min]`=sd(`duration [min]`)/sqrt(jobs),
+                          `stdev [min]`=sd(`duration [min]`),
+                          `min [min]`=min(`duration [min]`),
+                          `max [min]`=max(`duration [min]`)) %>%
+                arrange(host, cluster)
+)
+
+# Plot, print() needed for sourcing because of https://yihui.name/en/2017/06/top-level-r-expressions/
 print(ggplot()
       + geom_point(data=jobs, aes(x=`latency [min]`, y=running_at_start, color=run))
       + geom_point(data=jobs, aes(x=`latency [min]` + `duration [min]`, y=running_at_stop, color=run))
@@ -363,7 +396,6 @@ print(ggplot()
       + ylab("running jobs")
       + theme_grey(base_size = 20)
 )
-
 if (any(!is.na(jobs["latency [min]"]))) {
   print(ggplot(jobs, aes(x=job, y=`latency [min]`, color=run))
         + geom_point(alpha=1/2)
@@ -405,39 +437,6 @@ if (any(!is.nan(unlist(jobs["total CPLEX time [min]"])))) {
   )
 }
 
-# Summarize
-jobs %>%
-select(label, cluster, submitted, `latency [min]`, `duration [min]`, `latency [h]`, `duration [h]`, `running_at_start`) %>%
-group_by(cluster) %>%
-summarize(label=dplyr::first(label),
-          submitted=min(submitted),
-          `jobs`=n(),
-          `max running`=max(`running_at_start`),
-          `mean [min]`=mean(`duration [min]`),
-          `stderr [min]`=sd(`duration [min]`)/sqrt(jobs),
-          `stdev [min]`=sd(`duration [min]`),
-          `min [min]`=min(`duration [min]`),
-          `max [min]`=max(`duration [min]`),
-          `overall [min]`=max(`latency [min]` + `duration [min]`),
-          `throughput [jobs/h]`=n()/max(`latency [h]` + `duration [h]`)) %>%
-arrange(cluster) -> summary
-display_table(summary)
+# Summary plots
 print(ggplot(summary, aes(x=jobs/5, y=`mean [min]`, color=str_glue("{label}_{cluster}"))) + geom_errorbar(aes(ymin=`mean [min]`-`stdev [min]`, ymax=`mean [min]`+`stdev [min]`), width=1) + geom_point(size=3) + xlab("jobs/limpopo") + ylab("mean job time [min]") + scale_color_discrete(name = "run") + ggtitle("contention") + theme_grey(base_size=20))
 print(ggplot(summary, aes(x=jobs, y=`throughput [jobs/h]`, color=str_glue("{label}_{cluster}"))) + geom_point(size=3) + scale_x_continuous(trans='log10') + xlab("jobs/run") + ylab("jobs/h") + scale_color_discrete(name = "run") + ggtitle("throughput") + theme_grey(base_size=20))
-
-options(tibble.print_max = Inf)
-
-# Print summary grouped by job cluster and host
-display_table(jobs %>%
-      select(label, cluster, host, submitted, `duration [min]`) %>%
-      group_by(cluster,host) %>%
-      summarize(label=dplyr::first(label),
-                submitted=min(submitted),
-                `jobs`=n(),
-                `mean [min]`=mean(`duration [min]`),
-                `stderr [min]`=sd(`duration [min]`)/sqrt(jobs),
-                `stdev [min]`=sd(`duration [min]`),
-                `min [min]`=min(`duration [min]`),
-                `max [min]`=max(`duration [min]`)) %>%
-      arrange(host, cluster)
-)
