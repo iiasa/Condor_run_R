@@ -98,7 +98,9 @@ if (interactive()) {
     }
   }
   # Set PDF filename and use landscape mode for generating the PDF with plots
-  pdf(paper = "a4r", width=11.7, height=8.3, file=str_c(str_c(lapply(LOG_DIRECTORIES, basename), collapse="_"), ".pdf"))
+  pdf_file_name <- str_c(str_c(lapply(LOG_DIRECTORIES, basename), collapse="_"), ".pdf")
+  pdf(paper = "a4r", width=11.7, height=8.3, file=pdf_file_name)
+  message(str_glue("Writing tables and plots to {pdf_file_name}"))
 }
 
 # ---- Preload the .out and .log files from the given log directories ----
