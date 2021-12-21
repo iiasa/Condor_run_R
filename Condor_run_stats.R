@@ -381,7 +381,7 @@ jobs %>%
   arrange(host, cluster) -> summary_grouped
 
 # Tabulate summary, and summary grouped by job cluster and host
-grid.table(summary)
+grid.table(summary, theme=ttheme_default(base_size = 9.2))
 print(ggplot() + theme_void())
 grid.table(summary_grouped)
 
