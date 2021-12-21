@@ -27,16 +27,10 @@ options(tidyverse.quiet=TRUE)
 library(tidyverse)
 library(fs)
 library(gridExtra)
-gridExtra_loaded <- require(gridExtra, quietly=TRUE) # optional, use when installed
 
 # Setup
 options(tibble.width = Inf)
 options(tibble.print_max = Inf)
-if (gridExtra_loaded) {
-  display_table <- grid.table
-} else {
-  display_table <- print
-}
 
 # ---- Handle arguments and set up plotting for RStudio or command line ----
 
@@ -372,22 +366,24 @@ jobs %>%
             `throughput [jobs/h]`=n()/max(`latency [h]` + `duration [h]`)) %>%
   arrange(cluster) -> summary
 
+# Summarize and group by cluster and host
+jobs %>%
+  select(label, cluster, host, submitted, `duration [min]`) %>%
+  group_by(cluster,host) %>%
+  summarize(label=dplyr::first(label),
+            submitted=min(submitted),
+            `jobs`=n(),
+            `mean [min]`=mean(`duration [min]`),
+            `stderr [min]`=sd(`duration [min]`)/sqrt(jobs),
+            `stdev [min]`=sd(`duration [min]`),
+            `min [min]`=min(`duration [min]`),
+            `max [min]`=max(`duration [min]`)) %>%
+  arrange(host, cluster) -> summary_grouped
+
 # Tabulate summary, and summary grouped by job cluster and host
-display_table(summary)
-print(ggplot() + theme)
-display_table(jobs %>%
-                select(label, cluster, host, submitted, `duration [min]`) %>%
-                group_by(cluster,host) %>%
-                summarize(label=dplyr::first(label),
-                          submitted=min(submitted),
-                          `jobs`=n(),
-                          `mean [min]`=mean(`duration [min]`),
-                          `stderr [min]`=sd(`duration [min]`)/sqrt(jobs),
-                          `stdev [min]`=sd(`duration [min]`),
-                          `min [min]`=min(`duration [min]`),
-                          `max [min]`=max(`duration [min]`)) %>%
-                arrange(host, cluster)
-)
+grid.table(summary)
+print(ggplot() + theme_void())
+grid.table(summary_grouped)
 
 # Plot, print() needed for sourcing because of https://yihui.name/en/2017/06/top-level-r-expressions/
 print(ggplot()
