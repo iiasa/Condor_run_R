@@ -21,7 +21,7 @@ Specify the job numbers of the jobs to submit. Jobs numbers start at 0. For exam
 
 Typically, the script that is run when your jobs are started accepts the job number as an argument so that it knows which variant of the calculation to run. For example, a script that runs a model scenario might map the job number to a particular scenario so that submitting with `JOBS = c(0:9)` will run the first ten scenarios in parallel on the cluster.
 
-## HOST_REGEXP
+### HOST_REGEXP
 A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select execute hosts from the cluster by hostname.
 
 ### REQUEST_MEMORY
