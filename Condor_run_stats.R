@@ -24,7 +24,7 @@ hostname_map <- c("147.125.99.211"="limpopo1",
 
 # Required packages
 options(tidyverse.quiet=TRUE)
-library(gridExtra)
+require(gridExtra, quietly=TRUE) # optional, if available produce graphical summary tables
 library(tidyverse)
 library(fs)
 
@@ -385,9 +385,16 @@ jobs %>%
   arrange(host, cluster) -> summary_grouped
 
 # Tabulate summary, and summary grouped by job cluster and host
-grid.table(summary, theme=ttheme_default(base_size = 9.2))
-print(ggplot() + theme_void())
-grid.table(summary_grouped)
+if (exists("grid.table")) {
+  # produce graphical tables
+  grid.table(summary, theme=ttheme_default(base_size = 9.2))
+  print(ggplot() + theme_void())
+  grid.table(summary_grouped)
+} else {
+  # produce tables formatted as text
+  print(summary)
+  print(summary_grouped)
+}
 
 # Plot, print() needed for sourcing because of https://yihui.name/en/2017/06/top-level-r-expressions/
 print(ggplot()
