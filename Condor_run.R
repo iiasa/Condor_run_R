@@ -18,13 +18,13 @@ rm(list=ls())
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 # .......8><....snippy.snappy....8><.........................................
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
-JOBS = c(0:3,7,10)
-HOST_REGEXP = "^limpopo"
-REQUEST_MEMORY = 7800
+JOBS = c()
+HOST_REGEXP = ".*"
+REQUEST_MEMORY = 100
 REQUEST_CPUS = 1
-GAMS_FILE_PATH = "6_scenarios_limpopo.gms"
+GAMS_FILE_PATH = "model.gms"
 GAMS_ARGUMENTS = "//job_number=%1 checkErrorLevel=1"
-GAMS_VERSION = "32.2"
+GAMS_VERSION = "32.1"
 WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
 mandatory_config_names <- ls()
