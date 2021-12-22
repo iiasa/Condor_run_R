@@ -22,7 +22,7 @@ Specify the job numbers of the jobs to submit. Jobs numbers start at 0. For exam
 Typically, the script that is run when your jobs are started accepts the job number as an argument so that it knows which variant of the calculation to run. For example, a script that runs a model scenario might map the job number to a particular scenario so that submitting with `JOBS = c(0:9)` will run the first ten scenarios in parallel on the cluster.
 
 ## HOST_REGEXP
-A regular expression to select execute hosts from the cluster by hostname.
+A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select execute hosts from the cluster by hostname.
 
 ### REQUEST_MEMORY
 An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execute host when the sum of their memory requests exceeds the memory allocated to the execution slot of on the host. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the execute host at risk of running out of memory, which can endanger other jobs as well.
