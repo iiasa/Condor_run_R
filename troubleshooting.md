@@ -5,10 +5,10 @@ When you have an issue with getting your jobs to run or with retrieving output, 
 - [The script does not progress](#the-script-does-not-progress)
 - [You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials](#you-get-error-no-credential-stored-for-userdomain-but-did-store-your-credentials)
 - [When transferring the bundle, jobs stay in the running state indefinitely](#when-transferring-the-bundle-jobs-stay-in-the-running-state-indefinitely)
+- [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
 - [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
 - [Jobs go on hold without producing matching `.log` files](#jobs-go-on-hold-without-producing-matching-log-files)
 - [Jobs run but at the end fail to send and write output files](#jobs-run-but-at-the-end-fail-to-send-and-write-output-files)
-- [All seeding jobs remain idle and then abort through the PeriodicRemove expression](#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
 - [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
 - [`Condor_run_stats.R` produces empty plots](#condor_run_statsr-produces-empty-plots)
 - [None of the above solves my problem](#none-of-the-above-solves-my-problem)
@@ -39,6 +39,15 @@ If not, you may have recently changed your password and need to store your user 
 This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke [`condor_restart -schedd`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_restart.html), and try to submit again. You will be asked to delete the bundle first.
 
 If the resubmission also stays stuck in the running state when transferring the bundle, stop the script, reboot, and then try to submit again. If your temp directory survives reboots, you will again be asked to delete the bundle first.
+
+## All seeding jobs remain idle and then abort through the PeriodicRemove expression
+A likely reason is that your cluster administrator has not given you access to the cluster yet. Ask your cluster administrator to provide access / white-list you. However, if you have successfully submitted jobs before, read on because the cause is likely different.
+
+It may be that the entire cluster is unavailable, but that is somewhat unlikely. Also, it may be that the entire cluster is fully occupied and the execute hosts have not been [properly configured to always accept seeding jobs](README.md#configuring-execute-hosts) by the Condor administrator. Use [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) to check availability and occuppation.
+
+Alternatively, the machine you submit from announcing itself with a wrong domain is a possible cause. It has been seen to happen that submit machines announce themselves with the `local` domain, which is not valid for remote access so that jobs cannot be collected. To check whether the submit machine has announced itself wrongly, issue the [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) command. The output should contain the hostname and domain of your machine. If the domain is `local` the issue is likely present and can be resolved by restarting the Condor background processes on the submit machine.
+
+The crude way to restart Condor is to reboot the submit machine. The better way is to restart the Condor service. This can be done via the Services application on Windows or via [`systemctl restart condor.service`](https://manpages.debian.org/bullseye/systemctl/systemctl.1.en.html) with root privileges on Linux.
 
 ## Jobs do not run but instead go on hold
 Likely, some error occurred. First look at the output of the `Condor_run[_basic].R` script for clues. Next, issue [`condor_q -held`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) to review the hold reason. If the hold reason  is `Failed to initialize user log to <some path on a network drive>`, see [the next section](#jobs-go-on-hold-without-producing-matching-log-files)
@@ -72,13 +81,6 @@ There are two likely causes:
 1. An [`[G00_|GDX_]OUTPUT_DIR[_SUBMIT]`](configuring.md#output_dir) configuration setting is pointing to a directory on a network share that your user account can access but the locally running Condor daemon/service cannot. Either reconfigure that configuration setting to point to a directory on a local disk (absolute paths are allowed in case of the `_SUBMIT` variants) that Condor can access or try to reconfigure the Condor service/daemon to run from a different account or with additional rights as needed to access the network share.
 
 2. The permissions on the directory pointed to by [`[G00_|GDX_]OUTPUT_DIR[_SUBMIT]`](configuring.md#output_dir) prevent access by the locally running Condor daemon/service. Either change the permissions on that directory to give Condor access or reconfigure the Condor daemon/service to run from a different account or with additional rights as needed to gain access.
-
-## All seeding jobs remain idle and then abort through the PeriodicRemove expression
-It may be that the entire cluster is unavailable, but that is somewhat unlikely. It may be that the entire cluster is fully occupied and the execute hosts have not been [properly configured to always accept seeding jobs](README.md#configuring-execute-hosts) by the Condor administrator. Use [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) to check availability and occuppation.
-
-Alternatively, the machine you submit from announcing itself with a wrong domain is a possible cause. It has been seen to happen that submit machines announce themselves with the `local` domain, which is not valid for remote access so that jobs cannot be collected. To check whether the submit machine has announced itself wrongly, issue the [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) command. The output should contain the hostname and domain of your machine. If the domain is `local` the issue is likely present and can be resolved by restarting the Condor background processes on the submit machine.
-
-The crude way to restart Condor is to reboot the submit machine. The better way is to restart the Condor service. This can be done via the Services application on Windows or via [`systemctl restart condor.service`](https://manpages.debian.org/bullseye/systemctl/systemctl.1.en.html) with root privileges on Linux.
 
 ## Jobs are idle and do not run, or only some do
 The cluster may be busy. To see who else has submitted jobs, issue [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue [`condor_userprio`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_userprio.html). Large numbers mean low priority. Your cluster administrator can set your priority.
