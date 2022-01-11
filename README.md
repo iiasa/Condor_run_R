@@ -12,11 +12,11 @@ ___
 - [Installation](#installation)
 - [Test](#test)
 - [Updating](#updating)
+- [Function of submit scripts](#function-of-submit-scripts)
 - [Use](#use)
   + [Configuring](configuring.md)
-- [Troubleshooting](troubleshooting.md)
-- [Function of submit scripts](#function-of-submit-scripts)
 - [Job output](#job-output)
+- [Troubleshooting](troubleshooting.md)
 
 ## Introduction
 This repository provides R scripts for submitting a *run* (a set of jobs) to a HT Condor  cluster, and for analysing run performance statistics. Four scripts are provided:
@@ -48,6 +48,26 @@ This repository includes [tests](tests/tests.md). To check your setup, run the [
 ## Updating
 It is recommended to always update to the [latest release of the scripts](https://github.com/iiasa/Condor_run_R/releases) so that you have the latest fixes and features. Releases are typically backwards compatible and should work with your existing run configurations. Before updating, read the release notes. Automatic notification of new releases can be enabled by going to the [main repository page](https://github.com/iiasa/Condor_run_R), clicking on the Watch/Unwatch drop down menu button at the top right of the page, and check marking Custom → Releases. You need to be signed in to GitHub for this to work.
 
+## Function of submit scripts
+1. Bundle up the job files using 7-Zip.
+2. Seed the execute hosts with the bundle.
+   - Seeding jobs transfer the bundle once for each execute host.
+   - The execute hosts cache the bundle for use by your jobs.
+3. Submit the jobs.
+   - Jobs unpack the cached bundle when run.
+5. Optionally wait for the jobs to finish
+6. Optionally merge GAMS GDX results files (`Condor_run.R`)
+
+By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized and the submit machine (which might be a laptop) can be disconnected from the cluster or shut down on completion of submission. Without a connected submit machine, idle (queued) jobs will still be scheduled because the cached bundle suffices and no further transfer of input data from the submit machine is needed. A disconnected submit machine will receive the output data after it reconnects to the cluster.
+
+When a job is run on an execute host, the cached bundle is decompressed in a scratch directory. This creates the file tree that the job needs to run. By passing the job number to the main script of the job, each job in the run can customize the calculation even though it is using the same bundle as input, e.g. by using the job number to select one scenario out of a collection of scenarios.
+
+**Beware:** only when the jobs of the run are queued can an additional run be submitted. This is after the submit script prints the message
+
+`It is now possible to submit additional runs.`
+
+The submit script enforces this by using the bundle as a lock file. If you abort the script or an error occurs before the above message appears, you will need to remove the bundle to free the lock. The script will throw an explanatory error until you do.
+
 ## Use
 Invoke the submit script via `Rscript`. Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. Both take a `.R` configuration file as only argument. An example invocation is:
 
@@ -71,32 +91,12 @@ This produces a PDF with plots in the current working directory. When invoking `
 
 On Linux/MacOS, all three scripts can also be invoked directly without a leading `Rscript` on the command line ([shebang invocation](https://en.wikipedia.org/wiki/Shebang_(Unix))).
 
-## Troubleshooting
-When your cannot submit or a problem occurs at a later stage, please explore the [troubleshooting documentation](troubleshooting.md) for solutions.
-
-## Function of submit scripts
-1. Bundle up the job files using 7-Zip.
-2. Seed the execute hosts with the bundle.
-   - Seeding jobs transfer the bundle once for each execute host.
-   - The execute hosts cache the bundle for use by your jobs.
-3. Submit the jobs.
-   - Jobs unpack the cached bundle when run.
-5. Optionally wait for the jobs to finish
-6. Optionally merge GAMS GDX results files (`Condor_run.R`)
-
-By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized and the submit machine (which might be a laptop) can be disconnected from the cluster or shut down on completion of submission. Without a connected submit machine, idle (queued) jobs will still be scheduled because the cached bundle suffices and no further transfer of input data from the submit machine is needed. A disconnected submit machine will receive the output data after it reconnects to the cluster.
-
-When a job is run on an execute host, the cached bundle is decompressed in a scratch directory. This creates the file tree that the job needs to run. By passing the job number to the main script of the job, each job in the run can customize the calculation even though it is using the same bundle as input, e.g. by using the job number to select one scenario out of a collection of scenarios.
-
-**Beware:** only when the jobs of the run are queued can an additional run be submitted. This is after the submit script prints the message
-
-`It is now possible to submit additional runs.`
-
-The submit script enforces this by using the bundle as a lock file. If you abort the script or an error occurs before the above message appears, you will need to remove the bundle to free the lock. The script will throw an explanatory error until you do.
-
 ## Job output
 Each job will typically produce some kind of output. For R jobs this might be an `.RData` file. For GAMS jobs this is likely to be a GDX or a restart file. There are many ways to produce output. In R, objects can be saved to `.RData` files with the [`save()`](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/save) function. In GAMS, GDX files of everything can be dumped at the end of execution via the [GDX](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) command line option, or selectively written at run time using [execute_unload](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION). Restart (`.g00`) files can be saved with the [save](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave) command line option. And so on.
 
 The submit scripts contain default functionality that has Condor transfer job output back to the submit machine as each job completes. The relevant configuration settings are [`GET_OUTPUT`](configuring.md#get_output), [`OUTPUT_DIR`](configuring.md#output_dir), and [`OUTPUT_FILE`](configuring.md#output_file) for R runs using `Condor_run_basic.R`. For GAMS runs using `Condor_run.R`, the [`G00_OUTPUT_DIR`](configuring.md#g00_output_dir), [`G00_OUTPUT_FILE`](configuring.md#g00_output_file), [`GET_G00_OUTPUT`](configuring.md#get_g00_output), [`GDX_OUTPUT_DIR`](configuring.md#gdx_output_dir), [`GDX_OUTPUT_FILE`](configuring.md#gdx_output_file) and [`GET_GDX_OUTPUT`](configuring.md#get_gdx_output) configs can be used. Note that the files are renamed on receipt with unique numbers for the run and job so that the output files from different runs and jobs are kept separate.
 
 Once all jobs are done, which can be ensured by configuring [`WAIT_FOR_RUN_COMPLETION`](configuring.md#wait_for_run_completion)` = TRUE`, you may wish to combine or analyse the retrieved output as a next step. For GAMS jobs, retrieved GDX files can be automatically merged as configured by the [`MERGE_GDX_OUPTUT`](configuring.md#merge_gdx_ouptut), [`MERGE_BIG`](configuring.md#merge_big), [`MERGE_EXCLUDE`](configuring.md#merge_exclude) and [`REMOVE_MERGED_GDX_FILES`](configuring.md#remove_merged_gdx_files) options (`Condor_run.R`).
+
+## Troubleshooting
+When your cannot submit or a problem occurs at a later stage, please explore the [troubleshooting documentation](troubleshooting.md) for solutions.
