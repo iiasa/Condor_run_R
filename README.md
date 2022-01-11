@@ -56,7 +56,7 @@ It is recommended to always update to the [latest release of the scripts](https:
 3. Submit the jobs.
    - Jobs unpack the cached bundle when run.
 5. Optionally wait for the jobs to finish
-6. Optionally merge GAMS GDX results files (`Condor_run.R`)
+6. Optionally merge GAMS GDX output files (`Condor_run.R`)
 
 By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized and the submit machine (which might be a laptop) can be disconnected from the cluster or shut down on completion of submission. Without a connected submit machine, idle (queued) jobs will still be scheduled because the cached bundle suffices and no further transfer of input data from the submit machine is needed. A disconnected submit machine will receive the output data after it reconnects to the cluster.
 
@@ -96,7 +96,9 @@ Each job will typically produce some kind of output. For R jobs this might be an
 
 The submit scripts contain default functionality that has Condor transfer job output back to the submit machine as each job completes. The relevant configuration settings are [`GET_OUTPUT`](configuring.md#get_output), [`OUTPUT_DIR`](configuring.md#output_dir), and [`OUTPUT_FILE`](configuring.md#output_file) for R runs using `Condor_run_basic.R`. For GAMS runs using `Condor_run.R`, the [`G00_OUTPUT_DIR`](configuring.md#g00_output_dir), [`G00_OUTPUT_FILE`](configuring.md#g00_output_file), [`GET_G00_OUTPUT`](configuring.md#get_g00_output), [`GDX_OUTPUT_DIR`](configuring.md#gdx_output_dir), [`GDX_OUTPUT_FILE`](configuring.md#gdx_output_file) and [`GET_GDX_OUTPUT`](configuring.md#get_gdx_output) configs can be used. Note that the files are renamed on receipt with unique numbers for the run and job so that the output files from different runs and jobs are kept separate.
 
-Once all jobs are done, which can be ensured by configuring [`WAIT_FOR_RUN_COMPLETION`](configuring.md#wait_for_run_completion)` = TRUE`, you may wish to combine or analyse the retrieved output as a next step. For GAMS jobs, retrieved GDX files can be automatically merged as configured by the [`MERGE_GDX_OUPTUT`](configuring.md#merge_gdx_ouptut), [`MERGE_BIG`](configuring.md#merge_big), [`MERGE_EXCLUDE`](configuring.md#merge_exclude) and [`REMOVE_MERGED_GDX_FILES`](configuring.md#remove_merged_gdx_files) options (`Condor_run.R`).
+Once all jobs are done, which can be ensured by configuring [`WAIT_FOR_RUN_COMPLETION`](configuring.md#wait_for_run_completion)` = TRUE`, you may wish to combine or analyse the retrieved output as a next step. You can automate this by writing a batch file or shell script that includes the submit invocation followed by output processing steps.
+
+For GAMS jobs, retrieved GDX files can be automatically merged as configured by the [`MERGE_GDX_OUPTUT`](configuring.md#merge_gdx_ouptut), [`MERGE_BIG`](configuring.md#merge_big), [`MERGE_EXCLUDE`](configuring.md#merge_exclude) and [`REMOVE_MERGED_GDX_FILES`](configuring.md#remove_merged_gdx_files) options (`Condor_run.R`).
 
 ## Troubleshooting
 When your cannot submit or a problem occurs at a later stage, please explore the [troubleshooting documentation](troubleshooting.md) for solutions.
