@@ -76,11 +76,13 @@ When your cannot submit or a problem occurs at a later stage, please explore the
 
 ## Function of submit scripts
 1. Bundle up the job files using 7-Zip.
-2. Submit the bundle once to each of the execute hosts.
-   - The execute hosts are made to cache the bundle in a separate directory.
+2. Seed the execute hosts with the bundle.
+   - Seeding jobs transfer the bundle once for each execute host.
+   - The execute hosts cache the bundle for use by your jobs.
 3. Submit the jobs.
-4. Optionally wait for the jobs to finish
-5. Optionally merge GAMS GDX results files (`Condor_run.R`)
+   - Jobs unpack the cached bundle when run.
+5. Optionally wait for the jobs to finish
+6. Optionally merge GAMS GDX results files (`Condor_run.R`)
 
 By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized and the submit machine (which might be a laptop) can be disconnected from the cluster or shut down on completion of submission. Without a connected submit machine, idle (queued) jobs will still be scheduled because the cached bundle suffices and no further transfer of input data from the submit machine is needed. A disconnected submit machine will receive the output data after it reconnects to the cluster.
 
