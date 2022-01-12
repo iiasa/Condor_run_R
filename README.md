@@ -19,7 +19,7 @@ ___
 - [Troubleshooting](troubleshooting.md)
 
 ## Introduction
-This repository provides R scripts for submitting a *run* (a set of jobs) to a HT Condor cluster, and for analysing run performance statistics. Four scripts are provided:
+This repository provides R scripts for submitting a *run* (a set of jobs) to an HT Condor cluster, and for analysing run performance statistics. Four scripts are provided:
 1. [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R): generic submit script suitable for any kind of job.
 2. [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R): submit script with enhanced functionality for [GAMS](https://www.gams.com/) jobs.
 3. [`Condor_run_stats.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_stats.R): analyse and plot run performance statistics.

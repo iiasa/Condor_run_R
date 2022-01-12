@@ -14,6 +14,10 @@ Several configuration parameters specify paths to files or directories. **Use on
 
 This approach allows you to test jobs on your submit machine, and then easily use the submit script to bundle up your project's file tree via 7-Zip for transfer to and execution on the cluster. The `BUNDLE_*` parameters detailed below control which files are added to the bundle. For some examples of how to set this up, see [the tests](tests/tests.md)
 
+Since the submit script and configuration file may not be located in the the chosen current working directory, you may need to prefix them with a path on invocation:
+
+`Rscript [<path to>]Condor_run_basic.R [<path to>]my_configuration.R`
+
 ## Mandatory configuration parameters
 
 ### JOBS
