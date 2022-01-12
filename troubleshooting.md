@@ -16,7 +16,7 @@ When you have an issue with getting your jobs to run or with retrieving output, 
 - [Further information](#further-information)
 
 ## Submit script immediately aborts with an error
-Look carefully at the error message. If a file or directory cannot be located, a likely cause is a mismatch between the paths specified in the configuration file and the current working directory on invoking the submit script: most of the path configuration settings are relative to the current working directory. See [here](configuring.md#path-handling)) for further details on path handling.
+Look carefully at the error message. If a file or directory cannot be located, a likely cause is a mismatch between the paths specified in the configuration file and the current working directory on invoking the submit script: most of the path configuration settings are relative to the current working directory. See [here](configuring.md#path-handling) for further details on path handling.
 
 When the error message relates to a specific configuration setting, please review the documentation of that setting by locating it in the configuration documentation as described [here](configuring.md#configuring-the-condor-submit-scripts).
 
@@ -34,7 +34,7 @@ When you cannot submit jobs, ensure that:
 - You are using [up-to-date scripts](README.md#updating).
 
 ## The script does not progress
-The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**.
+The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt titlebar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**. After doing so, you can left-click and drag to select text in the Command Prompt window only after first entering CTRL-M or selecting the **Edit → Mark** menu item.
 
 ## You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials
 Try to submit again. It might be a transient error.
