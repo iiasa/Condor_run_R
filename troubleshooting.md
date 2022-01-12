@@ -1,6 +1,7 @@
 # Troubleshooting
 When you have an issue with getting your jobs to run or with retrieving output, please see if your problem is listed below. As a default solution, reboot your submit machine: it often helps.
 
+- [Submit script immediately aborts with an error](#submit-script-immediately-aborts-with-an-error)
 - [Cannot submit jobs](#cannot-submit-jobs)
 - [The script does not progress](#the-script-does-not-progress)
 - [You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials](#you-get-error-no-credential-stored-for-userdomain-but-did-store-your-credentials)
@@ -13,6 +14,11 @@ When you have an issue with getting your jobs to run or with retrieving output, 
 - [`Condor_run_stats.R` produces empty plots](#condor_run_statsr-produces-empty-plots)
 - [None of the above solves my problem](#none-of-the-above-solves-my-problem)
 - [Further information](#further-information)
+
+## Submit script immediately aborts with an error
+Look carefully at the error message. If a file or directory cannot be located, a likely cause is a mismatch between the paths specified in the configuration file and the current working directory on invoking the submit script: most of the path configuration settings are relative to the current working directory. See [here](configuring.md#path-handling)) for further details on path handling.
+
+When the error message relates to a specific configuration setting, please review the documentation of that setting by locating it in the configuration documentation as described [here](configuring.md#configuring-the-condor-submit-scripts).
 
 ## Cannot submit jobs
 When you cannot submit jobs, ensure that:
