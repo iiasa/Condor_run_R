@@ -19,7 +19,7 @@ ___
 - [Troubleshooting](troubleshooting.md)
 
 ## Introduction
-This repository provides R scripts for submitting a *run* (a set of jobs) to a HT Condor  cluster, and for analysing run performance statistics. Four scripts are provided:
+This repository provides R scripts for submitting a *run* (a set of jobs) to a nHT Condor  cluster, and for analysing run performance statistics. Four scripts are provided:
 1. [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R): generic submit script suitable for any kind of job.
 2. [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R): submit script with enhanced functionality for [GAMS](https://www.gams.com/) jobs.
 3. [`Condor_run_stats.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_stats.R): analyse and plot run performance statistics.
@@ -47,7 +47,7 @@ Test that [`condor_status`](https://htcondor.readthedocs.io/en/latest/man-pages/
 This repository includes [tests](tests/tests.md). To check your setup, run the [`basic` test](tests/basic/purpose.md) via the `test.bat` batch file (Windows) or `test.sh` shell script (MacOS/Linux) located in the `tests/basic` subdirectory. The `basic` test submits a run of several small R jobs via `Condor_run_basic.R` and after completion performs analysis using `Condor_run_stats.R`. The plots can be viewed by opening the resulting PDF file.
 
 ## Updating
-It is recommended to always update to the [latest release of the scripts](https://github.com/iiasa/Condor_run_R/releases) so that you have the latest fixes and features. Releases are typically backwards compatible and should work with your existing run configurations. Before updating, read the release notes. Automatic notification of new releases can be enabled by going to the [main repository page](https://github.com/iiasa/Condor_run_R), clicking on the Watch/Unwatch drop down menu button at the top right of the page, and check marking Custom → Releases. You need to be signed in to GitHub for this to work.
+It is recommended to always update to the [latest release of the scripts](https://github.com/iiasa/Condor_run_R/releases) so that you have the latest fixes and features. Releases are typically backwards compatible and should work with your existing run configurations. Before updating, read the release notes. Automatic notification of new releases can be enabled by going to the [main repository page](https://github.com/iiasa/Condor_run_R), clicking on the Watch/Unwatch drop down menu button at the top right of the page, and check marking **Custom → Releases**. You need to be signed in to GitHub for this to work.
 
 ## Function of submit scripts
 1. Bundle up the job files using 7-Zip.
