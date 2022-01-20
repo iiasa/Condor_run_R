@@ -131,7 +131,9 @@ Retain the bundle in the run's [`CONDOR_DIR`](#condor_dir) subdirectory when `TR
 ### SEED_JOB_RELEASES
 Default value: `0`
 
-Number of times to auto-release (retry) held seed jobs before giving up.
+Number of times to auto-release (retry) held bundle-seeding jobs before giving up. Not retrying—by using the 0 default value—is fine when you have plenty of execute hosts in the cluster: hosts that could not receive the bundle are assumed to be unavailable and will be excluded from the subsequent job submission stage. The hosts that could receive the bundle will still process your jobs.
+
+When the cluster has only one or a couple of execute hosts, or there are intermittent failures on account of networking issues, it may be worthwhile to retry a few times. This can make the seeding process take longer.
 
 ### JOB_RELEASES
 Default value: `3`
