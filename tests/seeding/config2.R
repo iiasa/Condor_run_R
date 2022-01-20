@@ -3,7 +3,6 @@ LABEL = "seeding_inspite_of_occupation_{Sys.Date()}"
 JOBS = c(0:19)
 HOST_REGEXP = "^limpopo6"
 REQUEST_MEMORY = 1000
-REQUEST_CPUS = 1
 LAUNCHER = "Rscript"
 SCRIPT = "test.R"
 ARGUMENTS = "%1"

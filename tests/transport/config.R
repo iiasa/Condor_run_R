@@ -3,7 +3,6 @@ LABEL = "transport_{Sys.Date()}"
 JOBS = c(0, 5, 10, 15, 20, 25, 30, 40, 45, 50)
 HOST_REGEXP = "^limpopo"
 REQUEST_MEMORY = 1000
-REQUEST_CPUS = 1
 GAMS_FILE_PATH = "transport.gms"
 GAMS_ARGUMENTS = "gdx={GDX_OUTPUT_DIR}/{GDX_OUTPUT_FILE} //shift=%1"
 GAMS_VERSION = "32.2"

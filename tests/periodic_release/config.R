@@ -3,7 +3,6 @@ LABEL = "periodic_release_{Sys.Date()}"
 JOBS = c(0:39,42,45)
 HOST_REGEXP = "^limpopo"
 REQUEST_MEMORY = 1000
-REQUEST_CPUS = 1
 LAUNCHER = "Rscript"
 SCRIPT = "test.R"
 ARGUMENTS = "%1"
