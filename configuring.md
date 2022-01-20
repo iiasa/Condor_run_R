@@ -33,9 +33,6 @@ An estimate of the amount of memory (in MiB) required per job. Condor will stop 
 
 It is therefore important to configure a good estimate. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs after they complete and produce a warning when the `REQUEST_MEMORY` estimate is significantly wrong. Use this warning to imrpove the estimate.
 
-### REQUEST_CPUS
-Number of hardware threads to reserve for each job. Set this to at least 1. If you know that your job involves considerable multiprocessing, set this value to an estimate of the average number of in-use threads.
-
 ### WAIT_FOR_RUN_COMPLETION
 If `TRUE`, wait for the run to complete while displaying monitoring information and, on completion, check the presence of output files and prune empty log files. When submitting a GAMS job through `Condor_run.R`, also perform a merge of the GDX ouput when [`MERGE_GDX_OUTPUT`](#merge_gdx_output)`= TRUE`.
 
@@ -140,6 +137,11 @@ Number of times to auto-release (retry) held seed jobs before giving up.
 Default value: `3`
 
 Number of times to auto-release (retry) held jobs before giving up.
+
+### REQUEST_CPUS
+Default value: `1`
+
+Number of hardware threads to reserve for each job. The default value is good for jobs that are single-threaded, or mostly so. When your job involves significant multiprocessing, set this value to an estimate of the average number of in-use threads.
 
 ### RUN_AS_OWNER
 Default value: `TRUE`
