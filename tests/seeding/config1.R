@@ -3,6 +3,7 @@ LABEL = "occupy_all_{Sys.Date()}"
 JOBS = c(0:499)
 HOST_REGEXP = "^limpopo"
 REQUEST_MEMORY = 1000
+REQUEST_DISK = 1
 LAUNCHER = "Rscript"
 SCRIPT = "test.R"
 ARGUMENTS = "%1"
