@@ -43,6 +43,7 @@ RETAIN_BUNDLE = FALSE
 SEED_JOB_RELEASES = 0
 JOB_RELEASES = 3
 REQUEST_CPUS = 1
+REQUEST_DISK = NULL
 CONDOR_DIR = "Condor"
 GET_OUTPUT = TRUE
 OUTPUT_DIR = "output"
@@ -199,7 +200,7 @@ if (length(args) == 0) {
   # Source the config file, should add mandatory config settings to the global scope
   source(config_file_arg, local=TRUE, echo=FALSE)
 
-  # Check that all config settings exist, this catches mandatory settings missing in the config file
+  # Check that all config settings exist and have no weird value type
   for (i in seq_along(config_names))  {
     name <- config_names[i]
     if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {config_file_arg}!"))
@@ -207,7 +208,7 @@ if (length(args) == 0) {
     if (type != config_types[[i]] &&
         type != "integer" && # R has no stable numerical type
         type != "double" && # R has no stable numerical type
-        type != "NULL" && # allow for configured vector being empty
+        type != "NULL" && # allow for NULL
         config_types[[i]] != "NULL" # allow for default vector being empty
     ) stop(str_glue("{name} set to wrong type in {config_file_arg}, type should be {config_types[[i]]}"))
   }
@@ -253,6 +254,7 @@ if (!all(JOBS < 1e6)) stop("Job numbers in JOBS must be less than 1000000 (one m
 if (!all(JOBS >= 0)) stop("Job numbers in JOBS may not be negative!")
 if (length(JOBS) > 200 && !NICE_USER) warning(str_glue("You are submitting {length(JOBS)} jobs. That's a lot. Consider being nice by configuring NICE_USER = TRUE so as to give jobs of other users priority."))
 if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
+if (!is.null(REQUEST_DISK) && REQUEST_DISK <= 0) stop("REQUEST_DISK should be either NULL (the script will calculate an estimate the amount of required disk) or a number larger than zero!")
 if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
 if (!(file_exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
 if (str_detect(SCRIPT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCRIPT has forbidden character(s)!"))
@@ -546,9 +548,13 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("\n")
 }
 
-# Estimate the amount of disk to request for run, in KiB
-# decompressed bundle content + 2GiB for output files
-request_disk <- ceiling((byte_size+additional_byte_size)/1024)+2*1024*1024
+if (!is.null(REQUEST_DISK)) {
+  request_disk <- REQUEST_DISK
+} else {
+  # Estimate the amount of disk to request per job, in KiB:
+  # size of decompressed bundle content + 2GiB for output files
+  request_disk <- ceiling((byte_size+additional_byte_size)/1024)+2*1024*1024
+}
 
 # Determine the bundle size in KiB
 bundle_size <- floor(file_size(bundle_path)/1024)
