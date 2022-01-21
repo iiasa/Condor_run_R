@@ -26,6 +26,7 @@ This repository provides R scripts for submitting a *run* (a set of jobs) to an 
 4. [`restart_version.R`](https://github.com/iiasa/Condor_run_R/blob/master/restart_version.R): displays the GAMS version with which a specified restart file was saved.
 
 The advantages of using these scripts over using [`condor_submit`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html) directly are:
+- Manages submission of a set of related jobs in one go.
 - Conveniently collect many files into a submit bundle.
   * For jobs using many source and/or data files.
 - Replicate the project file tree on your submit machine to the remote scratch directory on the machine where a job is executed (execute host).
