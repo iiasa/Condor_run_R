@@ -4,10 +4,10 @@
 # times and cluster performance behaviour.
 #
 # Installation: https://github.com/iiasa/Condor_run_R#installation
-# Usage: https://github.com/iiasa/Condor_run_R#use
-##
-# Author: Albert Brouwer
-# Repository: https://github.com/iiasa/Condor_run_R
+# Use:          https://github.com/iiasa/Condor_run_R#use
+#
+# Author:  Albert Brouwer
+# Release: https://github.com/iiasa/Condor_run_R/releases/tag/v2021-12-06
 
 # ---- Initialization ----
 

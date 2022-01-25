@@ -3,11 +3,11 @@
 # to monitor progress.
 #
 # Installation: https://github.com/iiasa/Condor_run_R#installation
-# Usage: https://github.com/iiasa/Condor_run_R#use
+# Use:          https://github.com/iiasa/Condor_run_R#use
 #
-# Author: Albert Brouwer
+# Author:   Albert Brouwer
 # Based on: GLOBIOM-limpopo scripts by David Leclere
-# Repository: https://github.com/iiasa/Condor_run_R
+# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2021-12-06
 
 # ---- Configuration parameters, mandatory ----
 
