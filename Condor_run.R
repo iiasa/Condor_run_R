@@ -863,23 +863,46 @@ if (WAIT_FOR_RUN_COMPLETION) {
   }
   cat("All jobs are done.\n")
 
-  # Warn when REQUEST_MEMORY turns out to have been set too low or significantly too high
+  # Warn when REQUEST_MEMORY or REQUEST_DISK turns out to have been set
+  # too low or significantly too high.
   max_memory_use <- -1
   max_memory_job <- -1
+  max_disk_use <- -1
+  max_disk_job <- -1
+  disk_allocated <- 0
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
+  disk_use_regexp <- "^\\s+Disk \\(KB\\)\\s+:\\s+(\\d+)\\s+(\\d+)"
   for (job in JOBS) {
     job_lines <- readLines(path(log_dir, str_glue("{PREFIX}_{cluster}.{job}.log")))
-    memory_use <- as.double(str_match(tail(grep(memory_use_regexp, job_lines, value=TRUE), 1), memory_use_regexp)[2])
+    memory_use <-
+      as.double(str_match(tail(
+        grep(memory_use_regexp, job_lines, value = TRUE), 1
+      ), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
       max_memory_job <- job
+    }
+    disk_use <-
+      as.double(str_match(tail(
+        grep(disk_use_regexp, job_lines, value = TRUE), 1
+      ), disk_use_regexp)[2:3])
+    if (!any(is.na(disk_use)) && disk_use[1] > max_disk_use) {
+      max_disk_use <- disk_use[1]
+      disk_allocated <- disk_use[2]
+      max_disk_job <- job
     }
   }
   if (max_memory_job >= 0 && max_memory_use > REQUEST_MEMORY) {
     warning(str_glue("The job ({max_memory_job}) with the highest memory use ({max_memory_use} MiB) exceeded the REQUEST_MEMORY config."))
   }
   if (max_memory_job >= 0 && max_memory_use/REQUEST_MEMORY < 0.75 && max_memory_use > 1000) {
-    warning(str_glue("REQUEST_MEMORY ({REQUEST_MEMORY} MiB) is significantly larger than the memory use ({max_memory_use} MiB) of the job ({max_memory_job}) using the most memory, you can request less."))
+    warning(str_glue("REQUEST_MEMORY ({REQUEST_MEMORY} MiB) is significantly larger than the memory use ({max_memory_use} MiB) of the job ({max_memory_job}) using the most memory. Please lower REQUEST_MEMORY so that more jobs can run."))
+  }
+  if (max_disk_job >= 0 && max_disk_use > disk_allocated) {
+    warning(str_glue("The job ({max_disk_job}) with the highest disk use exceeded the reserved disk space by {max_disk_use-disk_allocated} KB. Please increase REQUEST_DISK by at least that amount."))
+  }
+  if (max_disk_job >= 0 && max_disk_use/disk_allocated < 0.4 && max_disk_use > 2000000) {
+    warning(str_glue("The amount of allocated disk space is larger ({disk_allocated-max_disk_use} KB more) than the disk use of the job ({max_disk_job}) using the most disk. Consider lowering REQUEST_DISK."))
   }
 
   # Merge returned GDX files (implies GET_GDX_OUTPUT and WAIT_FOR_RUN_COMPLETION)
