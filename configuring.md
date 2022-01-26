@@ -146,9 +146,9 @@ Default value: `1`
 Number of hardware threads to reserve for each job. The default value is good for jobs that are single-threaded, or mostly so. When your job involves significant multiprocessing, set this value to an estimate of the average number of in-use threads.
 
 ### REQUEST_DISK
-Default value: `2097152`
+Default value: `1000000`
 
-Estimate of the amount of execute-host-side disk space required per job for storing transient and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The default value equals 2 [GiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units).
+Estimate of the amount of execute-host-side disk space required per job for storing transient and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units.
 
 This value is added to the uncompressed size of the bundle. The sum is used to reserve disk space for a job when it is started on an execute host.
 
