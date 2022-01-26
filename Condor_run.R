@@ -7,7 +7,7 @@
 #
 # Author:   Albert Brouwer
 # Based on: GLOBIOM-limpopo scripts by David Leclere
-# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2021-12-06
+# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2022-01-26
 
 # ---- Configuration parameters, mandatory ----
 
@@ -888,7 +888,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
       ), disk_use_regexp)[2:3])
     if (!any(is.na(disk_use)) && disk_use[1] > max_disk_use) {
       max_disk_use <- disk_use[1]
-      disk_allocated <- disk_use[2]
+      disk_request <- disk_use[2]
       max_disk_job <- job
     }
   }
@@ -898,11 +898,11 @@ if (WAIT_FOR_RUN_COMPLETION) {
   if (max_memory_job >= 0 && max_memory_use/REQUEST_MEMORY < 0.75 && max_memory_use > 1000) {
     warning(str_glue("REQUEST_MEMORY ({REQUEST_MEMORY} MiB) is significantly larger than the memory use ({max_memory_use} MiB) of the job ({max_memory_job}) using the most memory. Please lower REQUEST_MEMORY so that more jobs can run."))
   }
-  if (max_disk_job >= 0 && max_disk_use > disk_allocated) {
-    warning(str_glue("The job ({max_disk_job}) with the highest disk use exceeded the allocated disk space by {max_disk_use-disk_allocated} KB. Please increase REQUEST_DISK by at least that amount."))
+  if (max_disk_job >= 0 && max_disk_use > disk_request) {
+    warning(str_glue("The job ({max_disk_job}) with the highest disk use exceeded the requested disk space by {max_disk_use-disk_request} KB. Please increase REQUEST_DISK by at least that amount."))
   }
   if (max_disk_job >= 0 && max_disk_use/disk_allocated < 0.6 && max_disk_use > 2000000) {
-    warning(str_glue("The amount of allocated disk space is significantly larger ({disk_allocated-max_disk_use} KB more) than the disk use of the job ({max_disk_job}) using the most disk. Consider lowering REQUEST_DISK."))
+    warning(str_glue("The amount of requested disk space is significantly larger ({disk_request-max_disk_use} KB more) than the disk use of the job ({max_disk_job}) using the most disk. Consider lowering REQUEST_DISK."))
   }
 
   # Merge returned GDX files (implies GET_GDX_OUTPUT and WAIT_FOR_RUN_COMPLETION)
