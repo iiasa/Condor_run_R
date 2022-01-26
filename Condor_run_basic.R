@@ -789,10 +789,10 @@ if (WAIT_FOR_RUN_COMPLETION) {
     warning(str_glue("REQUEST_MEMORY ({REQUEST_MEMORY} MiB) is significantly larger than the memory use ({max_memory_use} MiB) of the job ({max_memory_job}) using the most memory. Please lower REQUEST_MEMORY so that more jobs can run."))
   }
   if (max_disk_job >= 0 && max_disk_use > disk_allocated) {
-    warning(str_glue("The job ({max_disk_job}) with the highest disk use exceeded the reserved disk space by {max_disk_use-disk_allocated} KB. Please increase REQUEST_DISK by at least that amount."))
+    warning(str_glue("The job ({max_disk_job}) with the highest disk use exceeded the allocated disk space by {max_disk_use-disk_allocated} KB. Please increase REQUEST_DISK by at least that amount."))
   }
-  if (max_disk_job >= 0 && max_disk_use/disk_allocated < 0.4 && max_disk_use > 2000000) {
-    warning(str_glue("The amount of allocated disk space is larger ({disk_allocated-max_disk_use} KB more) than the disk use of the job ({max_disk_job}) using the most disk. Consider lowering REQUEST_DISK."))
+  if (max_disk_job >= 0 && max_disk_use/disk_allocated < 0.6 && max_disk_use > 2000000) {
+    warning(str_glue("The amount of allocated disk space is significantly larger ({disk_allocated-max_disk_use} KB more) than the disk use of the job ({max_disk_job}) using the most disk. Consider lowering REQUEST_DISK."))
   }
 
   # Make a bit of noise to notify the user of completion (works with Rscript but not from RStudio)
