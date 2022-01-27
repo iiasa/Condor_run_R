@@ -1,12 +1,10 @@
 args <- commandArgs(trailingOnly=TRUE)
-# Busy loop for a while
-sum <- 0
-for (i in 1:1e9) {
-  sum <- sum + cos(i)^2 + sin(i)^2
+# Intensive memory-hitting matrix diagonalization
+N <- 4500
+set.seed(1) # for reproducibility
+for (i in 1:1) {
+  M <- matrix(runif(N*N, -10, 10), nrow=N) # N x N matrix
+  ev <- eigen(M, only.values = TRUE) # SVD is O(N^3)
 }
-cat(sum, "\n")
-# Output dummy dataframe
-study <- data.frame(id = 1:5,
-                    sex = c("m", "m", "f", "f", "m"),
-                    score = c(51, 20, 67, 52, 42))
-save(study, file="output/output.RData")
+# Return eigenvalues as output
+save(ev, file="output/output.RData")
