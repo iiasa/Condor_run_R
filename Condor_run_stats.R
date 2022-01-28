@@ -240,7 +240,7 @@ for (i in seq_along(roots)) {
   terminate_times <- c(terminate_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
 }
 
-# Extract the disk usage (KiB) from the .log files
+# Extract the disk usage (KB) from the .log files
 disk_usages <- list()
 disk_usage_regexp <- "^\\s+Disk \\(KB\\)\\s+:\\s+(\\d+)\\s+(\\d+)"
 for (i in seq_along(roots)) {
@@ -251,6 +251,18 @@ for (i in seq_along(roots)) {
   disk_usages <- c(disk_usages, disk_usage)
 }
 rm(disk_usage_regexp, disk_usage)
+
+# Extract the memory usage (MB) from the .log files
+memory_usages <- list()
+memory_usage_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
+for (i in seq_along(roots)) {
+  lines <- grep(memory_usage_regexp, log_files[[i]], value=TRUE)
+  if (length(lines) != 1) stop(str_glue("Cannot extract memory usage from {roots[[i]]}.log!"))
+  memory_usage <- as.double(str_match(lines[1], memory_usage_regexp)[2])
+  if (is.na(memory_usage)) stop(str_glue("Cannot decode memory usage from {roots[[i]]}.log"))
+  memory_usages <- c(memory_usages, memory_usage)
+}
+rm(memory_usage_regexp, memory_usage)
 
 # Calculate the execution start latencies in seconds (difference between submit and execution start times)
 latencies <- c()
@@ -348,7 +360,8 @@ jobs <- tibble(label=unlist(labels),
                running_at_start=running_at_start,
                running_at_stop=running_at_stop,
                `total CPLEX time [s]`=total_CPLEX_times,
-               `disk usage [KiB]`=unlist(disk_usages))
+               `disk usage [KB]`=unlist(disk_usages),
+               `memory usage [MB]`=unlist(memory_usages))
 
 # Add a combined host_slot column
 jobs <- add_column(jobs, host_slot=paste(jobs$host, jobs$slot))
@@ -399,12 +412,15 @@ jobs %>%
 
 # Summarize resource use
 jobs %>%
-  select(label, cluster, `disk usage [KiB]`) %>%
+  select(label, cluster, `disk usage [KB]`, `memory usage [MB]`) %>%
   group_by(cluster) %>%
   summarize(label=dplyr::first(label),
-            `mean disk usage [KiB]`=mean(`disk usage [KiB]`),
-            `min [KiB]`=min(`disk usage [KiB]`),
-            `max [KiB]`=max(`disk usage [KiB]`),
+            `mean disk usage [KB]`=mean(`disk usage [KB]`),
+            `min [KB]`=min(`disk usage [KB]`),
+            `max [KB]`=max(`disk usage [KB]`),
+            `mean memory usage [MB]`=mean(`memory usage [MB]`),
+            `min [MB]`=min(`memory usage [MB]`),
+            `max [MB]`=max(`memory usage [MB]`),
             .groups="keep") %>%
   arrange(cluster) -> resource_summary
 
