@@ -179,10 +179,10 @@ for (i in seq_along(roots)) {
   job_numbers <- c(job_numbers, as.integer(prstr))
 }
 
-# Determine the current year to help compensate for the absense of year numbers in the .log file
+# Determine the current year to help compensate for the absence of year numbers in the .log file
 current_year <- as.integer(format(Sys.Date(),"%Y"))
 
-# Extract the job submit times (with uncertain year) and strings from the .log files
+# Extract the job submit time (with uncertain year) and date/time string from the .log files
 submit_dtstrs <- c()
 submit_times <- list()
 submit_times_minus_1y <- list()
@@ -207,7 +207,7 @@ for (i in seq_along(roots)) {
   }
 }
 
-# Extract the job execution start times (with uncertain year) and hosts from the .log files
+# Extract the job execution start time (with uncertain year) and host from the .log files
 start_times <- list()
 start_times_minus_1y <- list()
 hosts <- c()
@@ -229,7 +229,7 @@ for (i in seq_along(roots)) {
   hosts <- c(hosts, host)
 }
 
-# Extract the job termination times (with uncertain year) from the .log files
+# Extract the job termination time (with uncertain year) from the .log files
 terminate_times <- list()
 for (i in seq_along(roots)) {
   lines <- grep("\\) \\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d Job terminated.$", log_files[[i]], value=TRUE)
@@ -239,6 +239,18 @@ for (i in seq_along(roots)) {
   # Use guessed year (can fail for leap days)
   terminate_times <- c(terminate_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
 }
+
+# Extract the disk usage (KiB) from the .log files
+disk_usages <- list()
+disk_usage_regexp <- "^\\s+Disk \\(KB\\)\\s+:\\s+(\\d+)\\s+(\\d+)"
+for (i in seq_along(roots)) {
+  lines <- grep(disk_usage_regexp, log_files[[i]], value=TRUE)
+  if (length(lines) != 1) stop(str_glue("Cannot extract disk usage from {roots[[i]]}.log!"))
+  disk_usage <- as.double(str_match(lines[1], disk_usage_regexp)[2])
+  if (is.na(disk_usage)) stop(str_glue("Cannot decode disk usage from {roots[[i]]}.log"))
+  disk_usages <- c(disk_usages, disk_usage)
+}
+rm(disk_usage_regexp, disk_usage)
 
 # Calculate the execution start latencies in seconds (difference between submit and execution start times)
 latencies <- c()
@@ -335,7 +347,8 @@ jobs <- tibble(label=unlist(labels),
                `duration [s]`=durations,
                running_at_start=running_at_start,
                running_at_stop=running_at_stop,
-               `total CPLEX time [s]`=total_CPLEX_times)
+               `total CPLEX time [s]`=total_CPLEX_times,
+               `disk usage [KiB]`=unlist(disk_usages))
 
 # Add a combined host_slot column
 jobs <- add_column(jobs, host_slot=paste(jobs$host, jobs$slot))
@@ -351,7 +364,7 @@ for (name in names(jobs)) {
 
 # ---- Analyse jobs data ----
 
-# Summarize
+# Summarize run times
 jobs %>%
   select(label, cluster, submitted, `latency [min]`, `duration [min]`, `latency [h]`, `duration [h]`, `running_at_start`) %>%
   group_by(cluster) %>%
@@ -384,16 +397,30 @@ jobs %>%
             .groups="keep") %>%
   arrange(host, cluster) -> summary_grouped
 
-# Tabulate summary, and summary grouped by job cluster and host
+# Summarize resource use
+jobs %>%
+  select(label, cluster, `disk usage [KiB]`) %>%
+  group_by(cluster) %>%
+  summarize(label=dplyr::first(label),
+            `mean disk usage [KiB]`=mean(`disk usage [KiB]`),
+            `min [KiB]`=min(`disk usage [KiB]`),
+            `max [KiB]`=max(`disk usage [KiB]`),
+            .groups="keep") %>%
+  arrange(cluster) -> resource_summary
+
+# Tabulate summaries
 if (exists("grid.table")) {
   # produce graphical tables
   grid.table(summary, theme=ttheme_default(base_size = 9.2))
   print(ggplot() + theme_void())
   grid.table(summary_grouped)
+  print(ggplot() + theme_void())
+  grid.table(resource_summary)
 } else {
   # produce tables formatted as text
   print(summary)
   print(summary_grouped)
+  print(resource_summary)
 }
 
 # Plot, print() needed for sourcing because of https://yihui.name/en/2017/06/top-level-r-expressions/
