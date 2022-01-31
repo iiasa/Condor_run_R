@@ -240,17 +240,22 @@ for (i in seq_along(roots)) {
   terminate_times <- c(terminate_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
 }
 
-# Extract the disk usage (KB) from the .log files
+# Extract the disk usage and request (KB) from the .log files
 disk_usages <- list()
-disk_usage_regexp <- "^\\s+Disk \\(KB\\)\\s+:\\s+(\\d+)\\s+(\\d+)"
+disk_requests <- list()
+disk_regexp <- "^\\s+Disk \\(KB\\)\\s+:\\s+(\\d+)\\s+(\\d+)"
 for (i in seq_along(roots)) {
-  lines <- grep(disk_usage_regexp, log_files[[i]], value=TRUE)
+  lines <- grep(disk_regexp, log_files[[i]], value=TRUE)
   if (length(lines) != 1) stop(str_glue("Cannot extract disk usage from {roots[[i]]}.log!"))
-  disk_usage <- as.double(str_match(lines[1], disk_usage_regexp)[2])
+  disk_match <-str_match(lines[1], disk_regexp)
+  disk_usage <- as.double(disk_match[2])
+  disk_request <- as.double(disk_match[3])
   if (is.na(disk_usage)) stop(str_glue("Cannot decode disk usage from {roots[[i]]}.log"))
+  if (is.na(disk_request)) stop(str_glue("Cannot decode disk request from {roots[[i]]}.log"))
   disk_usages <- c(disk_usages, disk_usage)
+  disk_requests <- c(disk_requests, disk_request)
 }
-rm(disk_usage_regexp, disk_usage)
+rm(disk_regexp, disk_match, disk_usage, disk_request)
 
 # Extract the memory usage (MB) from the .log files
 memory_usages <- list()
@@ -361,6 +366,7 @@ jobs <- tibble(label=unlist(labels),
                running_at_stop=running_at_stop,
                `total CPLEX time [s]`=total_CPLEX_times,
                `disk usage [KB]`=unlist(disk_usages),
+               `disk request [KB]`=unlist(disk_requests),
                `memory usage [MB]`=unlist(memory_usages))
 
 # Add a combined host_slot column
@@ -412,12 +418,12 @@ jobs %>%
 
 # Summarize resource use
 jobs %>%
-  select(label, cluster, `disk usage [KB]`, `memory usage [MB]`) %>%
+  select(label, cluster, `disk usage [KB]`, `disk request [KB]`, `memory usage [MB]`) %>%
   group_by(cluster) %>%
   summarize(label=dplyr::first(label),
-            `mean disk usage [KB]`=mean(`disk usage [KB]`),
-            `min [KB]`=min(`disk usage [KB]`),
-            `max [KB]`=max(`disk usage [KB]`),
+            `mean disk usage-request [KB]`=mean(`disk usage [KB]` - `disk request [KB]`),
+            `min [KB]`=min(`disk usage [KB]` - `disk request [KB]`),
+            `max [KB]`=max(`disk usage [KB]` - `disk request [KB]`),
             `mean memory usage [MB]`=mean(`memory usage [MB]`),
             `min [MB]`=min(`memory usage [MB]`),
             `max [MB]`=max(`memory usage [MB]`),
@@ -431,7 +437,7 @@ if (exists("grid.table")) {
   print(ggplot() + theme_void())
   grid.table(summary_grouped)
   print(ggplot() + theme_void())
-  grid.table(resource_summary)
+  grid.table(resource_summary, theme=ttheme_default(base_size = 10.0))
 } else {
   # produce tables formatted as text
   print(summary)
