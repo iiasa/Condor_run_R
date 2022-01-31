@@ -1,7 +1,7 @@
 ![License](https://img.shields.io/github/license/iiasa/Condor_run_R)
 
 # Condor_run_R
-R scripts to conveniently and quickly submit and analyse [HT Condor](https://research.cs.wisc.edu/htcondor/htcondor/overview/) jobs requiring many files and/or much input data.
+R scripts to conveniently and quickly submit and analyse sets of [HT Condor](https://research.cs.wisc.edu/htcondor/htcondor/overview/) jobs requiring many files and/or much input data.
 
 ## Author
 Albert Brouwer
