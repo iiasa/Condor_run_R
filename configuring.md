@@ -21,7 +21,7 @@ Since the submit script and configuration file may not be located in the the cho
 ## Mandatory configuration parameters
 
 ### JOBS
-Specify the job numbers of the jobs to submit. Jobs numbers start at 0. For example configuring `c(0:3,7,10)` will start jobs 0, 1, 2, 3, 7, and 10.
+Specify the job numbers of the jobs to submit. Job numbers start at 0. For example, configuring `c(0:3,7,10)` will start jobs 0 to 3, 8 and 10.
 
 Typically, the script that is run when your jobs are started accepts the job number as an argument so that it knows which variant of the calculation to run. For example, a script that runs a model scenario might map the job number to a particular scenario so that submitting with `JOBS = c(0:9)` will run the first ten scenarios in parallel on the cluster.
 
