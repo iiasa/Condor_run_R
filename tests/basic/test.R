@@ -1,5 +1,5 @@
 args <- commandArgs(trailingOnly=TRUE)
-# Intensive memory-hitting matrix diagonalization
+# Matrix diagonalization
 N <- 4500
 set.seed(1) # for reproducibility
 for (i in 1:1) {
