@@ -175,7 +175,7 @@ Default value: `NULL`
 Set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
 
 ### NICE_USER
-Default value: `length(JOBS) > 100`
+Default value: `FALSE`
 
 Be nice, give jobs of other users priority by setting this to `TRUE`.
 
