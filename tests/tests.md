@@ -1,9 +1,9 @@
 This directory holds tests, each in its own subdirectory. Tests can
-be run via the `test.bat` (Windows) or `test.sh` (MacOS/Linux) scripts
-present in every test subdirectory.
+be run via the `test.bat` (Windows) or `test.sh` (MacOS/Linux) scripts present in every test subdirectory.
 
 Tests listing:
 - [basic](basic/purpose.md)
+- [parallel](parallel/purpose.md)
 - [periodic_release](periodic_release/purpose.md)
 - [seeding](seeding/purpose.md)
 - [transport](transport/purpose.md)

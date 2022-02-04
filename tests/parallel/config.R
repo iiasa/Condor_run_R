@@ -1,0 +1,12 @@
+# See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
+LABEL = "parallel_{Sys.Date()}"
+JOBS = c(0:31)
+HOST_REGEXP = "^limpopo"
+REQUEST_CPUS = 4
+REQUEST_MEMORY = 8000
+REQUEST_DISK = 1800
+LAUNCHER = "Rscript"
+SCRIPT = "test.R"
+ARGUMENTS = "%1"
+BUNDLE_INCLUDE = SCRIPT
+WAIT_FOR_RUN_COMPLETION = TRUE
