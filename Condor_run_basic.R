@@ -760,8 +760,11 @@ if (WAIT_FOR_RUN_COMPLETION) {
   max_disk_use <- -1
   max_disk_job <- -1
   disk_allocated <- 0
+  max_cpu_use <- -1
+  max_cpu_job <- -1
   memory_use_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
   disk_use_regexp <- "^\\s+Disk \\(KB\\)\\s+:\\s+(\\d+)\\s+(\\d+)"
+  cpus_use_regexp <- "^\\s+Cpus\\s+:\\s+([[:digit:].]+)\\s+"
   for (job in JOBS) {
     job_lines <- readLines(path(log_dir, str_glue("{PREFIX}_{cluster}.{job}.log")))
     memory_use <-
@@ -781,6 +784,14 @@ if (WAIT_FOR_RUN_COMPLETION) {
       disk_request <- disk_use[2]
       max_disk_job <- job
     }
+    cpu_use <-
+      as.double(str_match(tail(
+        grep(cpus_use_regexp, job_lines, value = TRUE), 1
+      ), cpus_use_regexp)[2])
+    if (!is.na(cpu_use) && cpu_use > max_cpu_use) {
+      max_cpu_use <- cpu_use
+      max_cpu_job <- job
+    }
   }
   if (max_memory_job >= 0 && max_memory_use > REQUEST_MEMORY) {
     warning(str_glue("!!!! The job ({max_memory_job}) with the highest memory use ({max_memory_use} MiB) exceeded the REQUEST_MEMORY config. !!!!"))
@@ -793,6 +804,9 @@ if (WAIT_FOR_RUN_COMPLETION) {
   }
   if (max_disk_job >= 0 && max_disk_use/disk_allocated < 0.6 && max_disk_use > 2000000) {
     warning(str_glue("The amount of requested disk space is significantly larger ({disk_request-max_disk_use} KB more) than the disk use of the job ({max_disk_job}) using the most disk. Consider lowering REQUEST_DISK."))
+  }
+  if (max_cpu_use >= 0 && max_cpu_use >= REQUEST_CPUS+1) {
+    warning(str_glue("The job ({max_cpu_job}) with the highest CPU thread usage ({max_cpu_use}) considerably exceeded REQUEST_CPUS ({REQUEST_CPUS}). Please increase REQUEST_CPUS to a higher integer number."))
   }
 
   # Make a bit of noise to notify the user of completion (works with Rscript but not from RStudio)
