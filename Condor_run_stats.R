@@ -240,6 +240,18 @@ for (i in seq_along(roots)) {
   terminate_times <- c(terminate_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
 }
 
+# Extract the CPUs (threads) usage from the .log files
+cpus_usages <- list()
+cpus_usage_regexp <- "^\\s+Cpus\\s+:\\s+([[:digit:].]+)\\s+"
+for (i in seq_along(roots)) {
+  lines <- grep(cpus_usage_regexp, log_files[[i]], value=TRUE)
+  if (length(lines) != 1) stop(str_glue("Cannot extract CPUs usage from {roots[[i]]}.log!"))
+  cpus_usage <- as.double(str_match(lines[1], cpus_usage_regexp)[2])
+  if (is.na(cpus_usage)) stop(str_glue("Cannot decode CPUs usage from {roots[[i]]}.log"))
+  cpus_usages <- c(cpus_usages, cpus_usage)
+}
+rm(cpus_usage_regexp, cpus_usage)
+
 # Extract the disk usage and request (KB) from the .log files
 disk_usages <- list()
 disk_requests <- list()
@@ -365,6 +377,7 @@ jobs <- tibble(label=unlist(labels),
                running_at_start=running_at_start,
                running_at_stop=running_at_stop,
                `total CPLEX time [s]`=total_CPLEX_times,
+               `CPUs usage`=unlist(cpus_usages),
                `disk usage [KB]`=unlist(disk_usages),
                `disk request [KB]`=unlist(disk_requests),
                `memory usage [MB]`=unlist(memory_usages))
@@ -418,9 +431,10 @@ jobs %>%
 
 # Summarize resource use
 jobs %>%
-  select(label, cluster, `disk usage [KB]`, `disk request [KB]`, `memory usage [MB]`) %>%
+  select(label, cluster,`CPUs usage`, `disk usage [KB]`, `disk request [KB]`, `memory usage [MB]`) %>%
   group_by(cluster) %>%
   summarize(label=dplyr::first(label),
+            `mean CPUs`=mean(`CPUs usage`),
             `mean disk usage-request [KB]`=mean(`disk usage [KB]` - `disk request [KB]`),
             `min [KB]`=min(`disk usage [KB]` - `disk request [KB]`),
             `max [KB]`=max(`disk usage [KB]` - `disk request [KB]`),
