@@ -56,7 +56,7 @@ This can occur on account of outdated state such as a stale IP address being cac
 If the resubmission also stays stuck in the running state when transferring the bundle, stop the script, reboot, and then try to submit again. If your temp directory survives reboots, you will again be asked to delete the bundle first.
 
 ## Jobs do not run but instead go on hold
-Some error occurred. Errors can be transient. With the [`JOB_RELEASES`](configuring.md#job_releases) retry count, jobs will be auto-released for a retry a few times in an attempt to recover from transient errors. This process can be monitored by examining the `.log` file of a job. When jobs keep on failing and the retry count runs out, they go on hold permanently.
+Some error occurred. Errors can be transient. With the [`JOB_RELEASES`](configuring.md#job_releases) retry count set, jobs will be auto-released for a retry in an attempt to recover from transient errors. This process can be monitored by examining the `.log` file of a job. When jobs keep on failing and the retry count runs out, they go on hold permanently.
 
 In that case (when you see that jobs remain in the held state without being rescheduled after a few minutes), the error is probaly not transient and requires some analysis. Look at the output of the `Condor_run[_basic].R` script for some initial clues. Next, issue [`condor_q -held`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) to review the hold reason. If the hold reason is `Failed to initialize user log to <some path on a network drive>`, see [the next section](#jobs-go-on-hold-without-producing-matching-log-files).
 
