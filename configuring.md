@@ -138,7 +138,7 @@ When the cluster has only one or a couple of execute hosts, or there are intermi
 ### JOB_RELEASES
 Default value: `3`
 
-Number of times to auto-release (retry) held jobs before giving up.
+Number of times to auto-release (retry) held (failed) jobs before giving up. This allows your jobs to recover from transient errors such as a network outage or an execute host running out of memory. When the re-tries have run out, your jobs will remain in the held state. Then the error is likely not transient and requires some analysis as described [here](troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold).
 
 ### REQUEST_CPUS
 Default value: `1`
