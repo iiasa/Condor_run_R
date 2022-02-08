@@ -960,6 +960,9 @@ if (WAIT_FOR_RUN_COMPLETION) {
   alarm()
 } else {
   cat(str_glue("You can monitor progress of the run with: condor_q {cluster}."), sep="\n")
+  if (GET_G00_OUTPUT) {
+    cat(str_glue("After the run completes, you can find the G00 results at: {G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}_{LABEL}_{cluster}.*.g00"), sep="\n")
+  }
   if (GET_GDX_OUTPUT) {
     cat(str_glue("After the run completes, you can find the GDX results at: {GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}_{LABEL}_{cluster}.*.gdx"), sep="\n")
   }
