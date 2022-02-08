@@ -1,0 +1,1 @@
+Test submission of a single job that runs an executable (Rscript) with no SCRIPT configured.
