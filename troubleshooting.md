@@ -99,9 +99,9 @@ The cluster may be busy. To see who else has submitted jobs, issue [`condor_stat
 When running `Condor_run_stats.R` and some of the resulting plots are empty, the console output probably contained something like:
 ```
 Warning message:
-Cannot extract submit time from Condor event log (e.g.~/Condor_run_R/tests/basic/Condor/basic/job_570.0.log). Unable to determine latency between job submission and start time. Latency results and plots will be partially or fully unavailable.
+Cannot extract submit time from Condor event log (e.g. ~/Condor_run_R/tests/basic/Condor/basic/job_570.0.log). Unable to determine latency between job submission and start time. Latency results and plots will be partially or fully unavailable.
 ```
-This results from  one or more of the per-job `.log` files lacking a line identifying the source and time of submission. Exanine the SchedLog entries on your submit machine at the time of the submission, e.g. via:
+This results from  one or more of the per-job `.log` files lacking a line identifying the source and time of submission. Examine the SchedLog entries on your submit machine at the time of the submission, e.g. via:
 ```
 condor_fetchlog localhost SCHEDD
 ```
