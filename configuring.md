@@ -41,10 +41,10 @@ Also useful for custom-scripted processing of output, with processing steps plac
 ## `Condor_run_basic.R`-specific mandatory configuration parameters
 
 ### LAUNCHER
-Interpreter / language-runtime with which to launch the [`SCRIPT`](#script) or, when [`SCRIPT`](#script) is empty, the executable/binary to run.
+Interpreter/language-runtime with which to launch the [`SCRIPT`](#script) or, when [`SCRIPT`](#script) is empty, the executable/binary to run.
 
 ### ARGUMENTS
-Arguments to the script or, when [`SCRIPT`](#script) is empty, the [`LAUNCHER`](#launcher). When submitting multiple jobs, this hould include `%1` which expands to the job number.
+Arguments to the script or, when [`SCRIPT`](#script) is empty, the [`LAUNCHER`](#launcher). When submitting multiple jobs, this must include `%1` which expands to the job number.
 
 ## `Condor_run.R`-specific mandatory configuration parameters
 
