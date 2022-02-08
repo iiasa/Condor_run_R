@@ -1,6 +1,8 @@
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 LABEL = "periodic_release_{Sys.Date()}"
 JOBS = c(0:39,42,45)
+JOB_RELEASES = 10
+JOB_RELEASE_DELAY = 60
 HOST_REGEXP = "^limpopo"
 REQUEST_MEMORY = 1000
 REQUEST_DISK = 200
