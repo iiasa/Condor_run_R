@@ -140,6 +140,11 @@ Default value: `3`
 
 Number of times to auto-release (retry) held (failed) jobs before giving up. This allows your jobs to recover from transient errors such as a network outage or an execute host running out of memory. When the re-tries have run out, your jobs will remain in the held state. Then the error is likely not transient and requires some analysis as described [here](troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold).
 
+### JOB_RELEASE_DELAY
+Default value: `120`
+
+Number of seconds to wait after a job has entered the *hold* state before auto-releasing it for a retry. The maximum number of retries is set via [`JOB_RELEASES`](#job_releases). When common causes of transient failure on your cluster take long to resolve, set this value to an estimate of the problem half life so as to not exhaust the retries too soon.
+
 ### REQUEST_CPUS
 Default value: `1`
 
