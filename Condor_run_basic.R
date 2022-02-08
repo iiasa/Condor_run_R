@@ -42,6 +42,7 @@ BUNDLE_ADDITIONAL_FILES = c()
 RETAIN_BUNDLE = FALSE
 SEED_JOB_RELEASES = 0
 JOB_RELEASES = 3
+JOB_RELEASE_DELAY = 120
 REQUEST_CPUS = 1
 REQUEST_DISK = 1000000 # KiB
 CONDOR_DIR = "Condor"
@@ -74,8 +75,8 @@ JOB_TEMPLATE <- c(
   "stream_output = True",
   "error = {log_dir}/{PREFIX}_$(cluster).$(job).err",
   "stream_error = True",
-  "",
-  "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 120)", # if seed job goes on hold for more than 2 minutes, release it up to JOB_RELEASES times
+  "", # If a job goes on hold for more than JOB_RELEASE_DELAY seconds, release it up to JOB_RELEASES times
+  "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > {JOB_RELEASE_DELAY})",
   "",
   "requirements = \\",
   '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
