@@ -22,7 +22,6 @@ JOBS = c()
 HOST_REGEXP = ".*"
 REQUEST_MEMORY = 100
 LAUNCHER = "Rscript"
-SCRIPT = "my_script.R"
 ARGUMENTS = "%1"
 WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
@@ -33,6 +32,7 @@ mandatory_config_names <- ls()
 # Review and add any optional parameters that you need to your configuration file.
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 LABEL = "{Sys.Date()}"
+SCRIPT = ""
 BUNDLE_INCLUDE = "*"
 BUNDLE_INCLUDE_DIRS = c()
 BUNDLE_EXCLUDE_DIRS = c(".git", ".svn")
@@ -257,7 +257,7 @@ if (length(JOBS) > 200 && !NICE_USER) warning(str_glue("You are submitting {leng
 if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
 if (!(REQUEST_DISK > 0)) stop("REQUEST_DISK should be larger than zero!")
 if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
-if (!(file_exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
+if (SCRIPT != "" && !(file_exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
 if (str_detect(SCRIPT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCRIPT has forbidden character(s)!"))
 if (!str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
 for (file in BUNDLE_ADDITIONAL_FILES) {
@@ -667,14 +667,16 @@ tryCatch(
 file_delete(temp_config_file)
 
 # Copy the SCRIPT to the log directory for reference
-tryCatch(
-  file_copy(SCRIPT, path(log_dir, str_glue("_{script_prefix}_{predicted_cluster}.{script_extension}")), overwrite=TRUE),
-  error=function(cond) {
-    file_delete(bundle_path)
-    message(cond)
-    stop(str_glue("Cannot copy the configured SCRIPT file to {log_dir}!"))
-  }
-)
+if (SCRIPT != "") {
+  tryCatch(
+    file_copy(SCRIPT, path(log_dir, str_glue("_{script_prefix}_{predicted_cluster}.{script_extension}")), overwrite=TRUE),
+    error=function(cond) {
+      file_delete(bundle_path)
+      message(cond)
+      stop(str_glue("Cannot copy the configured SCRIPT file to {log_dir}!"))
+    }
+  )
+}
 
 # Apply settings to BAT_TEMPLATE and write the batch file / shell script to launch jobs with
 bat_path <- path(log_dir, str_glue("_launch_{predicted_cluster}.bat"))
