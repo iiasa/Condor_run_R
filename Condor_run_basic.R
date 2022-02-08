@@ -264,19 +264,21 @@ for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file_exists(path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
 }
 if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
-if (is.null(OUTPUT_DIR_SUBMIT)) {
-  # Use OUTPUT_DIR on the submit machine side as well.
-  if (!(file_exists(OUTPUT_DIR))) stop(str_glue('Configured OUTPUT_DIR "{OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
-  OUTPUT_DIR_SUBMIT <- OUTPUT_DIR
-} else {
-  # Use a separate OUTPUT_DIR_SUBMIT configuration on the submit machine side.
-  if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
-  if (!(file_exists(OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured OUTPUT_DIR_SUBMIT "{OUTPUT_DIR_SUBMIT}" does not exist!'))
+if (GET_OUTPUT) {
+  if (is.null(OUTPUT_DIR_SUBMIT)) {
+    # Use OUTPUT_DIR on the submit machine side as well.
+    if (!(file_exists(OUTPUT_DIR))) stop(str_glue('Configured OUTPUT_DIR "{OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
+    OUTPUT_DIR_SUBMIT <- OUTPUT_DIR
+  } else {
+    # Use a separate OUTPUT_DIR_SUBMIT configuration on the submit machine side.
+    if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
+    if (!(file_exists(OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured OUTPUT_DIR_SUBMIT "{OUTPUT_DIR_SUBMIT}" does not exist!'))
+  }
+  if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
+  if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
+  if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
+  if (str_detect(OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured OUTPUT_FILE has forbidden character(s)!"))
 }
-if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
-if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
-if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
-if (str_detect(OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured OUTPUT_FILE has forbidden character(s)!"))
 output_prefix <- tools::file_path_sans_ext(OUTPUT_FILE)
 output_extension <- tools::file_ext(OUTPUT_FILE)
 script_prefix <- tools::file_path_sans_ext(SCRIPT)
