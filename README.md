@@ -34,6 +34,7 @@ The advantages of using these scripts over using [`condor_submit`](https://htcon
 - Execute hosts cache the bundle so that it needs to be sent over only once per host instead of once per job, avoiding network contention or the hassle of instead setting up a shared network-accessible filesystem.
 - Submit machines (e.g. laptops) can disconnect from the cluster during the run, and re-connect later to receive output.
 - Can monitor jobs and wait for their completion so that it becomes easy to automate handling of run output.
+- Provides for configurable retry of on-hold jobs so as to recover from transient errors.
 
 ## Installation
 Download the latest release [here](https://github.com/iiasa/Condor_run_R/releases) and unpack the archive. The R scripts in the root directory are self-contained and hence can be copied to a place conviently co-located with your model/project files. Of course, you need to have [R](https://www.r-project.org/) installed to be able to run the scripts. All packages that are required and not installed with R by default are from the [tidyverse](https://www.tidyverse.org/) package collection. Please ensure that you have the tidyverse installed.
