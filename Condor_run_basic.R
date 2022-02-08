@@ -818,5 +818,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   alarm()
 } else {
   cat(str_glue("You can monitor progress of the run with: condor_q {cluster}."), sep="\n")
-  cat(str_glue("After the run completes, you can find the output files at: {OUTPUT_DIR_SUBMIT}/{output_prefix}_{LABEL}_{cluster}.*"), sep="\n")
+  if (GET_OUTPUT) {
+    cat(str_glue("After the run completes, you can find the output files at: {OUTPUT_DIR_SUBMIT}/{output_prefix}_{LABEL}_{cluster}.*"), sep="\n")
+  }
 }
