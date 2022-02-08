@@ -58,7 +58,7 @@ If the resubmission also stays stuck in the running state when transferring the 
 ## Jobs do not run but instead go on hold
 Some error occurred. Errors can be transient. With the [`JOB_RELEASES`](configuring.md#job_releases) retry count set, on-hold jobs will be auto-released for a retry after [`JOB_RELEASE_DELAY`](configuring.md#job_release_delay) seconds have passed in an attempt to recover from transient errors. This process can be monitored by examining the `.log` file of a job. When jobs keep on failing and the retry count runs out, they go on hold permanently.
 
-In that case (when you see that jobs remain in the held state without being rescheduled after a few minutes), the error is probaly not transient and requires some analysis. Look at the output of the `Condor_run[_basic].R` script for some initial clues. Next, issue [`condor_q -held`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) to review the hold reason. If the hold reason is `Failed to initialize user log to <some path on a network drive>`, see [the next section](#jobs-go-on-hold-without-producing-matching-log-files).
+In that case (when you see that jobs remain in the *hold* state without being rescheduled after a few minutes), the error is probaly not transient and requires some analysis. Look at the output of the `Condor_run[_basic].R` script for some initial clues. Next, issue [`condor_q -held`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) to review the hold reason. If the hold reason is `Failed to initialize user log to <some path on a network drive>`, see [the next section](#jobs-go-on-hold-without-producing-matching-log-files).
 
 Otherwise investigate further. If you can, try to run the job that failed on your local machine and see if you can reproduce the error. If possible, use an integrated development environment that can show stack traces, errors linked to source code, or allows you to run the code in a debugger. Local analysis tends to be much easier than figuring out what went wrong on a remote execute host.
 
@@ -74,7 +74,7 @@ When you do not have the rights to log in to execute hosts to analyze held jobs 
 
 If the above does not clarify the problem, execute [`condor_q –analyze`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) and examine the output: it might be something that happened after the job completed, e.g. result files not fitting because your disk is full.
 
-When your analysis indicates that the error might still be transient, you can release the held jobs from the held state for a retry by issuing [`condor_release <cluster number of the run>`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_release.html) or, if you have only one set of jobs going, [`condor_release <your user name>`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_release.html).
+When your analysis indicates that the error might still be transient, you can release the on-hold jobs for a retry by issuing [`condor_release <cluster number of the run>`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_release.html) or, if you have only one set of jobs going, [`condor_release <your user name>`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_release.html).
 
 When you are done analyzing the held jobs, use [`condor_rm`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_rm.html) (with a cluster number or your user name as argument) to remove them from the queue. This will clean up their working directories on the execute host.
 
