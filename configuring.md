@@ -41,13 +41,10 @@ Also useful for custom-scripted processing of output, with processing steps plac
 ## `Condor_run_basic.R`-specific mandatory configuration parameters
 
 ### LAUNCHER
-Interpreter with which to launch the script.
-
-### SCRIPT
-Script that comprises your job.
+Interpreter / language-runtime with which to launch the [`SCRIPT`](#script) or, when [`SCRIPT`](#script) is empty, the executable/binary to run.
 
 ### ARGUMENTS
-Arguments to the script. Should include `%1` which expands to the job number.
+Arguments to the script or, when [`SCRIPT`](#script) is empty, the [`LAUNCHER`](#launcher). When submitting multiple jobs, this hould include `%1` which expands to the job number.
 
 ## `Condor_run.R`-specific mandatory configuration parameters
 
@@ -195,6 +192,11 @@ Default value: `TRUE`
 Clear status monitoring lines so as to show only the last status, set to FALSE when this does not work. This might be the case when the output goes into the chunk output of an RMarkdown notebook in RStudio while [this RStudio issue](https://github.com/rstudio/rstudio/issues/8040) is not yet resolved in the RStudio version that you are using.
 
 ## `Condor_run_basic.R`-specific optional configuration parameters
+
+### SCRIPT
+Default value: `""`  
+
+The script to launch with [`LAUNCHER`](#launcher). When empty (the default) the job is not defined by a script but rather by the executable/binary specified in the [`LAUNCHER`](#launcher) setting.
 
 ### GET_OUTPUT
 Default value: `TRUE`
