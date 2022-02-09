@@ -306,8 +306,14 @@ Default value: `FALSE`
 
 When `TRUE`, remove per-job GDX output files after having been merged.
 
+# Templates
+The template parameters configure Condor `.job` files and job launch scripts (that run on the execute-host side). These files are generated from the templates on submitting a run. The template strings can use `{}` expansion to include other configuration parameters and run-time state in the generated files.
+
+## Caution on overriding templates
+Templates implement part of the function of the submit scripts. When [updating to a new release](README.md#updating) additional functionality may be present in the default template values, in particular there where `{}` expansions are used. When overriding templates, it is therefore important to keep an eye on the [release notes](https://github.com/iiasa/Condor_run_R/releases) to see if template default values were changed: you may need to update your templates, for example by applying your template customizations to the new defaults.
+
 ## Configuring templates for a different cluster
-The template parameters allow you to configure how Condor `.job` files and job launch scripts (that run on the execute-host side) are generated. The template strings can use `{}` expansion. The default values work with the IIASA Limpopo cluster. To configure the templates for a different cluster, override [`SEED_JOB_TEMPLATE`](#seed_job_template) and [`JOB_TEMPLATE`](#job_template) found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. In addition, override [`SEED_BAT_TEMPLATE`](#seed_bat_template) and [`BAT_TEMPLATE`](#bat_template) to generate batch files or shell scripts that will run the jobs on your cluster's execute hosts.
+The template default values work with the IIASA Limpopo cluster. To configure the templates for a different cluster, override [`SEED_JOB_TEMPLATE`](#seed_job_template) and [`JOB_TEMPLATE`](#job_template) found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. In addition, override [`SEED_BAT_TEMPLATE`](#seed_bat_template) and [`BAT_TEMPLATE`](#bat_template) to generate batch files or shell scripts that will run the jobs on your cluster's execute hosts.
 
 Each execute host should provide a directory where the bundles can be cached, and should periodically delete old bundles in those caches so as to prevent their disks from filling up, e.g. using a crontab entry and a [`find <cache directory> -mtime +1 -delete`](https://manpages.debian.org/bullseye/findutils/find.1.en.html) command that will delete all bundles with a timestamp older than one day. The `bat_template` uses [touch](https://linux.die.net/man/1/touch) to update the timestamp of the bundle to the current time. This ensures that that a bundle will not be deleted as long as jobs continue to get scheduled from it.
 
@@ -322,17 +328,25 @@ Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/
 
 Template of the Condor `.job` file to submit the run with. The `.job` file produced with this template is preserved in the [log directory of the run](#condor_dir).
 
+See also: [caution on overriding templates](#caution-on-overriding-templates)
+
 ### BAT_TEMPLATE
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L102) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L114).
 
 Template for the `.bat` file that launches jobs on the execute host side. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir).
+
+See also: [caution on overriding templates](#caution-on-overriding-templates)
 
 ### SEED_JOB_TEMPLATE
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L126) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L150).
 
 Template of the Condor `.job` file to submit the bundle seed jobs with. The `.job` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
 
+See also: [caution on overriding templates](#caution-on-overriding-templates)
+
 ### SEED_BAT_TEMPLATE
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L157) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L181).
 
 Template for the `.bat` file that caches the bundle on the execute host side for a seeding job. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
+
+See also: [caution on overriding templates](#caution-on-overriding-templates)
