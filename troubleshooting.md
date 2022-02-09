@@ -30,7 +30,7 @@ When you cannot submit jobs, ensure that:
   * Type [`condor_store_cred -c add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) and, when prompted, enter the condor pool password (ask your administrator).
 - Issuing the command [`condor_status`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) tabulates the cluster status.
 - Issuing the command [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) results in a summary of queued jobs.
-- The [templates are adapted to your cluster](README.md#configuring-templates-for-a-different-cluster).
+- The [templates are adapted to your cluster](configuring.md#configuring-templates-for-a-different-cluster).
 - You are using [up-to-date scripts](README.md#updating).
 
 ## The script does not progress
