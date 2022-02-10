@@ -174,7 +174,7 @@ Specify when to send notification emails. Alternatives are:
 ### EMAIL_ADDRESS
 Default value: `NULL`
 
-Set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your emmail from your username.
+Set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your email from your username.
 
 ### NICE_USER
 Default value: `FALSE`
