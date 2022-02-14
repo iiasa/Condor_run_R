@@ -33,7 +33,7 @@ The advantages of using these scripts over using [`condor_submit`](https://htcon
 - The submit bundle is compressed and takes less time to send to an execute host.
 - Execute hosts cache the bundle so that it needs to be sent over only once per host instead of once per job, avoiding network contention or the hassle of instead setting up a shared network-accessible filesystem.
 - Once the bundle is cached, submit machines (e.g. laptops) can disconnect from the cluster during the run, and re-connect later to receive output.
-- Alternatively, jobs can be monitored until they complete so that it becomes easy to automate handling of run output.
+- Alternatively, jobs can be [monitored until they complete](configuring.md#wait_for_run_completion) so that it becomes easy to automate handling of run output.
 - Provides for configurable retry of on-hold jobs so as to recover from transient errors.
 
 ## Installation
@@ -58,8 +58,8 @@ It is recommended to always update to the [latest release of the scripts](https:
    - The execute hosts cache the bundle for use by your jobs.
 3. Submit the jobs.
    - Jobs unpack the cached bundle when run.
-5. Optionally wait for the jobs to finish
-6. Optionally merge GAMS GDX output files (`Condor_run.R`)
+5. Optionally [wait for the jobs to finish](configuring.md#wait_for_run_completion).
+6. Optionally [merge GAMS GDX output files](configuring.md#merge_gdx_output) (`Condor_run.R`)
 
 By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized.
 
