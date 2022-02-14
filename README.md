@@ -32,8 +32,8 @@ The advantages of using these scripts over using [`condor_submit`](https://htcon
 - Replicate the project file tree on your submit machine to the remote scratch directory on the machine where a job is executed (execute host).
 - The submit bundle is compressed and takes less time to send to an execute host.
 - Execute hosts cache the bundle so that it needs to be sent over only once per host instead of once per job, avoiding network contention or the hassle of instead setting up a shared network-accessible filesystem.
-- Submit machines (e.g. laptops) can disconnect from the cluster during the run, and re-connect later to receive output.
-- Can monitor jobs and wait for their completion so that it becomes easy to automate handling of run output.
+- Once the bundle is cached, submit machines (e.g. laptops) can disconnect from the cluster during the run, and re-connect later to receive output.
+- Alternatively, jobs can be monitored until they complete so that it becomes easy to automate handling of run output.
 - Provides for configurable retry of on-hold jobs so as to recover from transient errors.
 
 ## Installation
@@ -41,7 +41,7 @@ Download the latest release [here](https://github.com/iiasa/Condor_run_R/release
 
 The `Condor_run_stats.R` analysis script will produce graphical summary tables if you have the [gridExtra](https://github.com/baptiste/gridextra/) package installed, but this is not required.
 
-For submission, you in addition need a local [HT Condor installation](https://research.cs.wisc.edu/htcondor/downloads/) and [7-Zip](https://www.7-zip.org/) (on Windows) or the `p7zip` package (on Linux) install. A recent version of both is required since some of their newer features are used.
+For submission, you in addition need a local [HT Condor installation](https://research.cs.wisc.edu/htcondor/downloads/) and [7-Zip](https://www.7-zip.org/) (on Windows) or the `p7zip` package (on Linux) installed and on-path. A recent version of both is required since some of their newer features are used.
 
 Test that [`condor_status`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html), `Rscript`, and `7z` can be invoked from the command line. When this does not work, add the appropriate installation directories to your `PATH` environment variable. [See here](https://iiasa.github.io/GLOBIOM/R.html#setting-environment-variables) for instructions on how to do so.
 
