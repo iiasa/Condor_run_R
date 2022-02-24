@@ -33,7 +33,6 @@ options(tibble.width = Inf)
 options(tibble.print_max = Inf)
 
 # ---- Handle arguments and set up plotting for RStudio or command line ----
-
 if (interactive()) {
   # Paths to one or more directories containing log files of runs to analyse.
   LOG_DIRECTORIES <- dir_ls("tests/basic/Condor")
@@ -112,7 +111,7 @@ labels <- list() # expanded to a per-job list
 for (log_dir in LOG_DIRECTORIES) {
   label <- basename(log_dir)
   if (!is_absolute_path(log_dir)) {
-    if (Sys.getenv("RSTUDIO") == "1") {
+    if (interactive() && Sys.getenv("RSTUDIO") == "1") {
       log_dir <- path(dirname(rstudioapi::getActiveDocumentContext()$path), log_dir)
     } else {
       log_dir <- path(getwd(), log_dir)
