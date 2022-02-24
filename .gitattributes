@@ -1,6 +1,7 @@
 * text=auto
-*.bat text eol=crlf
-*.sh  text eol=lf
-*.gms text eol=lf
-*.R   text eol=lf
-*.md  text eol=lf
+*.bat   text eol=crlf
+*.sh    text eol=lf
+*.gms   text eol=lf
+*.R     text eol=lf
+*.Rproj tet eol=crlf
+*.md    text eol=lf
