@@ -33,6 +33,8 @@ An estimate of the amount of memory (in MiB) required per job. Condor will stop 
 
 It is therefore important to configure a good estimates. You can find a job's memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
 
+Note that your jobs will get scheduled only in "slots" of execute hosts that have sufficient memory to satisfy your request. To see what memory resources your cluster has available issue [`condor_status -avail`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+
 ### WAIT_FOR_RUN_COMPLETION
 If `TRUE`, wait for the run to complete while displaying progress monitoring information and, on completion, check the presence of output files, prune empty log files, and analyze resource usage. When submitting a GAMS job through `Condor_run.R`, also perform a merge of the GDX ouput when [`MERGE_GDX_OUTPUT`](#merge_gdx_output)`= TRUE`.
 
@@ -147,7 +149,9 @@ Default value: `1`
 
 Number of hardware threads to reserve for each job. The default value is good for jobs that are single-threaded, or mostly so. When your job involves significant multiprocessing, set this value to an estimate of the average number of in-use threads. The `.log` file of a job will record the average hardware thread usage when it completes.
   
-Note that the "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CPU can contain multiple processing cores, with each core potentially able to run multiple hardware threads, typially two per core. It is those hardware threads—each able to support and independent parallel execution context—that this setting and the statistic in the `.log` file refers to.
+The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CPU can contain multiple processing cores, with each core potentially able to run multiple hardware threads, typially two per core. It is those hardware threads—each able to support and independent parallel execution context—that this setting and the statistic in the `.log` file refers to.
+
+Note that your jobs will get scheduled only in "slots" of execute hosts that have suffient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
 ### REQUEST_DISK
 Default value: `1000000`
@@ -156,6 +160,8 @@ Estimate of the amount of execute-host-side disk space required per job for stor
 
 This value is added to the uncompressed size of the bundle. The sum is used to reserve disk space for a job when it is started on an execute host. You can find a job's summed memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
 
+Note that your jobs will get scheduled only in "slots" of execute hosts that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+  
 ### RUN_AS_OWNER
 Default value: `TRUE`
 
