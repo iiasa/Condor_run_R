@@ -35,7 +35,7 @@ options(tibble.print_max = Inf)
 # ---- Handle arguments and set up plotting for RStudio or command line ----
 if (interactive()) {
   # Paths to one or more directories containing log files of runs to analyse.
-  LOG_DIRECTORIES <- dir_ls("tests/basic/Condor")
+  LOG_DIRECTORIES <- dir_ls("logdir")
   if (length(LOG_DIRECTORIES) == 0) {
     stop("No LOG_DIRECTORIES provided!")
   }
@@ -186,23 +186,30 @@ submit_dtstrs <- c()
 submit_times <- list()
 submit_times_minus_1y <- list()
 submit_time_warning <- FALSE
+submit_pattern <- "\\) (.*) Job submitted from host:"
 for (i in seq_along(roots)) {
-  lines <- grep("\\) \\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d Job submitted from host:", log_files[[i]], value=TRUE)
-  if (length(lines) != 1) {
+  lines <- grep(submit_pattern, log_files[[i]], value=TRUE)
+  if (length(lines) == 0) {
     if (!submit_time_warning) {
-      warning(str_glue("Cannot extract submit time from Condor event log (e.g. {roots[[i]]}.log). Unable to determine latency between job submission and start time. Latency results and plots will be partially or fully unavailable."))
+      warning(str_glue("Cannot find submit time in Condor event log (e.g. {roots[[i]]}.log). Unable to determine latency between job submission and start time. Latency results and plots will be partially or fully unavailable."))
       submit_time_warning <- TRUE
     }
     submit_dtstrs <- c(submit_dtstrs, "")
     submit_times <- c(submit_times, NA)
     submit_times_minus_1y <- c(submit_times_minus_1y, NA)
   } else {
-    dtstr <- str_match(lines[1], "\\) (\\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d) Job submitted from host:")[2]
+    dtstr <- str_match(lines[length(lines)], submit_pattern)[2] # pick last one, should be the only one
     if (is.na(dtstr)) stop(str_glue("Cannot decode submit time from {roots[[i]]}.log"))
     submit_dtstrs <- c(submit_dtstrs, dtstr)
-    # Use guessed year (can fail for leap days)
-    submit_times <- c(submit_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
-    submit_times_minus_1y <- c(submit_times_minus_1y, list(strptime(str_glue("{current_year-1}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
+    # Decode possible date-time formats
+    submit_time <- strptime(dtstr, "%Y-%m-%d %H:%M:%S")
+    if (is.na(submit_time)) {
+      # Use guessed year (can fail for leap days)
+      submit_time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
+      if (is.na(submit_time)) stop(str_glue("Unsupported submit time format in {roots[[i]]}.log"))
+    }
+    submit_times <- c(submit_times, list(submit_time)))
+    submit_times_minus_1y <- c(submit_times_minus_1y, list(strptime(str_glue("{current_year-1}/{dtstr}"), "%Y/%m/%d %H:%M:%S"))
   }
 }
 
