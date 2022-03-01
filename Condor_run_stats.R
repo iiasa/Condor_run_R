@@ -184,7 +184,6 @@ current_year <- as.integer(format(Sys.Date(),"%Y"))
 # Extract the job submit time (with uncertain year) and date/time string from the .log files
 submit_dtstrs <- c()
 submit_times <- list()
-submit_times_minus_1y <- list()
 submit_time_warning <- FALSE
 submit_pattern <- "\\) (.*) Job submitted from host:"
 for (i in seq_along(roots)) {
@@ -196,7 +195,6 @@ for (i in seq_along(roots)) {
     }
     submit_dtstrs <- c(submit_dtstrs, "")
     submit_times <- c(submit_times, NA)
-    submit_times_minus_1y <- c(submit_times_minus_1y, NA)
   } else {
     dtstr <- str_match(lines[length(lines)], submit_pattern)[2] # pick last one, should be the only one
     if (is.na(dtstr)) stop(str_glue("Cannot decode submit time from {roots[[i]]}.log"))
@@ -208,8 +206,7 @@ for (i in seq_along(roots)) {
       submit_time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
       if (is.na(submit_time)) stop(str_glue("Unsupported submit time format in {roots[[i]]}.log"))
     }
-    submit_times <- c(submit_times, list(submit_time)))
-    submit_times_minus_1y <- c(submit_times_minus_1y, list(strptime(str_glue("{current_year-1}/{dtstr}"), "%Y/%m/%d %H:%M:%S"))
+    submit_times <- c(submit_times, list(submit_time))
   }
 }
 
@@ -290,14 +287,16 @@ rm(memory_usage_regexp, memory_usage)
 # Calculate the execution start latencies in seconds (difference between submit and execution start times)
 latencies <- c()
 for (i in seq_along(roots)) {
-  if (is.na(submit_times[[i]])) {
+  submit_time <- submit_times[[i]]
+  if (is.na(submit_time)) {
     latencies <- c(latencies, NA)
   } else {
-    if (start_times[[i]] >= submit_times[[i]]) {
-      latency <- difftime(start_times[[i]], submit_times[[i]], units="secs")
+    if (start_times[[i]] >= submit_time) {
+      latency <- difftime(start_times[[i]], submit_time, units="secs")
     } else {
       # Submission must have happened in the prior year relative to execution start
-      latency <- difftime(start_times[[i]], submit_times_minus_1y[[i]], units="secs")
+      submit_time$year <- submit_time$year - 1
+      latency <- difftime(start_times[[i]], submit_time, units="secs")
     }
     latencies <- c(latencies, latency)
   }
