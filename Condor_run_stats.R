@@ -232,11 +232,12 @@ for (i in seq_along(roots)) {
   if (is.na(start_time)) {
     # Use guessed year (can fail for leap days)
     start_time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
+    if (is.na(start_time)) stop(str_glue("Unsupported start time format in {roots[[i]]}.log"))
     start_times <- c(start_times, list(start_time))
   }
   start_times_minus_1y <- c(start_times_minus_1y, list(strptime(str_glue("{current_year-1}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
   if (is.na(hostname_map[ipstr])) host <- ipstr
-  else host <- hostname_map[ipstr]
+  else host <- hostname_map[ipstr]qq
   hosts <- c(hosts, host)
 }
 
