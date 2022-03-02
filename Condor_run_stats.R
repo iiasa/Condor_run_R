@@ -196,7 +196,8 @@ for (i in seq_along(roots)) {
     submit_dtstrs <- c(submit_dtstrs, "")
     submit_times <- c(submit_times, NA)
   } else {
-    dtstr <- str_match(lines[length(lines)], submit_pattern)[2] # pick last one, should be the only one
+    # Use the last matching line, should be the only submission
+    dtstr <- str_match(lines[length(lines)], submit_pattern)[2]
     if (is.na(dtstr)) stop(str_glue("Cannot decode submit time from {roots[[i]]}.log"))
     submit_dtstrs <- c(submit_dtstrs, dtstr)
     # Decode possible date-time formats
@@ -213,19 +214,26 @@ for (i in seq_along(roots)) {
 # Extract the job execution start time (with uncertain year) and host from the .log files
 start_times <- list()
 start_times_minus_1y <- list()
+start_pattern <- "\\) (.*) Job executing on host: <(.*).\\d+?"
 hosts <- c()
 for (i in seq_along(roots)) {
-  lines <- grep("\\) \\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d Job executing on host: <\\d+\\.\\d+\\.\\d+\\.\\d+:", log_files[[i]], value=TRUE)
+  lines <- grep(start_pattern, log_files[[i]], value=TRUE)
   if (length(lines) < 1) stop(str_glue("Cannot extract execution start time from {roots[[i]]}.log!"))
   if (length(lines) > 1) warning(str_glue("Execution started multiple times for job. Probably the initial execution host disconnected. See {roots[[i]]}.log!"))
-  # Pick the last execution start time since that's on the host that can be assumed to have made it to the end.
-  mat <- str_match(lines[length(lines)], "\\) (\\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d) Job executing on host: <(\\d+\\.\\d+\\.\\d+\\.\\d+):")
+  # Use the last execution start time since that's on the
+  # host that can be assumed to have completed the job.
+  mat <- str_match(lines[length(lines)], start_pattern)
   dtstr <- mat[2]
   ipstr <- mat[3]
   if (is.na(dtstr)) stop(str_glue("Cannot decode execution start time from {roots[[i]]}.log"))
   if (is.na(ipstr)) stop(str_glue("Cannot decode execution host IP from {roots[[i]]}.log"))
-  # Use guessed year (can fail for leap days)
-  start_times <- c(start_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
+  # Decode possible date-time formats
+  start_time <- strptime(dtstr, "%Y-%m-%d %H:%M:%S")
+  if (is.na(start_time)) {
+    # Use guessed year (can fail for leap days)
+    start_time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
+    start_times <- c(start_times, list(start_time))
+  }
   start_times_minus_1y <- c(start_times_minus_1y, list(strptime(str_glue("{current_year-1}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
   if (is.na(hostname_map[ipstr])) host <- ipstr
   else host <- hostname_map[ipstr]
