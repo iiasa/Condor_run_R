@@ -213,7 +213,6 @@ for (i in seq_along(roots)) {
 
 # Extract the job execution start time (with uncertain year) and host from the .log files
 start_times <- list()
-start_times_minus_1y <- list()
 start_pattern <- "\\) (.*) Job executing on host: <(.*).\\d+?"
 hosts <- c()
 for (i in seq_along(roots)) {
@@ -235,9 +234,8 @@ for (i in seq_along(roots)) {
     if (is.na(start_time)) stop(str_glue("Unsupported start time format in {roots[[i]]}.log"))
     start_times <- c(start_times, list(start_time))
   }
-  start_times_minus_1y <- c(start_times_minus_1y, list(strptime(str_glue("{current_year-1}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
   if (is.na(hostname_map[ipstr])) host <- ipstr
-  else host <- hostname_map[ipstr]qq
+  else host <- hostname_map[ipstr]
   hosts <- c(hosts, host)
 }
 
@@ -314,11 +312,13 @@ for (i in seq_along(roots)) {
 # Calculate the execution duration in seconds (difference between execution start and termination times)
 durations <- c()
 for (i in seq_along(roots)) {
-  if (terminate_times[[i]] >= start_times[[i]]) {
-    duration <- difftime(terminate_times[[i]], start_times[[i]], units="secs")
+  start_time <- start_times[[i]]
+  if (terminate_times[[i]] >= start_time) {
+    duration <- difftime(terminate_times[[i]], start_time, units="secs")
   } else {
     # Execution start must have happened in the prior year relative to execution termination
-    duration <- difftime(terminate_times[[i]], start_times_minus_1y[[i]], units="secs")
+    start_time$year <- start_time$year - 1
+    duration <- difftime(terminate_times[[i]], start_time, units="secs")
   }
   durations <- c(durations, duration)
 }
