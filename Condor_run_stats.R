@@ -32,6 +32,23 @@ library(fs)
 options(tibble.width = Inf)
 options(tibble.print_max = Inf)
 
+# Determine the current year to help compensate for the absence of year numbers
+# in old-format .log files
+current_year <- as.integer(format(Sys.Date(),"%Y"))
+
+# ---- Define helper functions ----
+
+parse_datetime <- function(dtstr, kind, fileroot) {
+  # Decode possible date-time formats
+  time <- strptime(dtstr, "%Y-%m-%d %H:%M:%S")
+  if (is.na(time)) {
+    # Use guessed year (can fail for leap days)
+    time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
+    if (is.na(time)) stop(str_glue("Unsupported {kind} time format in {fileroot}.log"))
+  }
+  return(list(time))
+}
+
 # ---- Handle arguments and set up plotting for RStudio or command line ----
 if (interactive()) {
   # Paths to one or more directories containing log files of runs to analyse.
@@ -178,9 +195,6 @@ for (i in seq_along(roots)) {
   job_numbers <- c(job_numbers, as.integer(prstr))
 }
 
-# Determine the current year to help compensate for the absence of year numbers in the .log file
-current_year <- as.integer(format(Sys.Date(),"%Y"))
-
 # Extract the job submit time (with uncertain year) and date/time string from the .log files
 submit_dtstrs <- c()
 submit_times <- list()
@@ -200,14 +214,7 @@ for (i in seq_along(roots)) {
     dtstr <- str_match(lines[length(lines)], submit_pattern)[2]
     if (is.na(dtstr)) stop(str_glue("Cannot decode submit time from {roots[[i]]}.log"))
     submit_dtstrs <- c(submit_dtstrs, dtstr)
-    # Decode possible date-time formats
-    submit_time <- strptime(dtstr, "%Y-%m-%d %H:%M:%S")
-    if (is.na(submit_time)) {
-      # Use guessed year (can fail for leap days)
-      submit_time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
-      if (is.na(submit_time)) stop(str_glue("Unsupported submit time format in {roots[[i]]}.log"))
-    }
-    submit_times <- c(submit_times, list(submit_time))
+    submit_times <- c(submit_times, parse_datetime(dtstr, "submit", roots[[i]]))
   }
 }
 
@@ -226,14 +233,7 @@ for (i in seq_along(roots)) {
   ipstr <- mat[3]
   if (is.na(dtstr)) stop(str_glue("Cannot decode execution start time from {roots[[i]]}.log"))
   if (is.na(ipstr)) stop(str_glue("Cannot decode execution host IP from {roots[[i]]}.log"))
-  # Decode possible date-time formats
-  start_time <- strptime(dtstr, "%Y-%m-%d %H:%M:%S")
-  if (is.na(start_time)) {
-    # Use guessed year (can fail for leap days)
-    start_time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
-    if (is.na(start_time)) stop(str_glue("Unsupported start time format in {roots[[i]]}.log"))
-  }
-  start_times <- c(start_times, list(start_time))
+  start_times <- c(start_times, parse_datetime(dtstr, "start", roots[[i]]))
   if (is.na(hostname_map[ipstr])) host <- ipstr
   else host <- hostname_map[ipstr]
   hosts <- c(hosts, host)
@@ -247,14 +247,7 @@ for (i in seq_along(roots)) {
   if (length(lines) == 0) stop(str_glue("Cannot extract termination time from {roots[[i]]}.log!"))
   dtstr <- str_match(lines[length(lines)], termination_pattern)[2]
   if (is.na(dtstr)) stop(str_glue("Cannot decode termination time from {roots[[i]]}.log"))
-  # Decode possible date-time formats
-  termination_time <- strptime(dtstr, "%Y-%m-%d %H:%M:%S")
-  if (is.na(termination_time)) {
-    # Use guessed year (can fail for leap days)
-    termination_time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
-    if (is.na(termination_time)) stop(str_glue("Unsupported termination time format in {roots[[i]]}.log"))
-  }
-  termination_times <- c(termination_times, list(termination_time))
+  termination_times <- c(termination_times, parse_datetime(dtstr, "termination", roots[[i]]))
 }
 
 # Extract the CPUs (threads) usage from the .log files
