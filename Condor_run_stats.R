@@ -232,22 +232,29 @@ for (i in seq_along(roots)) {
     # Use guessed year (can fail for leap days)
     start_time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
     if (is.na(start_time)) stop(str_glue("Unsupported start time format in {roots[[i]]}.log"))
-    start_times <- c(start_times, list(start_time))
   }
+  start_times <- c(start_times, list(start_time))
   if (is.na(hostname_map[ipstr])) host <- ipstr
   else host <- hostname_map[ipstr]
   hosts <- c(hosts, host)
 }
 
 # Extract the job termination time (with uncertain year) from the .log files
-terminate_times <- list()
+termination_times <- list()
+termination_pattern <- "\\) (.*) Job terminated.$"
 for (i in seq_along(roots)) {
-  lines <- grep("\\) \\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d Job terminated.$", log_files[[i]], value=TRUE)
-  if (length(lines) != 1) stop(str_glue("Cannot extract termination time from {roots[[i]]}.log!"))
-  dtstr <- str_match(lines[1], "\\) (\\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d) Job terminated.$")[2]
+  lines <- grep(termination_pattern, log_files[[i]], value=TRUE)
+  if (length(lines) == 0) stop(str_glue("Cannot extract termination time from {roots[[i]]}.log!"))
+  dtstr <- str_match(lines[length(lines)], termination_pattern)[2]
   if (is.na(dtstr)) stop(str_glue("Cannot decode termination time from {roots[[i]]}.log"))
-  # Use guessed year (can fail for leap days)
-  terminate_times <- c(terminate_times, list(strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")))
+  # Decode possible date-time formats
+  termination_time <- strptime(dtstr, "%Y-%m-%d %H:%M:%S")
+  if (is.na(termination_time)) {
+    # Use guessed year (can fail for leap days)
+    termination_time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
+    if (is.na(termination_time)) stop(str_glue("Unsupported termination time format in {roots[[i]]}.log"))
+  }
+  termination_times <- c(termination_times, list(termination_time))
 }
 
 # Extract the CPUs (threads) usage from the .log files
@@ -313,12 +320,12 @@ for (i in seq_along(roots)) {
 durations <- c()
 for (i in seq_along(roots)) {
   start_time <- start_times[[i]]
-  if (terminate_times[[i]] >= start_time) {
-    duration <- difftime(terminate_times[[i]], start_time, units="secs")
+  if (termination_times[[i]] >= start_time) {
+    duration <- difftime(termination_times[[i]], start_time, units="secs")
   } else {
     # Execution start must have happened in the prior year relative to execution termination
     start_time$year <- start_time$year - 1
-    duration <- difftime(terminate_times[[i]], start_time, units="secs")
+    duration <- difftime(termination_times[[i]], start_time, units="secs")
   }
   durations <- c(durations, duration)
 }
