@@ -155,8 +155,8 @@ roots <- as.list(out_paths)
 # Remove aborted jobs
 indices_of_aborted_jobs <- c()
 for (i in seq_along(roots)) {
-  hits <- grep("\\) \\d\\d/\\d\\d \\d\\d:\\d\\d:\\d\\d Job was aborted", readLines(str_glue("{roots[[i]]}.log")))
-  if (length(hits) > 0) {
+  lines <- grep("\\) .* Job was aborted", readLines(str_glue("{roots[[i]]}.log")))
+  if (length(lines) > 0) {
     indices_of_aborted_jobs <- c(i, indices_of_aborted_jobs) # need inverse order for removal
     warning(str_glue("Ignoring aborted job {roots[[i]]}"))
   }
@@ -166,7 +166,7 @@ for (i in indices_of_aborted_jobs) {
   labels[[i]] = NULL
 }
 if (length(roots) == 0) stop("No jobs left to analyze!")
-rm (hits, indices_of_aborted_jobs)
+rm (lines, indices_of_aborted_jobs)
 
 # Pre-load the .log and .out files to speed up extraction
 log_files <- list()
