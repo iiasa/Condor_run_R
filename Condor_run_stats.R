@@ -350,12 +350,16 @@ for (i in seq_along(roots)) {
 # If available, obtain the hostname from the .out files instead
 # To make it available, execute the following command in the batch file of your jobs:
 # grep "^Machine = " .machine.ad
+machine_pattern = '^Machine = "([^.]+)[.].*"'
 for (i in seq_along(roots)) {
-  machine_line <- grep('^Machine = ".*"', out_files[[i]], value=TRUE)
-  host <- str_match(machine_line, '^Machine = "([^.]+)[.].*"')[2]
-  if (!is.na(host)) hosts[i] = host
+  lines <- grep(machine_pattern, out_files[[i]], value=TRUE)
+  if (lines > 0) {
+    # Should be only one match at the very start of the .out
+    host <- str_match(lines[[1]], machine_pattern)[2]
+    if (!is.na(host)) hosts[i] = host
+  }
 }
-rm(matchine_line)
+rm(lines, host)
 
 # If available, obtain the Condor slot name from the .out file
 # To make it available, execute the following command in the batch file of your jobs:
