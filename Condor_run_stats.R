@@ -140,9 +140,9 @@ for (log_dir in LOG_DIRECTORIES) {
   log_paths <- c(log_paths, logs)
   labels <- c(labels, rep(label, length(logs)))
 }
-rm(label)
-if (length(out_paths)==0) stop(str_glue("No output files for CLUSTER {CLUSTER} in any of the log directories!"))
-if (length(out_paths)!=length(log_paths)) stop(str_glue("The number of .out ({length(out_paths)}) and .log ({length(log_paths)}) files should be equal!"))
+rm(log_dir, label, outs, logs)
+if (length(out_paths) == 0) stop(str_glue("No output files for CLUSTER {CLUSTER} in any of the log directories!"))
+if (length(out_paths) != length(log_paths)) stop(str_glue("The number of .out ({length(out_paths)}) and .log ({length(log_paths)}) files should be equal!"))
 
 # Reduce the list of .out and .log file paths to extensionless root paths of these job output files and check that they are the same
 for (i in seq_along(out_paths))
@@ -166,6 +166,7 @@ for (i in indices_of_aborted_jobs) {
   labels[[i]] = NULL
 }
 if (length(roots) == 0) stop("No jobs left to analyze!")
+rm (hits, indices_of_aborted_jobs)
 
 # Pre-load the .log and .out files to speed up extraction
 log_files <- list()
@@ -178,6 +179,7 @@ for (i in seq_along(roots)) {
   out_files[[i]] <- readLines(str_glue("{roots[[i]]}.out"), warn=FALSE)
 }
 close(pb)
+rm(pb)
 
 # ---- Extract lists of jobs data from the loaded output ----
 
@@ -194,6 +196,7 @@ for (i in seq_along(roots)) {
   runs <- c(runs, str_glue("{labels[i]}_{clstr}"))
   job_numbers <- c(job_numbers, as.integer(prstr))
 }
+rm(mat, clstr, prstr)
 
 # Extract the job submit time (with uncertain year) and date/time string from the .log files
 submit_dtstrs <- c()
@@ -217,6 +220,7 @@ for (i in seq_along(roots)) {
     submit_times <- c(submit_times, parse_datetime(dtstr, "submit", roots[[i]]))
   }
 }
+rm(submit_pattern, lines, submit_time_warning, dtstr)
 
 # Extract the job execution start time (with uncertain year) and host from the .log files
 start_times <- list()
@@ -238,6 +242,7 @@ for (i in seq_along(roots)) {
   else host <- hostname_map[ipstr]
   hosts <- c(hosts, host)
 }
+rm(start_pattern, lines, mat, dtstr, ipstr, host)
 
 # Extract the job termination time (with uncertain year) from the .log files
 termination_times <- list()
@@ -249,6 +254,7 @@ for (i in seq_along(roots)) {
   if (is.na(dtstr)) stop(str_glue("Cannot decode termination time from {roots[[i]]}.log"))
   termination_times <- c(termination_times, parse_datetime(dtstr, "termination", roots[[i]]))
 }
+rm(termination_pattern, lines, dtstr)
 
 # Extract the CPUs (threads) usage from the .log files
 cpus_usages <- list()
@@ -261,7 +267,7 @@ for (i in seq_along(roots)) {
   if (is.na(cpus_usage)) stop(str_glue("Cannot decode CPUs usage from {roots[[i]]}.log"))
   cpus_usages <- c(cpus_usages, cpus_usage)
 }
-rm(cpus_usage_regexp, cpus_usage)
+rm(cpus_usage_regexp, lines, cpus_usage)
 
 # Extract the disk usage and request (KB) from the .log files
 disk_usages <- list()
@@ -279,7 +285,7 @@ for (i in seq_along(roots)) {
   disk_usages <- c(disk_usages, disk_usage)
   disk_requests <- c(disk_requests, disk_request)
 }
-rm(disk_regexp, disk_match, disk_usage, disk_request)
+rm(disk_regexp, lines, disk_match, disk_usage, disk_request)
 
 # Extract the memory usage (MB) from the .log files
 memory_usages <- list()
@@ -292,7 +298,7 @@ for (i in seq_along(roots)) {
   if (is.na(memory_usage)) stop(str_glue("Cannot decode memory usage from {roots[[i]]}.log"))
   memory_usages <- c(memory_usages, memory_usage)
 }
-rm(memory_usage_regexp, memory_usage)
+rm(memory_usage_regexp, lines, memory_usage)
 
 # Calculate the execution start latencies in seconds (difference between submit and execution start times)
 latencies <- c()
@@ -311,6 +317,7 @@ for (i in seq_along(roots)) {
     latencies <- c(latencies, latency)
   }
 }
+rm(submit_time, latency)
 
 # Calculate the execution duration in seconds (difference between execution start and termination times)
 durations <- c()
@@ -325,6 +332,7 @@ for (i in seq_along(roots)) {
   }
   durations <- c(durations, duration)
 }
+rm(start_time, duration)
 
 # Determine the number of running jobs in each cluster
 running_at_start <- c()
@@ -347,6 +355,7 @@ for (i in seq_along(roots)) {
   host <- str_match(machine_line, '^Machine = "([^.]+)[.].*"')[2]
   if (!is.na(host)) hosts[i] = host
 }
+rm(matchine_line)
 
 # If available, obtain the Condor slot name from the .out file
 # To make it available, execute the following command in the batch file of your jobs:
@@ -362,6 +371,7 @@ for (i in seq_along(roots)) {
   }
   slots[[i]] = slot # NA if no match
 }
+rm(slot_line, slot)
 
 # Extract the total CPLEX time from the .out files
 total_CPLEX_times <- c()
@@ -373,6 +383,7 @@ for (i in seq_along(roots)) {
   }
   total_CPLEX_times <- c(total_CPLEX_times, s)
 }
+rm(s, line)
 
 # Extraction complete, loaded .log and .out files are no longer needed
 rm(log_files)
