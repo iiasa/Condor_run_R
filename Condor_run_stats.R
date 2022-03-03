@@ -52,7 +52,7 @@ parse_datetime <- function(dtstr, kind, fileroot) {
 # ---- Handle arguments and set up plotting for RStudio or command line ----
 if (interactive()) {
   # Paths to one or more directories containing log files of runs to analyse.
-  LOG_DIRECTORIES <- dir_ls("logdir")
+  LOG_DIRECTORIES <- dir_ls("tests/basic/Condor")
   if (length(LOG_DIRECTORIES) == 0) {
     stop("No LOG_DIRECTORIES provided!")
   }
@@ -356,7 +356,10 @@ for (i in seq_along(roots)) {
   if (lines > 0) {
     # Should be only one match at the very start of the .out
     host <- str_match(lines[[1]], machine_pattern)[2]
-    if (!is.na(host)) hosts[i] = host
+    if (!is.na(host)) {
+      # replace existing entry
+      hosts[i] = host
+    }
   }
 }
 rm(lines, host)
@@ -364,18 +367,23 @@ rm(lines, host)
 # If available, obtain the Condor slot name from the .out file
 # To make it available, execute the following command in the batch file of your jobs:
 # echo _CONDOR_SLOT = %_CONDOR_SLOT%
+# on Windows, or, on Linux
+# echo _CONDOR_SLOT = $_CONDOR_SLOT
 slots <- list()
 for (i in seq_along(roots)) {
-  slot_line <- grep("^_CONDOR_SLOT ?= ?.*$", out_files[[i]], value=TRUE)
-  # try to match dynamic slot format and clip off dynamic slot number
-  slot <- str_match(slot_line, "^_CONDOR_SLOT ?= ?(.*)_\\d+$")[2]
-  if (is.na(slot)) {
-    # try to match regular slot format
-    slot <- str_match(slot_line, "^_CONDOR_SLOT ?= ?(.*)$")[2]
+  slot <- NA
+  lines <- grep("^_CONDOR_SLOT ?= ?.*$", out_files[[i]], value=TRUE)
+  if (length(lines) > 0) {
+    # try to match dynamic slot format and clip off dynamic slot number
+    slot <- str_match(lines[[1]], "^_CONDOR_SLOT ?= ?(.*)_\\d+$")[2]
+    if (is.na(slot)) {
+      # try to match regular slot format, NA if no match
+      slot <- str_match(lines[[1]], "^_CONDOR_SLOT ?= ?(.*)$")[2]
+    }
   }
-  slots[[i]] = slot # NA if no match
+  slots[[i]] <- ifelse(is.na(slot), "NA", slot)
 }
-rm(slot_line, slot)
+rm(lines, slot)
 
 # Extract the total CPLEX time from the .out files
 total_CPLEX_times <- c()
