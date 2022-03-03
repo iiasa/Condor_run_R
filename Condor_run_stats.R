@@ -255,8 +255,9 @@ cpus_usages <- list()
 cpus_usage_regexp <- "^\\s+Cpus\\s+:\\s+([[:digit:].]+)\\s+"
 for (i in seq_along(roots)) {
   lines <- grep(cpus_usage_regexp, log_files[[i]], value=TRUE)
-  if (length(lines) != 1) stop(str_glue("Cannot extract CPUs usage from {roots[[i]]}.log!"))
-  cpus_usage <- as.double(str_match(lines[1], cpus_usage_regexp)[2])
+  if (length(lines) == 0) stop(str_glue("Cannot extract CPUs usage from {roots[[i]]}.log!"))
+  # Use the last match which should correspond to the job start ran to completion.
+  cpus_usage <- as.double(str_match(lines[length(lines)], cpus_usage_regexp)[2])
   if (is.na(cpus_usage)) stop(str_glue("Cannot decode CPUs usage from {roots[[i]]}.log"))
   cpus_usages <- c(cpus_usages, cpus_usage)
 }
