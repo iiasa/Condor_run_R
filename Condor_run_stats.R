@@ -269,8 +269,9 @@ disk_requests <- list()
 disk_regexp <- "^\\s+Disk \\(KB\\)\\s+:\\s+(\\d+)\\s+(\\d+)"
 for (i in seq_along(roots)) {
   lines <- grep(disk_regexp, log_files[[i]], value=TRUE)
-  if (length(lines) != 1) stop(str_glue("Cannot extract disk usage from {roots[[i]]}.log!"))
-  disk_match <-str_match(lines[1], disk_regexp)
+  if (length(lines) == 0) stop(str_glue("Cannot extract disk usage from {roots[[i]]}.log!"))
+  # Use the last match which should correspond to the job start ran to completion.
+  disk_match <-str_match(lines[length(lines)], disk_regexp)
   disk_usage <- as.double(disk_match[2])
   disk_request <- as.double(disk_match[3])
   if (is.na(disk_usage)) stop(str_glue("Cannot decode disk usage from {roots[[i]]}.log"))
