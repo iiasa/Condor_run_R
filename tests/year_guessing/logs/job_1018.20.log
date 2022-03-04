@@ -1,0 +1,23 @@
+000 (1018.004.000) 12/31 23:59:59 Job submitted from host: <147.125.52.253:9618?addrs=147.125.52.253-9618&noUDP&sock=8936_e446_3>
+...
+001 (1018.004.000) 01/01 00:00:21 Job executing on host: <147.125.99.216:9618?addrs=147.125.99.216-9618&alias=limpopo6.iiasa.ac.at&noUDP&sock=startd_34060_2250>
+...
+006 (1018.004.000) 01/01 00:02:21 Image size of job updated: 32136
+	19  -  MemoryUsage of job (MB)
+	18620  -  ResidentSetSize of job (KB)
+...
+005 (1018.004.000) 01/01 00:04:21 Job terminated.
+	(1) Normal termination (return value 0)
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Run Local Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Remote Usage
+		Usr 0 00:00:00, Sys 0 00:00:00  -  Total Local Usage
+	284421  -  Run Bytes Sent By Job
+	948  -  Run Bytes Received By Job
+	284421  -  Total Bytes Sent By Job
+	948  -  Total Bytes Received By Job
+	Partitionable Resources :    Usage  Request Allocated 
+	   Cpus                 :                 1         1 
+	   Disk (KB)            :      293      402    820918 
+	   Memory (MB)          :       19     1000      1024 
+...
