@@ -32,19 +32,30 @@ library(fs)
 options(tibble.width = Inf)
 options(tibble.print_max = Inf)
 
-# Determine the current year to help compensate for the absence of year numbers
-# in old-format .log files
-current_year <- as.integer(format(Sys.Date(),"%Y"))
-
 # ---- Define helper functions ----
 
 parse_datetime <- function(dtstr, kind, fileroot) {
   # Decode possible date-time formats
   time <- strptime(dtstr, "%Y-%m-%d %H:%M:%S")
   if (is.na(time)) {
-    # Use guessed year (can fail for leap days)
-    time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
+    # Parse format without year by guessing the year is the current year.
+    # The guessed year will be wrong when analyzing a run submitted in a
+    # previous year. Moreover, parsing will fail (return NA) when parsing
+    # a leap day from a prior year unless the current year is also a leap
+    # year.
+    current_time <- as.POSIXlt(Sys.time())
+    time <- strptime(str_glue("{current_time$year + 1900}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
     if (is.na(time)) stop(str_glue("Unsupported {kind} time format in {fileroot}.log"))
+
+    # If the guessed year is off, the submission happened in a prior
+    # year. The most likely scenario is that it is currently early in
+    # the next year, and the submission was late last year. Then
+    # the guessed time (with the year being one higher than it should be)
+    # will be larger than the current time. Here we detect and correct
+    # for this probable scenario.
+    if (time > current_time) {
+      time$year <- time$year - 1
+    }
   }
   return(time)
 }
@@ -299,36 +310,14 @@ rm(memory_usage_regexp, lines, memory_usage)
 # Calculate the execution start latencies in seconds (difference between submit and execution start times)
 latencies <- c()
 for (i in seq_along(roots)) {
-  submit_time <- submit_times[[i]]
-  if (is.na(submit_time)) {
-    latencies <- c(latencies, NA)
-  } else {
-    if (start_times[[i]] >= submit_time) {
-      latency <- difftime(start_times[[i]], submit_time, units="secs")
-    } else {
-      # Submission must have happened in the prior year relative to execution start
-      submit_time$year <- submit_time$year - 1
-      latency <- difftime(start_times[[i]], submit_time, units="secs")
-    }
-    latencies <- c(latencies, latency)
-  }
+  latencies <- c(latencies,  difftime(start_times[[i]], submit_times[[i]], units="secs"))
 }
-rm(submit_time, latency)
 
 # Calculate the execution duration in seconds (difference between execution start and termination times)
 durations <- c()
 for (i in seq_along(roots)) {
-  start_time <- start_times[[i]]
-  if (termination_times[[i]] >= start_time) {
-    duration <- difftime(termination_times[[i]], start_time, units="secs")
-  } else {
-    # Execution start must have happened in the prior year relative to execution termination
-    start_time$year <- start_time$year - 1
-    duration <- difftime(termination_times[[i]], start_time, units="secs")
-  }
-  durations <- c(durations, duration)
+  durations <- c(durations, difftime(termination_times[[i]], start_times[[i]], units="secs"))
 }
-rm(start_time, duration)
 
 # Determine the number of running jobs in each cluster
 running_at_start <- c()
