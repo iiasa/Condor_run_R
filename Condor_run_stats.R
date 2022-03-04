@@ -46,7 +46,7 @@ parse_datetime <- function(dtstr, kind, fileroot) {
     time <- strptime(str_glue("{current_year}/{dtstr}"), "%Y/%m/%d %H:%M:%S")
     if (is.na(time)) stop(str_glue("Unsupported {kind} time format in {fileroot}.log"))
   }
-  return(list(time))
+  return(time)
 }
 
 # ---- Handle arguments and set up plotting for RStudio or command line ----
@@ -217,7 +217,7 @@ for (i in seq_along(roots)) {
     dtstr <- str_match(lines[length(lines)], submit_pattern)[2]
     if (is.na(dtstr)) stop(str_glue("Cannot decode submit time from {roots[[i]]}.log"))
     submit_dtstrs <- c(submit_dtstrs, dtstr)
-    submit_times <- c(submit_times, parse_datetime(dtstr, "submit", roots[[i]]))
+    submit_times[[i]] <- parse_datetime(dtstr, "submit", roots[[i]])
   }
 }
 rm(submit_pattern, lines, submit_time_warning, dtstr)
@@ -236,7 +236,7 @@ for (i in seq_along(roots)) {
   ipstr <- mat[3]
   if (is.na(dtstr)) stop(str_glue("Cannot decode execution start time from {roots[[i]]}.log"))
   if (is.na(ipstr)) stop(str_glue("Cannot decode execution host IP from {roots[[i]]}.log"))
-  start_times <- c(start_times, parse_datetime(dtstr, "start", roots[[i]]))
+  start_times[[i]] <- parse_datetime(dtstr, "start", roots[[i]])
   if (is.na(hostname_map[ipstr])) host <- ipstr
   else host <- hostname_map[ipstr]
   hosts <- c(hosts, host)
@@ -251,7 +251,7 @@ for (i in seq_along(roots)) {
   if (length(lines) == 0) stop(str_glue("Cannot extract termination time from {roots[[i]]}.log!"))
   dtstr <- str_match(lines[length(lines)], termination_pattern)[2]
   if (is.na(dtstr)) stop(str_glue("Cannot decode termination time from {roots[[i]]}.log"))
-  termination_times <- c(termination_times, parse_datetime(dtstr, "termination", roots[[i]]))
+  termination_times[[i]] <- parse_datetime(dtstr, "termination", roots[[i]])
 }
 rm(termination_pattern, lines, dtstr)
 
@@ -264,7 +264,7 @@ for (i in seq_along(roots)) {
   # Use the last match which should correspond to the job start that ran to completion.
   cpus_usage <- as.double(str_match(lines[length(lines)], cpus_usage_regexp)[2])
   if (is.na(cpus_usage)) stop(str_glue("Cannot decode CPUs usage from {roots[[i]]}.log"))
-  cpus_usages <- c(cpus_usages, cpus_usage)
+  cpus_usages[[i]] <- cpus_usage
 }
 rm(cpus_usage_regexp, lines, cpus_usage)
 
@@ -281,8 +281,8 @@ for (i in seq_along(roots)) {
   disk_request <- as.double(disk_match[3])
   if (is.na(disk_usage)) stop(str_glue("Cannot decode disk usage from {roots[[i]]}.log"))
   if (is.na(disk_request)) stop(str_glue("Cannot decode disk request from {roots[[i]]}.log"))
-  disk_usages <- c(disk_usages, disk_usage)
-  disk_requests <- c(disk_requests, disk_request)
+  disk_usages[[i]] <- disk_usage
+  disk_requests[[i]] <- disk_request
 }
 rm(disk_regexp, lines, disk_match, disk_usage, disk_request)
 
@@ -295,7 +295,7 @@ for (i in seq_along(roots)) {
   # Use the last match which should correspond to the job start that ran to completion.
   memory_usage <- as.double(str_match(lines[length(lines)], memory_usage_regexp)[2])
   if (is.na(memory_usage)) stop(str_glue("Cannot decode memory usage from {roots[[i]]}.log"))
-  memory_usages <- c(memory_usages, memory_usage)
+  memory_usages[[i]] <- memory_usage
 }
 rm(memory_usage_regexp, lines, memory_usage)
 
