@@ -53,7 +53,11 @@ parse_datetime <- function(dtstr, kind, fileroot) {
     # the guessed time (with the year being one higher than it should be)
     # will be larger than the current time. Here we detect and correct
     # for this probable scenario.
-    if (time > current_time) {
+    #
+    # The extra day worth of seconds prevents the parsing of log files written
+    # on a machine located in a different timezone from triggering the correction
+    # logic.
+    if (time > current_time + 24 * 60 * 60) {
       time$year <- time$year - 1
     }
   }
