@@ -199,7 +199,6 @@ for (i in seq_along(roots)) {
 rm(mat, clstr, prstr)
 
 # Extract the job submit time (with uncertain year) and date/time string from the .log files
-submit_dtstrs <- c()
 submit_times <- list()
 submit_time_warning <- FALSE
 submit_pattern <- "\\) (.*) Job submitted from host:"
@@ -210,13 +209,11 @@ for (i in seq_along(roots)) {
       warning(str_glue("Cannot find submit time in Condor event log (e.g. {roots[[i]]}.log). Unable to determine latency between job submission and start time. Latency results and plots will be partially or fully unavailable."))
       submit_time_warning <- TRUE
     }
-    submit_dtstrs <- c(submit_dtstrs, "")
     submit_times <- c(submit_times, NA)
   } else {
     # Use the last matching line, should be the only submission
     dtstr <- str_match(lines[length(lines)], submit_pattern)[2]
     if (is.na(dtstr)) stop(str_glue("Cannot decode submit time from {roots[[i]]}.log"))
-    submit_dtstrs <- c(submit_dtstrs, dtstr)
     submit_times[[i]] <- parse_datetime(dtstr, "submit", roots[[i]])
   }
 }
@@ -407,7 +404,7 @@ jobs <- tibble(label=unlist(labels),
                cluster=clusters,
                run=runs,
                job=job_numbers,
-               submitted=submit_dtstrs,
+               submitted=submit_times,
                host=hosts,
                slot=unlist(slots),
                root=roots,
@@ -440,7 +437,7 @@ jobs %>%
   select(label, cluster, submitted, `latency [min]`, `duration [min]`, `latency [h]`, `duration [h]`, `running_at_start`) %>%
   group_by(cluster) %>%
   summarize(label=dplyr::first(label),
-            submitted=min(submitted),
+            submitted=Reduce(min, submitted),
             `jobs`=n(),
             `max running`=max(`running_at_start`),
             `mean [min]`=mean(`duration [min]`),
@@ -458,7 +455,7 @@ jobs %>%
   select(label, cluster, host, submitted, `duration [min]`) %>%
   group_by(cluster,host) %>%
   summarize(label=dplyr::first(label),
-            submitted=min(submitted),
+            submitted=Reduce(min, submitted),
             `jobs`=n(),
             `mean [min]`=mean(`duration [min]`),
             `stderr [min]`=sd(`duration [min]`)/sqrt(jobs),
