@@ -229,7 +229,6 @@ hosts <- c()
 for (i in seq_along(roots)) {
   lines <- grep(start_pattern, log_files[[i]], value=TRUE)
   if (length(lines) < 1) stop(str_glue("Cannot extract execution start time from {roots[[i]]}.log!"))
-  if (length(lines) > 1) warning(str_glue("Execution started multiple times for job. Probably the initial execution host disconnected. See {roots[[i]]}.log!"))
   # Use the last execution start time since that's on the
   # host that can be assumed to have completed the job.
   mat <- str_match(lines[length(lines)], start_pattern)
