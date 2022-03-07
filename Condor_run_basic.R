@@ -7,7 +7,7 @@
 #
 # Author:   Albert Brouwer
 # Based on: GLOBIOM-limpopo scripts by David Leclere
-# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2022-02-08
+# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2022-03-07
 
 # ---- Configuration parameters, mandatory ----
 
