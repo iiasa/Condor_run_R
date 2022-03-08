@@ -1,5 +1,5 @@
 ![License](https://img.shields.io/github/license/iiasa/Condor_run_R)
-[![Check Links](https://github.com/org/repo/actions/workflows/links.yml/badge.svg)](https://github.com/org/repo/actions/workflows/links.yml)
+[![Check Links](https://github.com/iiasa/Condor_run_R/actions/workflows/links.yml/badge.svg)](https://github.com/iiasa/Condor_run_R/actions/workflows/links.yml)
 
 # Condor_run_R
 R scripts to conveniently and quickly submit and analyse sets of [HT Condor](https://research.cs.wisc.edu/htcondor/htcondor/overview/) jobs requiring many files and/or much input data.
