@@ -7,8 +7,8 @@ Tests listing:
 - [parallel](parallel/purpose.md)
 - [periodic_release](periodic_release/purpose.md)
 - [seeding](seeding/purpose.md)
-- [time_correction](time_correction/purpose.md)
 - [transport](transport/purpose.md)
+- [year_guessing](year_guessing/purpose.md)
 
 Note that some tests execute the `Condor_run_stats.R` script on run
 completion, resulting in a PDF file that can be examined to review
