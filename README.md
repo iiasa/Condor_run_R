@@ -73,7 +73,7 @@ When a job is run on an execute host, the cached bundle is decompressed in a scr
 The submit script enforces this by using the bundle as a lock file. If you abort the script or an error occurs before the above message appears, you will need to remove the bundle to free the lock. The script will throw an explanatory error until you do.
 
 ## Use
-Invoke the submit script via `Rscript`. Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. Both take a `.R` configuration file as only argument. An example invocation is:
+Invoke the submit script via `Rscript`. Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. Both take a `.R` configuration file as only argument. Follow [these steps](configuring.md) to set up a configuration file. An example invocation is:
 
 `Rscript Condor_run_basic.R config.R`
 
