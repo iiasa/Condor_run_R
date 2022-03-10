@@ -9,13 +9,13 @@
 # Based on: GLOBIOM-limpopo scripts by David Leclere
 # Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2022-03-07
 
-# ---- Configuration parameters, mandatory ----
-
 # Remove any objects from active environment so that below it will contain only the default configuration
 rm(list=ls())
 
-# Add all of these to your configuration file.
-# See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
+# ---- Configuration parameters, mandatory ----
+
+# DO NOT EDIT HERE!
+# Copy all of these to a separate configuration file and adapt their values.
 # .......8><....snippy.snappy....8><.........................................
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 JOBS = c()
@@ -29,7 +29,8 @@ mandatory_config_names <- ls()
 
 # ---- Configuration parameters, optional ----
 
-# Review and add any optional parameters that you need to your configuration file.
+# DO NOT EDIT HERE!
+# Add to a separate configuration file the parameters that you need to override.
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 LABEL = "{Sys.Date()}"
 SCRIPT = ""
