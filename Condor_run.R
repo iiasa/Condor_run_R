@@ -418,6 +418,15 @@ bundle_with_7z <- function(args_for_7z) {
   }
 }
 
+# List content of a 7-Zip archive
+list_7z <- function(archive_path) {
+  out <- system2("7z", stdout=TRUE, stderr=TRUE, args=c("l", archive_path))
+  if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
+    stop(str_glue("Failed to list content of {archive_path}"), call.=FALSE)
+  }
+  return(out)
+}
+
 # Delete a file if it exists
 delete_if_exists <- function(dir_path, file_name) {
   file_path <- path(dir_path, file_name)
@@ -816,6 +825,13 @@ if (cluster != predicted_cluster) {
   file_delete(bundle_path)
   stop(str_glue("Submission cluster number {cluster} not equal to prediction {predicted_cluster}! You probably submitted something else via Condor while this submission was ongoing, causing the cluster number (sequence count of your submissions) to increment. As a result, log files have been named with a wrong cluster number.\n\nPlease do not submit additional Condor jobs until after a submission has completed. Note that this does not mean that you have to wait for the run to complete before submitting further runs, just wait for the submission to make it to the point where the execute hosts have been handed the jobs. Please try again.\n\nYou should first remove the run's jobs with: condor_rm {cluster}."))
 }
+
+# Log a listing of the bundle contents
+list <- list_7z(bundle_path)
+list_conn<-file(path(log_dir, str_glue("_bundle_{cluster}_contents.txt")), open="wt")
+writeLines(list, con = list_conn)
+close(list_conn)
+rm(list, list_conn)
 
 # Retain the bundle if so requested, then delete it from temp so that further submissions are no longer blocked
 if (RETAIN_BUNDLE) {
