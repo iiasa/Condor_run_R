@@ -649,23 +649,31 @@ args_for_7z <- unlist(lapply(c(
    ifelse(G00_OUTPUT_DIR_SUBMIT != "", "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
   "-xr!{GDX_OUTPUT_DIR_SUBMIT}",
   "{bundle_platform_path}",
-  "{BUNDLE_INCLUDE}",
-  "{RESTART_FILE_PATH}"
+  "{BUNDLE_INCLUDE}"
 ), str_glue))
 cat("Compressing files into bundle...\n")
 byte_size <- bundle_with_7z(args_for_7z)
 cat("\n")
 
-additional_byte_size <- 0
+added_size <- 0
 if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("Bundling additional files...\n")
-  args_for_7z <- c("a", BUNDLE_ADDITIONAL_FILES)
-  additional_byte_size <- bundle_with_7z(args_for_7z)
+  args_for_7z <- c("a", bundle_platform_path, BUNDLE_ADDITIONAL_FILES)
+  added_size <- bundle_with_7z(args_for_7z)
+  cat("\n")
+}
+
+restart_size <- 0
+if (RESTART_FILE_PATH != "") {
+  # Bundle separately so that base directory can be added to BUNDLE_EXCLUDE_DIRS
+  cat("Bundling restart file...\n")
+  args_for_7z <- c("a", bundle_platform_path, in_gams_curdir(RESTART_FILE_PATH))
+  restart_size <- bundle_with_7z(args_for_7z)
   cat("\n")
 }
 
 # Add uncompressed bundle size to the disk request in KiB
-request_disk <- REQUEST_DISK + ceiling((byte_size + additional_byte_size) / 1024)
+request_disk <- REQUEST_DISK + ceiling((byte_size + added_size + restart_size) / 1024)
 
 # Determine the bundle size in KiB
 bundle_size <- floor(file_size(bundle_path) / 1024)
