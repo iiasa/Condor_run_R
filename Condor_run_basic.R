@@ -297,8 +297,19 @@ if (!dir_exists(log_dir)) dir_create(log_dir)
 
 # ---- Define some helper functions ----
 
-# Bundle files with 7-zip, check success and output, and return the overall byte size of the input files
+# Check that the given binaries are on-path
+check_on_path <- function(binaries) {
+  where <- Sys.which(binaries)
+  for (bin in binaries) {
+    if (where[bin] == "") {
+      message(str_glue("Binary/executable '{bin}' was not found! Please add its containing directory to the PATH environment variable."), call.=FALSE)
+    }
+  }
+}
+
+# Bundle files with 7-Zip, check success and output, and return the overall byte size of the input files
 bundle_with_7z <- function(args_for_7z) {
+  check_on_path("7z")
   out <- system2("7z", stdout=TRUE, stderr=TRUE, args=args_for_7z)
   if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
     message("7z failed, likely because of erroneous or too many arguments.\nThe arguments for 7z derived from the BUNDLE_* config options were as follows:")
@@ -319,6 +330,7 @@ bundle_with_7z <- function(args_for_7z) {
 
 # List content of a 7-Zip archive
 list_7z <- function(archive_path) {
+  check_on_path("7z")
   out <- system2("7z", stdout=TRUE, stderr=TRUE, args=c("l", archive_path))
   if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
     stop(str_glue("Failed to list content of {archive_path}"), call.=FALSE)
@@ -517,6 +529,9 @@ all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
 
 # ---- Check status of execute hosts ----
 
+# Check that required Condor binaries are available
+check_on_path(c("condor_status", "condor_submit", "condor_q", "condor_reschedule"))
+
 # Show status summary of selected execute hosts
 error_code <- system2("condor_status", args=c("-compact", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
 if (error_code > 0) stop("Cannot show Condor pool status! Probably, your submit machine is unable to connect to the central manager. Possibly, you are running a too-old (< V8.7.2) Condor version.")
@@ -546,7 +561,7 @@ args_for_7z <- unlist(lapply(c(
   unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
   "-xr!{CONDOR_DIR}",
   ifelse(OUTPUT_DIR_SUBMIT != "", "-xr!{OUTPUT_DIR_SUBMIT}", ""),
-  "{bundle_platform_path}",
+  bundle_platform_path,
   "{BUNDLE_INCLUDE}"
 ), str_glue))
 cat("Compressing files into bundle...\n")
