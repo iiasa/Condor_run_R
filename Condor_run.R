@@ -26,7 +26,6 @@ GAMS_ARGUMENTS = "//job_number=%1 checkErrorLevel=1"
 GAMS_VERSION = "32.1"
 WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
-
 mandatory_config_names <- ls()
 
 # ---- Configuration parameters, optional ----
@@ -650,18 +649,17 @@ args_for_7z <- unlist(lapply(c(
    ifelse(G00_OUTPUT_DIR_SUBMIT != "", "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
   "-xr!{GDX_OUTPUT_DIR_SUBMIT}",
   "{bundle_platform_path}",
-  "{BUNDLE_INCLUDE}"
+  "{BUNDLE_INCLUDE}",
+  "{RESTART_FILE_PATH}"
 ), str_glue))
 cat("Compressing files into bundle...\n")
 byte_size <- bundle_with_7z(args_for_7z)
 cat("\n")
 
 additional_byte_size <- 0
-if (RESTART_FILE_PATH != "" || length(BUNDLE_ADDITIONAL_FILES) != 0) {
+if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("Bundling additional files...\n")
-  args_for_7z <- c("a", bundle_platform_path)
-  if (RESTART_FILE_PATH != "") args_for_7z <- c(args_for_7z, in_gams_curdir(RESTART_FILE_PATH))
-  if (length(BUNDLE_ADDITIONAL_FILES) != 0) args_for_7z <- c(args_for_7z, BUNDLE_ADDITIONAL_FILES)
+  args_for_7z <- c("a", BUNDLE_ADDITIONAL_FILES)
   additional_byte_size <- bundle_with_7z(args_for_7z)
   cat("\n")
 }
