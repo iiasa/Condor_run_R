@@ -631,7 +631,7 @@ if (!dir_exists(log_dir)) dir_create(log_dir)
 # ---- Check status of execute hosts ----
 
 # Check that required Condor binaries are available
-check_on_path(c("condor_status", "condor_submit", "condor_q", "condor_reschedule"))
+check_on_path(c("condor_submit", "condor_status", "condor_q", "condor_reschedule"))
 
 # Show status summary of selected execute hosts
 error_code <- system2("condor_status", args=c("-compact", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
