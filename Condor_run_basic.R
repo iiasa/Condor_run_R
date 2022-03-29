@@ -184,117 +184,6 @@ fsep <- ifelse(str_detect(temp_dir, fixed("\\") ), "\\", ".Platform$file.sep") #
 temp_dir <- str_replace_all(temp_dir, fixed(fsep), .Platform$file.sep)
 temp_dir_parent <- dirname(temp_dir) # Move up from the R-session-specific random sub directory to get a temp dir identical between sessions
 
-# ---- Process environment and run config settings ----
-
-# Read config file if specified via an argument, check presence and types.
-args <- commandArgs(trailingOnly=TRUE)
-if (length(args) == 0) {
-  stop("No configuration file argument supplied. For usage information, see: https://github.com/iiasa/Condor_run_R#use")
-} else if (length(args) == 1) {
-  # Check that the specified config file exists
-  config_file_arg <- args[1]
-  if (!(file_exists(config_file_arg))) stop(str_glue('Invalid command line argument: specified configuration file "{config_file}" does not exist!'))
-
-  # Remove mandatory config defaults from the global scope
-  rm(list=config_names[config_names %in% mandatory_config_names])
-  rm(mandatory_config_names)
-
-  # Source the config file, should add mandatory config settings to the global scope
-  source(config_file_arg, local=TRUE, echo=FALSE)
-
-  # Check that all config settings exist and have no weird value type
-  for (i in seq_along(config_names))  {
-    name <- config_names[i]
-    if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {config_file_arg}!"))
-    type <- typeof(get(name))
-    if (type != config_types[[i]] &&
-        type != "integer" && # R has no stable numerical type
-        type != "double" && # R has no stable numerical type
-        type != "NULL" && # allow for NULL
-        config_types[[i]] != "NULL" # allow for default vector being empty
-    ) stop(str_glue("{name} set to wrong type in {config_file_arg}, type should be {config_types[[i]]}"))
-  }
-} else {
-  stop("Multiple arguments provided! Expecting at most a single configuration file argument.")
-}
-
-# Copy/write configuration to a file in the temp directory for reference early to minimize the risk of it being edited in the mean time
-temp_config_file <- path(temp_dir, str_glue("config.R"))
-if (length(args) > 0) {
-  tryCatch(
-    file_copy(config_file_arg, temp_config_file, overwrite=TRUE),
-    error=function(cond) {
-      file_delete(bundle_path)
-      message(cond)
-      stop(str_glue("Cannot make a copy of the configuration file {config_file_arg}!"))
-    }
-  )
-} else {
-  # No configuration file provided, write default configuration defined above (definition order is lost)
-  config_conn<-file(temp_config_file, open="wt")
-  for (i in seq_along(config_names)) {
-    if (config_types[i] == "character") {
-      writeLines(str_glue('{config_names[i]} = "{get(config_names[i])}"'), config_conn)
-    } else {
-      writeLines(str_glue('{config_names[i]} = {get(config_names[i])}'), config_conn)
-    }
-  }
-  close(config_conn)
-}
-
-# Check and massage specific config settings
-if (exists("NAME")) LABEL <- NAME # allowed synonym
-if (exists("EXPERIMENT")) LABEL <- EXPERIMENT # allowed synonym
-if (exists("PROJECT")) LABEL <- PROJECT # allowed synonym
-LABEL <- str_glue(LABEL)
-if (str_detect(LABEL, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured LABEL/NAME/PROJECT/EXPERIMENT for run has forbidden character(s)!"))
-if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
-if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
-if (length(JOBS) < 1) stop("There should be at least one job in JOBS!")
-if (!all(JOBS == floor(JOBS))) stop("Job numbers in JOBS must be whole numbers!")
-if (!all(JOBS < 1e6)) stop("Job numbers in JOBS must be less than 1000000 (one million)!")
-if (!all(JOBS >= 0)) stop("Job numbers in JOBS may not be negative!")
-if (length(JOBS) > 200 && !NICE_USER) warning(str_glue("You are submitting {length(JOBS)} jobs. That's a lot. Consider being nice by configuring NICE_USER = TRUE so as to give jobs of other users priority."))
-if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
-if (!(REQUEST_DISK > 0)) stop("REQUEST_DISK should be larger than zero!")
-if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
-if (SCRIPT != "" && !(file_exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
-if (str_detect(SCRIPT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCRIPT has forbidden character(s)!"))
-if (length(JOBS) > 1 && !str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
-for (file in BUNDLE_ADDITIONAL_FILES) {
-  if (!(file_exists(path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
-}
-if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
-if (GET_OUTPUT) {
-  if (is.null(OUTPUT_DIR_SUBMIT)) {
-    # Use OUTPUT_DIR on the submit machine side as well.
-    if (!(file_exists(OUTPUT_DIR))) stop(str_glue('Configured OUTPUT_DIR "{OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
-    OUTPUT_DIR_SUBMIT <- OUTPUT_DIR
-  } else {
-    # Use a separate OUTPUT_DIR_SUBMIT configuration on the submit machine side.
-    if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
-    if (!(file_exists(OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured OUTPUT_DIR_SUBMIT "{OUTPUT_DIR_SUBMIT}" does not exist!'))
-  }
-  if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
-  if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
-  if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
-  if (str_detect(OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured OUTPUT_FILE has forbidden character(s)!"))
-}
-output_prefix <- tools::file_path_sans_ext(OUTPUT_FILE)
-output_extension <- tools::file_ext(OUTPUT_FILE)
-script_prefix <- tools::file_path_sans_ext(SCRIPT)
-script_extension <- tools::file_ext(SCRIPT)
-
-# Get username in a way that works on MacOS, Linux, and Windows
-username <- Sys.getenv("USERNAME")
-if (username == "") username <- Sys.getenv("USER")
-if (username == "") stop("Cannot determine the username!")
-
-# Ensure that a log directory to hold the .log/.err/.out files and other artifacts exists for the run
-if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
-log_dir <- path(CONDOR_DIR, LABEL)
-if (!dir_exists(log_dir)) dir_create(log_dir)
-
 # ---- Define some helper functions ----
 
 # Check that the given binaries are on-path
@@ -302,7 +191,7 @@ check_on_path <- function(binaries) {
   where <- Sys.which(binaries)
   for (bin in binaries) {
     if (where[bin] == "") {
-      message(str_glue("Binary/executable '{bin}' was not found! Please add its containing directory to the PATH environment variable."), call.=FALSE)
+      stop(str_glue("Required binary/executable '{bin}' was not found! Please add its containing directory to the PATH environment variable."), call.=FALSE)
     }
   }
 }
@@ -369,7 +258,7 @@ monitor <- function(clusters) {
   q <- "" # to hold formatted condor_q query result
   repeat {
     Sys.sleep(1)
-
+    
     # Collect Condor queue information via condor_q
     outerr <- system2("condor_q", args=c("-totals", "-wide", clusters), stdout=TRUE, stderr=TRUE)
     if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
@@ -384,7 +273,7 @@ monitor <- function(clusters) {
       }
     }
     q_errors <- 0
-
+    
     # Extract the totals line and parse it out
     match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
     if (is.na(match[1])) {
@@ -398,17 +287,17 @@ monitor <- function(clusters) {
     running    <- as.integer(match[6])
     held       <- as.integer(match[7])
     suspended  <- as.integer(match[8])
-
+    
     # Format condor_q result
     new_q <- str_sub(str_glue('{jobs} jobs:{ifelse(completed==0, "", str_glue(" {completed} completed,"))}{ifelse(removed==0, "", str_glue(" {removed} removed;"))}{ifelse(idle==0, "", str_glue(" {idle} idle (queued),"))}{ifelse(running==0, "", str_glue(" {running} running,"))}{ifelse(held==0, "", str_glue(" {held} held,"))}{ifelse(suspended==0, "", str_glue(" {suspended} suspended,"))}'), 1, -2)
-
+    
     # Display condor_q result when changed, overwriting old one
     if (new_q != q) {
       clear_line()
       q <- new_q
       cat(q)
       flush.console()
-
+      
       changes_since_reschedule <- TRUE
     }
     # Warn when there are held jobs for the first time
@@ -526,6 +415,117 @@ all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
   }
   return(!(any(absentees) || any(empties)))
 }
+
+# ---- Process environment and run config settings ----
+
+# Read config file if specified via an argument, check presence and types.
+args <- commandArgs(trailingOnly=TRUE)
+if (length(args) == 0) {
+  stop("No configuration file argument supplied. For usage information, see: https://github.com/iiasa/Condor_run_R#use")
+} else if (length(args) == 1) {
+  # Check that the specified config file exists
+  config_file_arg <- args[1]
+  if (!(file_exists(config_file_arg))) stop(str_glue('Invalid command line argument: specified configuration file "{config_file}" does not exist!'))
+
+  # Remove mandatory config defaults from the global scope
+  rm(list=config_names[config_names %in% mandatory_config_names])
+  rm(mandatory_config_names)
+
+  # Source the config file, should add mandatory config settings to the global scope
+  source(config_file_arg, local=TRUE, echo=FALSE)
+
+  # Check that all config settings exist and have no weird value type
+  for (i in seq_along(config_names))  {
+    name <- config_names[i]
+    if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {config_file_arg}!"))
+    type <- typeof(get(name))
+    if (type != config_types[[i]] &&
+        type != "integer" && # R has no stable numerical type
+        type != "double" && # R has no stable numerical type
+        type != "NULL" && # allow for NULL
+        config_types[[i]] != "NULL" # allow for default vector being empty
+    ) stop(str_glue("{name} set to wrong type in {config_file_arg}, type should be {config_types[[i]]}"))
+  }
+} else {
+  stop("Multiple arguments provided! Expecting at most a single configuration file argument.")
+}
+
+# Copy/write configuration to a file in the temp directory for reference early to minimize the risk of it being edited in the mean time
+temp_config_file <- path(temp_dir, str_glue("config.R"))
+if (length(args) > 0) {
+  tryCatch(
+    file_copy(config_file_arg, temp_config_file, overwrite=TRUE),
+    error=function(cond) {
+      file_delete(bundle_path)
+      message(cond)
+      stop(str_glue("Cannot make a copy of the configuration file {config_file_arg}!"))
+    }
+  )
+} else {
+  # No configuration file provided, write default configuration defined above (definition order is lost)
+  config_conn<-file(temp_config_file, open="wt")
+  for (i in seq_along(config_names)) {
+    if (config_types[i] == "character") {
+      writeLines(str_glue('{config_names[i]} = "{get(config_names[i])}"'), config_conn)
+    } else {
+      writeLines(str_glue('{config_names[i]} = {get(config_names[i])}'), config_conn)
+    }
+  }
+  close(config_conn)
+}
+
+# Check and massage specific config settings
+if (exists("NAME")) LABEL <- NAME # allowed synonym
+if (exists("EXPERIMENT")) LABEL <- EXPERIMENT # allowed synonym
+if (exists("PROJECT")) LABEL <- PROJECT # allowed synonym
+LABEL <- str_glue(LABEL)
+if (str_detect(LABEL, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured LABEL/NAME/PROJECT/EXPERIMENT for run has forbidden character(s)!"))
+if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
+if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
+if (length(JOBS) < 1) stop("There should be at least one job in JOBS!")
+if (!all(JOBS == floor(JOBS))) stop("Job numbers in JOBS must be whole numbers!")
+if (!all(JOBS < 1e6)) stop("Job numbers in JOBS must be less than 1000000 (one million)!")
+if (!all(JOBS >= 0)) stop("Job numbers in JOBS may not be negative!")
+if (length(JOBS) > 200 && !NICE_USER) warning(str_glue("You are submitting {length(JOBS)} jobs. That's a lot. Consider being nice by configuring NICE_USER = TRUE so as to give jobs of other users priority."))
+if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
+if (!(REQUEST_DISK > 0)) stop("REQUEST_DISK should be larger than zero!")
+if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
+if (SCRIPT != "" && !(file_exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
+if (str_detect(SCRIPT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCRIPT has forbidden character(s)!"))
+if (length(JOBS) > 1 && !str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
+for (file in BUNDLE_ADDITIONAL_FILES) {
+  if (!(file_exists(path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
+}
+if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
+if (GET_OUTPUT) {
+  if (is.null(OUTPUT_DIR_SUBMIT)) {
+    # Use OUTPUT_DIR on the submit machine side as well.
+    if (!(file_exists(OUTPUT_DIR))) stop(str_glue('Configured OUTPUT_DIR "{OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
+    OUTPUT_DIR_SUBMIT <- OUTPUT_DIR
+  } else {
+    # Use a separate OUTPUT_DIR_SUBMIT configuration on the submit machine side.
+    if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
+    if (!(file_exists(OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured OUTPUT_DIR_SUBMIT "{OUTPUT_DIR_SUBMIT}" does not exist!'))
+  }
+  if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
+  if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
+  if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
+  if (str_detect(OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured OUTPUT_FILE has forbidden character(s)!"))
+}
+output_prefix <- tools::file_path_sans_ext(OUTPUT_FILE)
+output_extension <- tools::file_ext(OUTPUT_FILE)
+script_prefix <- tools::file_path_sans_ext(SCRIPT)
+script_extension <- tools::file_ext(SCRIPT)
+
+# Get username in a way that works on MacOS, Linux, and Windows
+username <- Sys.getenv("USERNAME")
+if (username == "") username <- Sys.getenv("USER")
+if (username == "") stop("Cannot determine the username!")
+
+# Ensure that a log directory to hold the .log/.err/.out files and other artifacts exists for the run
+if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
+log_dir <- path(CONDOR_DIR, LABEL)
+if (!dir_exists(log_dir)) dir_create(log_dir)
 
 # ---- Check status of execute hosts ----
 

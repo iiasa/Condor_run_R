@@ -208,6 +208,238 @@ fsep <- ifelse(str_detect(temp_dir, fixed("\\") ), "\\", ".Platform$file.sep") #
 temp_dir <- str_replace_all(temp_dir, fixed(fsep), .Platform$file.sep)
 temp_dir_parent <- dirname(temp_dir) # Move up from the R-session-specific random sub directory to get a temp dir identical between sessions
 
+# ---- Define some helper functions ----
+
+# Check that the given binaries are on-path
+check_on_path <- function(binaries) {
+  where <- Sys.which(binaries)
+  for (bin in binaries) {
+    if (where[bin] == "") {
+      stop(str_glue("Required binary/executable '{bin}' was not found! Please add its containing directory to the PATH environment variable."), call.=FALSE)
+    }
+  }
+}
+
+# Bundle files with 7-Zip, check success and output, and return the overall byte size of the input files
+bundle_with_7z <- function(args_for_7z) {
+  check_on_path("7z")
+  out <- system2("7z", stdout=TRUE, stderr=TRUE, args=args_for_7z)
+  if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
+    message("7z failed, likely because of erroneous or too many arguments.\nThe arguments for 7z derived from the BUNDLE_* config options were as follows:")
+    message(paste(args_for_7z, collapse='\n'))
+    message("\nThe invocation of 7z returned:")
+    message(paste(out, collapse='\n'))
+    stop("Bundling failed!", call.=FALSE)
+  }
+  else {
+    cat(out[grep("^Scanning the drive:", out)+1], sep="\n")
+    size_line <- grep("^Archive size:", out, value=TRUE)
+    cat(size_line, sep="\n")
+    byte_size <- as.double(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
+    if (is.na(byte_size)) stop("7zip archive size extraction failed!", call.=FALSE) # 7zip output format has changed?
+    return(byte_size)
+  }
+}
+
+# List content of a 7-Zip archive
+list_7z <- function(archive_path) {
+  check_on_path("7z")
+  out <- system2("7z", stdout=TRUE, stderr=TRUE, args=c("l", archive_path))
+  if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
+    stop(str_glue("Failed to list content of {archive_path}"), call.=FALSE)
+  }
+  return(out)
+}
+
+# Delete a file if it exists
+delete_if_exists <- function(dir_path, file_name) {
+  file_path <- path(dir_path, file_name)
+  if (file_exists(file_path)) file_delete(file_path)
+}
+
+# Clear text displayed on current line and reset cursor to start of line
+# provided that CLEAR_LINES has been configured to be TRUE. Otherwise,
+# issue a line feed to move on to the start of the next line.
+clear_line <- function() {
+  if (CLEAR_LINES)
+    cat("\r                                                                     \r")
+  else
+    cat("\n")
+}
+
+# Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
+monitor <- function(clusters) {
+  warn <- FALSE
+  regexp <- "Total for query: (\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended"
+  #regexp <- "(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
+  reschedule_invocations <- 200 # limit the number of reschedules so it is only done early on to push out the jobs quickly
+  # initial values before first iteration
+  changes_since_reschedule <- FALSE
+  iterations_since_reschedule <- 0
+  q_errors <- 0
+  prior_idle <- -1
+  prior_running <- -1
+  q <- "" # to hold formatted condor_q query result
+  repeat {
+    Sys.sleep(1)
+    
+    # Collect Condor queue information via condor_q
+    outerr <- system2("condor_q", args=c("-totals", "-wide", clusters), stdout=TRUE, stderr=TRUE)
+    if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
+      q_errors <- q_errors+1
+      if (q_errors >= 10) {
+        # 10 consecutive condor_q errors, probably not transient, report and stop
+        cat(outerr, sep="\n")
+        stop("Invocation of condor_q failed! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
+      } else {
+        # Fewer than 10 consecutive condor_q errors, retry
+        next
+      }
+    }
+    q_errors <- 0
+    
+    # Extract the totals line and parse it out
+    match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
+    if (is.na(match[1])) {
+      cat(outerr, sep="\n")
+      stop("Monitoring Condor queue status with condor_q failed: unexpected output! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
+    }
+    jobs       <- as.integer(match[2])
+    completed  <- as.integer(match[3])
+    removed    <- as.integer(match[4])
+    idle       <- as.integer(match[5])
+    running    <- as.integer(match[6])
+    held       <- as.integer(match[7])
+    suspended  <- as.integer(match[8])
+    
+    # Format condor_q result
+    new_q <- str_sub(str_glue('{jobs} jobs:{ifelse(completed==0, "", str_glue(" {completed} completed,"))}{ifelse(removed==0, "", str_glue(" {removed} removed;"))}{ifelse(idle==0, "", str_glue(" {idle} idle (queued),"))}{ifelse(running==0, "", str_glue(" {running} running,"))}{ifelse(held==0, "", str_glue(" {held} held,"))}{ifelse(suspended==0, "", str_glue(" {suspended} suspended,"))}'), 1, -2)
+    
+    # Display condor_q result when changed, overwriting old one
+    if (new_q != q) {
+      clear_line()
+      q <- new_q
+      cat(q)
+      flush.console()
+      
+      changes_since_reschedule <- TRUE
+    }
+    # Warn when there are held jobs for the first time
+    if (held > 0 && !warn) {
+      clear_line()
+      message("Jobs are held!")
+      message("To see what this means please read: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold")
+      cat(q)
+      flush.console()
+      warn <- TRUE
+    }
+    # Request rescheduling early
+    if (idle > 0 && idle == prior_idle &&
+        reschedule_invocations > 0 &&
+        running <= prior_running
+        && ((changes_since_reschedule) || iterations_since_reschedule >= 10)
+    ) {
+      outerr <- suppressWarnings(system2("condor_reschedule", stdout=TRUE, stderr=TRUE))
+      if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
+        # Try to workaround issue with a seemingly superfluous args=c("reschedule") parameter
+        # because R seems to sometimes call some underlying generic exe that needs a parameter to
+        # resolve which command it should behave as.
+        outerr2 <- suppressWarnings(system2("condor_reschedule", args=c("reschedule"), stdout=TRUE, stderr=TRUE))
+        if (!is.null(attr(outerr2, "status")) && attr(outerr2, "status") != 0) {
+          # Warn about the first error, not the also-failed workaround
+          clear_line()
+          warning(str_c(c("Invocation of condor_reschedule failed with the following output:", outerr), collapse='\n'), call.=FALSE)
+          cat(q)
+          flush.console()
+        }
+      }
+      reschedule_invocations <- reschedule_invocations-1
+      changes_since_reschedule <- FALSE
+      iterations_since_reschedule <- 0
+    } else {
+      iterations_since_reschedule <- iterations_since_reschedule+1
+    }
+    # Store state for next iteration
+    prior_idle <- idle
+    prior_running <- running
+    # Stop if all jobs done
+    if (jobs == 0) {
+      clear_line()
+      flush.console()
+      break
+    }
+  }
+}
+
+# Get the return values of job log files, or NA when a job did not terminate normally.
+get_return_values <- function(log_dir, log_file_names) {
+  return_values <- c()
+  return_value_regexp <- "\\(1\\) Normal termination \\(return value (\\d+)\\)"
+  for (name in log_file_names) {
+    loglines <- readLines(path(log_dir, name))
+    return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
+    return_values <- c(return_values, return_value)
+  }
+  return(return_values)
+}
+
+# Summarize job numbers by using ranges
+summarize_jobs <- function(jobs) {
+  ranging <- FALSE
+  prior <- NULL
+  for (job in sort(jobs)) {
+    if (is.null(prior)) {
+      summary <- c(job)
+    } else {
+      if (job-prior == 1) {
+        ranging <- TRUE
+      } else {
+        if (ranging) {
+          summary <- c(summary, "-", prior)
+          ranging <- FALSE
+        }
+        summary <- c(summary, ",", job)
+      }
+    }
+    prior <- job
+  }
+  if (ranging) summary <- c(summary, "-", job)
+  return(str_c(summary, collapse=""))
+}
+
+# A function that for all given jobs tests if a file exists and is not empty.
+# Empty files are deleted.
+#
+# The file_template is a template of the filename that is run through str_glue
+# and can make use of variables defined in the calling context. The dir parameter
+# indicates the directory containing the files.
+#
+# Warnings are generated when files are absent or empty.
+# The boolean return value is TRUE when all files exist and are not empty.
+all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
+  absentees <- c()
+  empties <- c()
+  for (job in JOBS) {
+    path <- path(dir, str_glue(file_template))
+    absent <- !file_exists(path)
+    absentees <- c(absentees, absent)
+    if (absent) {
+      empties <- c(empties, FALSE)
+    } else {
+      empty <- file_size(path) == 0
+      if (empty) file_delete(path)
+      empties <- c(empties, empty)
+    }
+  }
+  if (warn && any(absentees)) {
+    warning(str_glue("No {file_type} files returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
+  }
+  if (warn && any(empties)) {
+    warning(str_glue("Empty {file_type} files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were deleted."), call.=FALSE)
+  }
+  return(!(any(absentees) || any(empties)))
+}
+
 # ---- Process environment and run config settings ----
 
 # Read config file if specified via an argument, check presence and types.
@@ -356,6 +588,7 @@ if (GET_GDX_OUTPUT) {
 if (MERGE_GDX_OUTPUT && !GET_GDX_OUTPUT) stop("Cannot MERGE_GDX_OUTPUT without first doing GET_GDX_OUTPUT!")
 if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT without first doing WAIT_FOR_RUN_COMPLETION!")
 if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX_FILES without first doing MERGE_GDX_OUTPUT!")
+if (MERGE_GDX_OUTPUT) check_on_path("gdxmerge")
 
 # Though not utlized unless GET_G00_OUTPUT or GET_GDX_OUTPUT are TRUE, the below variables are
 # used in conditional string expansion via str_glue() such that the non-use is enacted only
@@ -394,238 +627,6 @@ if (username == "") stop("Cannot determine the username!")
 if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
 log_dir <- path(CONDOR_DIR, LABEL)
 if (!dir_exists(log_dir)) dir_create(log_dir)
-
-# ---- Define some helper functions ----
-
-# Check that the given binaries are on-path
-check_on_path <- function(binaries) {
-  where <- Sys.which(binaries)
-  for (bin in binaries) {
-    if (where[bin] == "") {
-      message(str_glue("Binary/executable '{bin}' was not found! Please add its containing directory to the PATH environment variable."), call.=FALSE)
-    }
-  }
-}
-
-# Bundle files with 7-Zip, check success and output, and return the overall byte size of the input files
-bundle_with_7z <- function(args_for_7z) {
-  check_on_path("7z")
-  out <- system2("7z", stdout=TRUE, stderr=TRUE, args=args_for_7z)
-  if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
-    message("7z failed, likely because of erroneous or too many arguments.\nThe arguments for 7z derived from the BUNDLE_* config options were as follows:")
-    message(paste(args_for_7z, collapse='\n'))
-    message("\nThe invocation of 7z returned:")
-    message(paste(out, collapse='\n'))
-    stop("Bundling failed!", call.=FALSE)
-  }
-  else {
-    cat(out[grep("^Scanning the drive:", out)+1], sep="\n")
-    size_line <- grep("^Archive size:", out, value=TRUE)
-    cat(size_line, sep="\n")
-    byte_size <- as.double(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
-    if (is.na(byte_size)) stop("7zip archive size extraction failed!", call.=FALSE) # 7zip output format has changed?
-    return(byte_size)
-  }
-}
-
-# List content of a 7-Zip archive
-list_7z <- function(archive_path) {
-  check_on_path("7z")
-  out <- system2("7z", stdout=TRUE, stderr=TRUE, args=c("l", archive_path))
-  if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
-    stop(str_glue("Failed to list content of {archive_path}"), call.=FALSE)
-  }
-  return(out)
-}
-
-# Delete a file if it exists
-delete_if_exists <- function(dir_path, file_name) {
-  file_path <- path(dir_path, file_name)
-  if (file_exists(file_path)) file_delete(file_path)
-}
-
-# Clear text displayed on current line and reset cursor to start of line
-# provided that CLEAR_LINES has been configured to be TRUE. Otherwise,
-# issue a line feed to move on to the start of the next line.
-clear_line <- function() {
-  if (CLEAR_LINES)
-    cat("\r                                                                     \r")
-  else
-    cat("\n")
-}
-
-# Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
-monitor <- function(clusters) {
-  warn <- FALSE
-  regexp <- "Total for query: (\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended"
-  #regexp <- "(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
-  reschedule_invocations <- 200 # limit the number of reschedules so it is only done early on to push out the jobs quickly
-  # initial values before first iteration
-  changes_since_reschedule <- FALSE
-  iterations_since_reschedule <- 0
-  q_errors <- 0
-  prior_idle <- -1
-  prior_running <- -1
-  q <- "" # to hold formatted condor_q query result
-  repeat {
-    Sys.sleep(1)
-
-    # Collect Condor queue information via condor_q
-    outerr <- system2("condor_q", args=c("-totals", "-wide", clusters), stdout=TRUE, stderr=TRUE)
-    if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-      q_errors <- q_errors+1
-      if (q_errors >= 10) {
-        # 10 consecutive condor_q errors, probably not transient, report and stop
-        cat(outerr, sep="\n")
-        stop("Invocation of condor_q failed! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
-      } else {
-        # Fewer than 10 consecutive condor_q errors, retry
-        next
-      }
-    }
-    q_errors <- 0
-
-    # Extract the totals line and parse it out
-    match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
-    if (is.na(match[1])) {
-      cat(outerr, sep="\n")
-      stop("Monitoring Condor queue status with condor_q failed: unexpected output! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
-    }
-    jobs       <- as.integer(match[2])
-    completed  <- as.integer(match[3])
-    removed    <- as.integer(match[4])
-    idle       <- as.integer(match[5])
-    running    <- as.integer(match[6])
-    held       <- as.integer(match[7])
-    suspended  <- as.integer(match[8])
-
-    # Format condor_q result
-    new_q <- str_sub(str_glue('{jobs} jobs:{ifelse(completed==0, "", str_glue(" {completed} completed,"))}{ifelse(removed==0, "", str_glue(" {removed} removed;"))}{ifelse(idle==0, "", str_glue(" {idle} idle (queued),"))}{ifelse(running==0, "", str_glue(" {running} running,"))}{ifelse(held==0, "", str_glue(" {held} held,"))}{ifelse(suspended==0, "", str_glue(" {suspended} suspended,"))}'), 1, -2)
-
-    # Display condor_q result when changed, overwriting old one
-    if (new_q != q) {
-      clear_line()
-      q <- new_q
-      cat(q)
-      flush.console()
-
-      changes_since_reschedule <- TRUE
-    }
-    # Warn when there are held jobs for the first time
-    if (held > 0 && !warn) {
-      clear_line()
-      message("Jobs are held!")
-      message("To see what this means please read: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold")
-      cat(q)
-      flush.console()
-      warn <- TRUE
-    }
-    # Request rescheduling early
-    if (idle > 0 && idle == prior_idle &&
-        reschedule_invocations > 0 &&
-        running <= prior_running
-        && ((changes_since_reschedule) || iterations_since_reschedule >= 10)
-    ) {
-      outerr <- suppressWarnings(system2("condor_reschedule", stdout=TRUE, stderr=TRUE))
-      if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-        # Try to workaround issue with a seemingly superfluous args=c("reschedule") parameter
-        # because R seems to sometimes call some underlying generic exe that needs a parameter to
-        # resolve which command it should behave as.
-        outerr2 <- suppressWarnings(system2("condor_reschedule", args=c("reschedule"), stdout=TRUE, stderr=TRUE))
-        if (!is.null(attr(outerr2, "status")) && attr(outerr2, "status") != 0) {
-          # Warn about the first error, not the also-failed workaround
-          clear_line()
-          warning(str_c(c("Invocation of condor_reschedule failed with the following output:", outerr), collapse='\n'), call.=FALSE)
-          cat(q)
-          flush.console()
-        }
-      }
-      reschedule_invocations <- reschedule_invocations-1
-      changes_since_reschedule <- FALSE
-      iterations_since_reschedule <- 0
-    } else {
-      iterations_since_reschedule <- iterations_since_reschedule+1
-    }
-    # Store state for next iteration
-    prior_idle <- idle
-    prior_running <- running
-    # Stop if all jobs done
-    if (jobs == 0) {
-      clear_line()
-      flush.console()
-      break
-    }
-  }
-}
-
-# Get the return values of job log files, or NA when a job did not terminate normally.
-get_return_values <- function(log_dir, log_file_names) {
-  return_values <- c()
-  return_value_regexp <- "\\(1\\) Normal termination \\(return value (\\d+)\\)"
-  for (name in log_file_names) {
-    loglines <- readLines(path(log_dir, name))
-    return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
-    return_values <- c(return_values, return_value)
-  }
-  return(return_values)
-}
-
-# Summarize job numbers by using ranges
-summarize_jobs <- function(jobs) {
-  ranging <- FALSE
-  prior <- NULL
-  for (job in sort(jobs)) {
-    if (is.null(prior)) {
-      summary <- c(job)
-    } else {
-      if (job-prior == 1) {
-        ranging <- TRUE
-      } else {
-        if (ranging) {
-          summary <- c(summary, "-", prior)
-          ranging <- FALSE
-        }
-        summary <- c(summary, ",", job)
-      }
-    }
-    prior <- job
-  }
-  if (ranging) summary <- c(summary, "-", job)
-  return(str_c(summary, collapse=""))
-}
-
-# A function that for all given jobs tests if a file exists and is not empty.
-# Empty files are deleted.
-#
-# The file_template is a template of the filename that is run through str_glue
-# and can make use of variables defined in the calling context. The dir parameter
-# indicates the directory containing the files.
-#
-# Warnings are generated when files are absent or empty.
-# The boolean return value is TRUE when all files exist and are not empty.
-all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
-  absentees <- c()
-  empties <- c()
-  for (job in JOBS) {
-    path <- path(dir, str_glue(file_template))
-    absent <- !file_exists(path)
-    absentees <- c(absentees, absent)
-    if (absent) {
-      empties <- c(empties, FALSE)
-    } else {
-      empty <- file_size(path) == 0
-      if (empty) file_delete(path)
-      empties <- c(empties, empty)
-    }
-  }
-  if (warn && any(absentees)) {
-    warning(str_glue("No {file_type} files returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
-  }
-  if (warn && any(empties)) {
-    warning(str_glue("Empty {file_type} files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were deleted."), call.=FALSE)
-  }
-  return(!(any(absentees) || any(empties)))
-}
 
 # ---- Check status of execute hosts ----
 
@@ -965,7 +966,6 @@ if (WAIT_FOR_RUN_COMPLETION) {
       warning("MERGE_GDX_OUTPUT was set but not honored: no complete set of GDX files was returned.")
     } else {
       cat("Merging the returned GDX files...\n")
-      check_on_path("gdxmerge")
       prior_wd <- getwd()
       setwd(GDX_OUTPUT_DIR_SUBMIT)
       Sys.setenv(GDXCOMPRESS=1) # Causes the merged GDX file to be compressed, it will be usable as a regular GDX,
