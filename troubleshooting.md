@@ -101,14 +101,14 @@ The cluster may be busy. To see who else has submitted jobs, issue [`condor_stat
 
 Check your network connection. Check if your submit machine can reach machines in the pool, e.g. by issuing a `ping` command on the command line.
 
-If there is no issue witht he above, it might instead be that a stale IP adress was cached, in particular if the error looks something like:
+If there is no issue with the above, it might instead be that a stale IP adress was cached, in particular if the error looks something like:
 ```
 > condor_q
 -- Failed to fetch ads from: <123.234.145.156:9618?addrs=123.234.145.156-9618&noUDP&sock=3728_5f68_3> : pcname.orgname.local
 CEDAR:6001:Failed to connect to <123.234.145.156:9618?addrs=123.234.145.156-9618&noUDP&sock=3728_5f68_3>
 ```
 
-In that case, restarting condor daemons via [`condor_restart`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_restart.html) or rebooting might help.
+In that case, restarting Condor daemons via [`condor_restart`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_restart.html) or rebooting might help.
 
 ## `Condor_run_stats.R` produces empty plots
 When running `Condor_run_stats.R` and some of the resulting plots are empty, the console output probably contained something like:
