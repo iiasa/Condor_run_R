@@ -1,0 +1,14 @@
+# See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
+LABEL = "disconnect_{Sys.Date()}"
+JOBS = c(0:99)
+JOB_RELEASES = 50
+JOB_RELEASE_DELAY = 120
+HOST_REGEXP = "^limpopo"
+REQUEST_MEMORY = 1000
+REQUEST_DISK = 200
+LAUNCHER = "Rscript"
+SCRIPT = "test.R"
+ARGUMENTS = "%1"
+BUNDLE_INCLUDE = SCRIPT
+WAIT_FOR_RUN_COMPLETION = FALSE
+CLUSTER_NUMBER_LOG = "cluster_number"
