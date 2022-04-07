@@ -19,7 +19,6 @@ rm(list=ls())
 # .......8><....snippy.snappy....8><.........................................
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 JOBS = c()
-HOST_REGEXP = ".*"
 REQUEST_MEMORY = 100
 LAUNCHER = "Rscript"
 ARGUMENTS = "%1"
@@ -45,6 +44,7 @@ SEED_JOB_RELEASES = 0
 JOB_RELEASES = 3
 JOB_RELEASE_DELAY = 120
 REQUEST_CPUS = 1
+HOST_REGEXP = ".*"
 REQUEST_DISK = 1000000 # KiB
 CONDOR_DIR = "Condor"
 GET_OUTPUT = TRUE

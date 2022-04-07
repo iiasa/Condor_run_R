@@ -19,7 +19,6 @@ rm(list=ls())
 # .......8><....snippy.snappy....8><.........................................
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 JOBS = c()
-HOST_REGEXP = ".*"
 REQUEST_MEMORY = 100
 GAMS_FILE_PATH = "model.gms"
 GAMS_ARGUMENTS = "//job_number=%1 checkErrorLevel=1"
@@ -45,6 +44,7 @@ RETAIN_BUNDLE = FALSE
 SEED_JOB_RELEASES = 0
 JOB_RELEASES = 3
 JOB_RELEASE_DELAY = 120
+HOST_REGEXP = ".*"
 REQUEST_CPUS = 1
 REQUEST_DISK = 1000000 # KiB
 CONDOR_DIR = "Condor"

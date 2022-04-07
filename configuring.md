@@ -25,9 +25,6 @@ Specify the job numbers of the jobs to submit. Job numbers start at 0. For examp
 
 Typically, the script that is run when your jobs are started accepts the job number as an argument so that it knows which variant of the calculation to run. For example, a script that runs a model scenario might map the job number to a particular scenario so that submitting with `JOBS = c(0:9)` will run the first ten scenarios in parallel on the cluster.
 
-### HOST_REGEXP
-A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select execute hosts from the cluster by hostname.
-
 ### REQUEST_MEMORY
 An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execute host when the sum of their memory requests exceeds the memory allocated to the execution slot of on the host. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the execute host at risk of running out of memory, which can endanger other jobs as well.
 
@@ -143,6 +140,11 @@ Number of times to auto-release (retry) held (failed) jobs before giving up. Thi
 Default value: `120`
 
 Number of seconds to wait after a job has entered the *hold* state before auto-releasing it for a retry. The maximum number of retries is set via [`JOB_RELEASES`](#job_releases). When common causes of transient failure on your cluster take long to resolve, set this value to an estimate of the problem half life so as to not exhaust the retries too soon.
+
+### HOST_REGEXP
+Default value: `.*`
+
+A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select a subset of execute hosts from the cluster by hostname. Jobs will be scheduled only on the machines thus selected. The default value selects all available execute hosts.
 
 ### REQUEST_CPUS
 Default value: `1`
