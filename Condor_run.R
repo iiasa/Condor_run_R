@@ -89,7 +89,7 @@ JOB_TEMPLATE <- c(
   "error = {log_dir}/{PREFIX}_$(cluster).$(job).err",
   "stream_error = True",
   "", # If a job goes on hold for more than JOB_RELEASE_DELAY seconds, release it up to JOB_RELEASES times
-  "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && ((CurrentTime - EnteredCurrentStatus) > {JOB_RELEASE_DELAY})",
+  "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > {JOB_RELEASE_DELAY})",
   "",
   "requirements = \\",
   '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
@@ -158,7 +158,7 @@ SEED_JOB_TEMPLATE <- c(
   "output = {log_dir}/_seed_{hostname}.out",
   "error = {log_dir}/_seed_{hostname}.err",
   "",
-  "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && ((CurrentTime - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
+  "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
   "",
   "requirements = \\",
   '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
@@ -166,7 +166,7 @@ SEED_JOB_TEMPLATE <- c(
   "  ( GLOBIOM =?= True ) && \\",
   '  ( TARGET.Machine == "{hostdom}" )',
   "",
-  "periodic_remove = (JobStatus == 1) && (CurrentTime - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute host is not responding
+  "periodic_remove = (JobStatus == 1) && (time() - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute host is not responding
   "",
   "request_memory = 0",
   "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
