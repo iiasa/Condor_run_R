@@ -134,7 +134,7 @@ SEED_JOB_TEMPLATE <- c(
   "output = {log_dir}/_seed_{hostname}.out",
   "error = {log_dir}/_seed_{hostname}.err",
   "",
-  "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && (JobStatus == 5) && ((CurrentTime - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
+  "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && ((CurrentTime - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
   "",
   "requirements = \\",
   '  ( (Arch =="INTEL")||(Arch =="X86_64") ) && \\',
