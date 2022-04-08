@@ -33,8 +33,7 @@ The advantages of using these scripts over using [`condor_submit`](https://htcon
 - Replicate the project file tree on your submit machine to the remote scratch directory on the machine where a job is executed (execute host).
 - The submit bundle is compressed and takes less time to send to an execute host.
 - Execute hosts cache the bundle so that it needs to be sent over only once per host instead of once per job, avoiding network contention or the hassle of instead setting up a shared network-accessible filesystem.
-- Once the bundle is cached, submit machines (e.g. laptops) can disconnect from the cluster during the run, and re-connect later to receive output.
-- Alternatively, jobs can be [monitored until they complete](configuring.md#wait_for_run_completion) so that it becomes easy to automate handling of run output.
+- Jobs can be [monitored until they complete](configuring.md#wait_for_run_completion) so that it becomes easy to automate handling of run output.
 - Provides for configurable retry of on-hold jobs so as to recover from transient errors.
 
 ## Installation
@@ -100,7 +99,7 @@ Each job will typically produce some kind of output. For R jobs this might be an
 
 The submit scripts contain default functionality that has Condor transfer job output back to the submit machine as each job completes. The relevant configuration settings are [`GET_OUTPUT`](configuring.md#get_output), [`OUTPUT_DIR`](configuring.md#output_dir), and [`OUTPUT_FILE`](configuring.md#output_file) for `Condor_run_basic.R`. For GAMS runs using `Condor_run.R`, the [`G00_OUTPUT_DIR`](configuring.md#g00_output_dir), [`G00_OUTPUT_FILE`](configuring.md#g00_output_file), [`GET_G00_OUTPUT`](configuring.md#get_g00_output), [`GDX_OUTPUT_DIR`](configuring.md#gdx_output_dir), [`GDX_OUTPUT_FILE`](configuring.md#gdx_output_file) and [`GET_GDX_OUTPUT`](configuring.md#get_gdx_output) configs can be used. Note that the files are renamed on receipt with unique numbers for the run and job so that the output files from different runs and jobs are kept separate.
 
-When you do not need to automatically process the output, you can configure [`WAIT_FOR_RUN_COMPLETION`](configuring.md#wait_for_run_completion)` = FALSE` and disconnect or shut down the machine you submit from (which might be a laptop you want to take home) for the duration of the run. Without a connected submit machine, idle (queued) jobs will still be scheduled because the cached bundle suffices and no further transfer of input data from the submit machine is needed. A disconnected submit machine will receive the output data after it reconnects to the cluster, but you will need to manually trigger the processing of the output.
+When you do not need to automatically process the output, you can configure [`WAIT_FOR_RUN_COMPLETION`](configuring.md#wait_for_run_completion)` = FALSE`. Condor background processes on the submit machine will track job progress and receive job output. This tacking can survive a suspend or reboot of the submit machine, but not without causing a delay in job completion: it is better to keep the submit machine connected and running.
 
 To automatically process job output, configure [`WAIT_FOR_RUN_COMPLETION`](configuring.md#wait_for_run_completion)` = TRUE`and write a batch file or shell script that includes the [submit invocation](#use) followed by output processing steps. For GAMS jobs, retrieved GDX files can be automatically merged first as configured by the [`MERGE_GDX_OUPTUT`](configuring.md#merge_gdx_ouptut), [`MERGE_BIG`](configuring.md#merge_big), [`MERGE_EXCLUDE`](configuring.md#merge_exclude) and [`REMOVE_MERGED_GDX_FILES`](configuring.md#remove_merged_gdx_files) options (`Condor_run.R`).
 
