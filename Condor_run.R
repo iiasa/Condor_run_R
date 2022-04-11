@@ -45,6 +45,7 @@ SEED_JOB_RELEASES = 0
 JOB_RELEASES = 3
 JOB_RELEASE_DELAY = 120
 HOST_REGEXP = ".*"
+ARCH_REQUIREMENT = 'Arch =="X86_64"'
 REQUEST_CPUS = 1
 REQUEST_DISK = 1000000 # KiB
 CONDOR_DIR = "Condor"
@@ -92,8 +93,6 @@ JOB_TEMPLATE <- c(
   "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > {JOB_RELEASE_DELAY})",
   "",
   "requirements = \\",
-  '  (Arch =="X86_64") && \\',
-  '  (OpSys == "WINDOWS") && \\',
   "  ( GLOBIOM =?= True ) && \\",
   "  ( ( TARGET.Machine == \"{str_c(hostdoms, collapse='\" ) || ( TARGET.Machine == \"')}\") )",
   "request_memory = {REQUEST_MEMORY}",
@@ -161,8 +160,6 @@ SEED_JOB_TEMPLATE <- c(
   "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
   "",
   "requirements = \\",
-  '  (Arch =="X86_64") && \\',
-  '  (OpSys == "WINDOWS") && \\',
   "  ( GLOBIOM =?= True ) && \\",
   '  ( TARGET.Machine == "{hostdom}" )',
   "",
