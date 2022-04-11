@@ -141,6 +141,21 @@ Default value: `120`
 
 Number of seconds to wait after a job has entered the *hold* state before auto-releasing it for a retry. The maximum number of retries is set via [`JOB_RELEASES`](#job_releases). When common causes of transient failure on your cluster take long to resolve, set this value to an estimate of the problem half life so as to not exhaust the retries too soon.
 
+### REQUIREMENTS
+Default value: `c()`
+
+Requirement expressions that select the execute hosts to submit to based on their capabilities. These can be expressions such as `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"` which respectively require the execute hosts to run the Linux operating system and have a 64-bit AMD/Intel processor architecture.
+
+**Note:** by default, execute hosts are required to have the same `OpSys` and `Arch` as the machine you submit from. If your code can run on both Linux and Windows—for example because it is Python code, and a Python interpreter is available on all execute hosts—add ```'OpSys == "LINUX" || OpSys == "WINDOWS"'``` as a requirement.
+
+The requirement expressions that you configure are surrounded by `(` and `)` and concatenated with
+`&&` so that all must hold true for a host to be selected.
+
+For more information on requirement expressions, see the documentation of
+the `requirements` command of the [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands).
+
+**Note:** custom [`ClassAds`] may have been defined on the execute hosts that allow you select their capabilities on a more fine-grained level via requirement expresions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. Ask your cluster administrator.
+
 ### HOST_REGEXP
 Default value: `.*`
 
