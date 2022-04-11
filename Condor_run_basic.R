@@ -82,7 +82,6 @@ JOB_TEMPLATE <- c(
   "requirements = \\",
   '  (Arch =="X86_64") && \\',
   '  (OpSys == "WINDOWS") && \\',
-  "  ( GLOBIOM =?= True ) && \\",
   "  ( ( TARGET.Machine == \"{str_c(hostdoms, collapse='\" ) || ( TARGET.Machine == \"')}\") )",
   "request_memory = {REQUEST_MEMORY}",
   "request_cpus = {REQUEST_CPUS}", # Number of "CPUs" (hardware threads) to reserve for each job
@@ -139,7 +138,6 @@ SEED_JOB_TEMPLATE <- c(
   "requirements = \\",
   '  (Arch =="X86_64") && \\',
   '  (OpSys == "WINDOWS") && \\',
-  "  ( GLOBIOM =?= True ) && \\",
   '  ( TARGET.Machine == "{hostdom}" )',
   "",
   "periodic_remove = (JobStatus == 1) && (time() - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute host is not responding
