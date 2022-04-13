@@ -134,7 +134,7 @@ SEED_JOB_TEMPLATE <- c(
   "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
   "periodic_remove = (JobStatus == 1) && (time() - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute host is not responding
   "",
-  "{build_requirements_expression(REQUIREMENTS, hostdoms)}",
+  "{build_requirements_expression(REQUIREMENTS, hostdom)}",
   "request_memory = 0",
   "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
   "request_disk = {2*bundle_size+500}", # KiB, twice needed for move, add some for the extra files
