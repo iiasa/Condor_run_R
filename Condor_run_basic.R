@@ -44,6 +44,7 @@ SEED_JOB_RELEASES = 0
 JOB_RELEASES = 3
 JOB_RELEASE_DELAY = 120
 HOST_REGEXP = ".*"
+REQUIREMENTS = c()
 REQUEST_CPUS = 1
 REQUEST_DISK = 1000000 # KiB
 CONDOR_DIR = "Condor"
@@ -79,8 +80,7 @@ JOB_TEMPLATE <- c(
   "", # If a job goes on hold for more than JOB_RELEASE_DELAY seconds, release it up to JOB_RELEASES times
   "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > {JOB_RELEASE_DELAY})",
   "",
-  "requirements = \\",
-  "  ( ( TARGET.Machine == \"{str_c(hostdoms, collapse='\" ) || ( TARGET.Machine == \"')}\") )",
+  "{build_requirements_expression(REQUIREMENTS, hostdoms)}",
   "request_memory = {REQUEST_MEMORY}",
   "request_cpus = {REQUEST_CPUS}", # Number of "CPUs" (hardware threads) to reserve for each job
   "request_disk = {request_disk}",
@@ -132,12 +132,9 @@ SEED_JOB_TEMPLATE <- c(
   "error = {log_dir}/_seed_{hostname}.err",
   "",
   "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
-  "",
-  "requirements = \\",
-  '  ( TARGET.Machine == "{hostdom}" )',
-  "",
   "periodic_remove = (JobStatus == 1) && (time() - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute host is not responding
   "",
+  "{build_requirements_expression(REQUIREMENTS, hostdoms)}",
   "request_memory = 0",
   "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
   "request_disk = {2*bundle_size+500}", # KiB, twice needed for move, add some for the extra files
@@ -235,6 +232,43 @@ clear_line <- function() {
     cat("\r                                                                     \r")
   else
     cat("\n")
+}
+
+# Build a combined requirements expression from zero or more requirements
+# expressions as well as a list of zero or more exute host names to which
+# the submission should be limited.
+#
+# The input requirement expressions are surrounded with ( and ) and
+# concatenated with &&, so all must be true for the combined expression
+# to be true.
+#
+# The input host domain names are concatined with ||.
+build_requirements_expression <- function(requirements, hostdoms) {
+  h <- ""
+  if (length(hostdoms) > 0) {
+    h <- str_c(
+      "  ( \\\n",
+      '    (TARGET.Machine == \"',
+      str_c(hostdoms, collapse = '\") || \\\n    (TARGET.Machine == \"'),
+      "\") \\\n",
+      "  )\n"
+    )
+  }
+  r <- ""
+  if (length(requirements) > 0) {
+    r <- str_c(
+      "  (",
+      str_c(requirements, collapse = '\") && \\\n  (')
+    )
+    if (h == "")
+      r <- str_c(r, ")\n")
+    else
+      r <- str_c(r, ") && \\\n")
+  }
+  if (r == "" && h == "") {
+    return("")
+  }
+  str_c("requirements = \\\n", r, h)
 }
 
 # Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
