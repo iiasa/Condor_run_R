@@ -142,9 +142,11 @@ Default value: `120`
 Number of seconds to wait after a job has entered the *hold* state before auto-releasing it for a retry. The maximum number of retries is set via [`JOB_RELEASES`](#job_releases). When common causes of transient failure on your cluster take long to resolve, set this value to an estimate of the problem half life so as to not exhaust the retries too soon.
 
 ### REQUIREMENTS
-Default value: `c()`
+Default value: `c()` for `Condor_run_basic.R`.
 
-Requirement expressions that select the execute hosts to submit to based on their capabilities. These can be expressions such as `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"` which respectively require the execute hosts to run the Linux operating system and have a 64-bit AMD/Intel processor architecture.
+Default value: `c("GAMS")` for `Condor_run.R`.
+
+Requirement expressions that select the execute hosts to submit to based on their capabilities. These can be expressions such as `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"` which respectively require the execute hosts to run the Linux operating system and have a 64-bit AMD/Intel processor architecture. For convenience, bare ClassId identifiers are accepted and converted to valid `<identifier> =?= True` expressions.
 
 **Note:** by default, execute hosts are required to have the same `OpSys` and `Arch` as the machine you submit from. If your code can run on both Linux and Windows—for example because it is Python code, and a Python interpreter is available on all execute hosts—add ```'OpSys == "LINUX" || OpSys == "WINDOWS"'``` as a requirement.
 

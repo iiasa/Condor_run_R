@@ -242,6 +242,9 @@ clear_line <- function() {
 # concatenated with &&, so all must be true for the combined expression
 # to be true.
 #
+# Any bare ClassId identifiers found in the requirements will be converted
+# to '<identifier> =?= True' expressions for convenience.
+#
 # The input host domain names are concatined with ||.
 build_requirements_expression <- function(requirements, hostdoms) {
   h <- ""
@@ -253,6 +256,12 @@ build_requirements_expression <- function(requirements, hostdoms) {
       "\") \\\n",
       "  )\n"
     )
+  }
+  m <- str_match(requirements, "^[_.a-zA-Z0-9]+$")
+  for (i in seq_along(m)) {
+    if (!is.na(m[[i]])) {
+      requirements[[i]] <- str_c(requirements[[i]], " =?= True")
+    }
   }
   r <- ""
   if (length(requirements) > 0) {
