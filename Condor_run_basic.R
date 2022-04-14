@@ -234,9 +234,36 @@ clear_line <- function() {
     cat("\n")
 }
 
-# Build a combined requirements expression from zero or more requirements
-# expressions as well as a list of zero or more exute host names to which
-# the submission should be limited.
+# Search requirements expressions for bare ClassId identifiers and
+# convert those to `<identifier> =?= True' expressions.
+express_identifiers <- function(requirements) {
+  if (length(requirements) == 0) return(c())
+  m <- str_match(requirements, "^[_.a-zA-Z0-9]+$")
+  for (i in seq_along(m)) {
+    if (!is.na(m[[i]])) {
+      requirements[[i]] <- str_c(requirements[[i]], " =?= True")
+    }
+  }
+  return(requirements)
+}
+
+# Turn requirements into multiple '-constraint <expression>' arguments
+# that can be passed to condor_status via system2(). Requires removal
+# of spaces from expressions and escaping of " with backslashes.
+#
+# Tested on Windows and Linux.
+constraints <- function(requirements) {
+  if (length(requirements) == 0) return(c())
+  requirements <- express_identifiers(requirements)
+  requirements <- str_remove_all(requirements, " ")
+  requirements <- str_replace_all(requirements, '"', '\\\\"')
+  str_c("-constraint ", requirements)
+}
+
+# Build a combined pretty-printed expression from zero or more requirements
+# expressions as well as a list of zero or more execute host names to
+# which the submission should be limited. The build expression can be
+# included in a .job description file.
 #
 # The input requirement expressions are surrounded with ( and ) and
 # concatenated with &&, so all must be true for the combined expression
@@ -257,12 +284,7 @@ build_requirements_expression <- function(requirements, hostdoms) {
       "  )\n"
     )
   }
-  m <- str_match(requirements, "^[_.a-zA-Z0-9]+$")
-  for (i in seq_along(m)) {
-    if (!is.na(m[[i]])) {
-      requirements[[i]] <- str_c(requirements[[i]], " =?= True")
-    }
-  }
+  requirements <- express_identifiers(requirements)
   r <- ""
   if (length(requirements) > 0) {
     r <- str_c(
@@ -569,13 +591,13 @@ if (!dir_exists(log_dir)) dir_create(log_dir)
 # Check that required Condor binaries are available
 check_on_path(c("condor_submit", "condor_status", "condor_q", "condor_reschedule"))
 
-# Show status summary of execute hosts matching HOST_REGEXP
-error_code <- system2("condor_status", args=c("-compact", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
+cat("Available resources on execute hosts matching HOST_REGEXP and meeting REQUIREMENTS:\n")
+error_code <- system2("condor_status", args=c("-compact", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
 if (error_code > 0) stop("Cannot show Condor pool status! Probably, your submit machine is unable to connect to the central manager. Possibly, you are running a too-old (< V8.7.2) Condor version.")
 cat("\n")
 
-# Collect host name and domain of available execute hosts matching HOST_REGEXP
-hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machine", "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE))
+# Collect host name and domain of available execute hosts matching HOST_REGEXP and meeting REQUIREMENTS
+hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machine", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE))
 if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
 if (length(hostdoms) == 0) stop("No execute hosts matching HOST_REGEXP are available!")
 
