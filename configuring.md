@@ -146,12 +146,9 @@ Default value: `c()` for `Condor_run_basic.R`.
 
 Default value: `c("GAMS")` for `Condor_run.R`.
 
-Requirement expressions that select the execute hosts to submit to based on their capabilities. These can be expressions such as `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"` which respectively require the execute hosts to run the Linux operating system and have a 64-bit AMD/Intel processor architecture. For convenience, bare ClassId identifiers are accepted and converted to valid `<identifier> =?= True` expressions.
+Requirement expressions that select the execute hosts to submit to based on their capabilities. The expressions must all evaluated to True for an execute host to be selected. For convenience, bare ClassId identifiers are accepted and converted to valid `<identifier> =?= True` expressions.
 
-**Note:** by default, execute hosts are required to have the same `OpSys` and `Arch` as the machine you submit from. If your code can run on both Linux and Windows—for example because it is Python code, and a Python interpreter is available on all execute hosts—add ```'OpSys == "LINUX" || OpSys == "WINDOWS"'``` as a requirement.
-
-The requirement expressions that you configure are surrounded by `(` and `)` and concatenated with
-`&&` so that all must hold true for a host to be selected.
+Requirements expressions `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"` respectively select execute hosts that run the Linux operating system and have a 64-bit AMD/Intel processor architecture. Using `'OpSys ==  "WINDOWS"'` you can select Windows execute hosts. **Such OS and architecture selection is normally not necessary** because by default, when omitting such requirements, execute hosts are required to have the same `OpSys` and `Arch` as the machine you submit from, which is likely the desired behavior. However, if your code can run on both Linux and Windows—for example because it is Python code, and a Python interpreter is available on all execute hosts—add ```'OpSys == "LINUX" || OpSys == "WINDOWS"'``` as a requirement.
 
 For more information on requirement expressions, see the documentation of
 the `requirements` command of the [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands).
