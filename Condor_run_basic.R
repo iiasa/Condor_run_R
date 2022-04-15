@@ -591,10 +591,14 @@ if (!dir_exists(log_dir)) dir_create(log_dir)
 # Check that required Condor binaries are available
 check_on_path(c("condor_submit", "condor_status", "condor_q", "condor_reschedule"))
 
-# Construct clause indicating what execute hosts are selected by
-selected_by <- str_glue("{ifelse(HOST_REGEXP == '.*', '', ' matching HOST_REGEXP')}{ifelse(HOST_REGEXP == '.*' || length(REQUIREMENTS) == 0,'', ' and')}{ifelse(length(REQUIREMENTS) == 0, '', ' meeting REQUIREMENTS')}")
+# Construct clause stating what execute hosts are selected by
+selected_by <- str_glue(
+  "{ifelse(HOST_REGEXP == '.*', '', ' matching HOST_REGEXP')}",
+  "{ifelse(HOST_REGEXP == '.*' || length(REQUIREMENTS) == 0,'', ' and')}",
+  "{ifelse(length(REQUIREMENTS) == 0, '', ' meeting REQUIREMENTS')}"
+)
 
-cat(str_glue("Available resources on execute hosts{selected_by}:\n"))
+cat(str_glue("Available resources on execute hosts{selected_by}:"), sep="\n")
 error_code <- system2("condor_status", args=c("-compact", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
 if (error_code > 0) stop("Cannot show Condor pool status! Probably, your submit machine is unable to connect to the central manager. Possibly, you are running a too-old (< V8.7.2) Condor version.")
 cat("\n")
