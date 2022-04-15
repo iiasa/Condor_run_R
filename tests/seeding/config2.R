@@ -1,7 +1,7 @@
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 LABEL = "seeding_inspite_of_occupation_{Sys.Date()}"
 JOBS = c(0:19)
-HOST_REGEXP = "^limpopo6"
+REQUIREMENTS = c("R")
 REQUEST_MEMORY = 1000
 REQUEST_DISK = 200
 LAUNCHER = "Rscript"
