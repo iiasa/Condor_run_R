@@ -340,25 +340,17 @@ Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/
 
 Template of the Condor `.job` file to submit the run with. The `.job` file produced with this template is preserved in the [log directory of the run](#condor_dir).
 
-See also: [caution on overriding templates](#caution-on-overriding-templates)
-
 ### BAT_TEMPLATE
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L101) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L113).
 
 Template for the `.bat` file that launches jobs on the execute host side. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir).
-
-See also: [caution on overriding templates](#caution-on-overriding-templates)
 
 ### SEED_JOB_TEMPLATE
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L125) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L149).
 
 Template of the Condor `.job` file to submit the bundle seed jobs with. The `.job` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
 
-See also: [caution on overriding templates](#caution-on-overriding-templates)
-
 ### SEED_BAT_TEMPLATE
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L150) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L174).
 
 Template for the `.bat` file that caches the bundle on the execute host side for a seeding job. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
-
-See also: [caution on overriding templates](#caution-on-overriding-templates)
