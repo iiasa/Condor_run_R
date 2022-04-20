@@ -18,6 +18,7 @@ ___
   + [Configuring](configuring.md)
 - [Job output](#job-output)
 - [Troubleshooting](troubleshooting.md)
+- [Configuring a Condor cluster in support of `Condor_run_R`](condor.md#configuring-a-condor-cluster-in-support-of-condor_run_r)
 
 ## Introduction
 This repository provides R scripts for submitting a *run* (a set of jobs) to an HT Condor cluster, and for analysing run performance statistics. Four scripts are provided:

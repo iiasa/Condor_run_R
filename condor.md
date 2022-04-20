@@ -1,4 +1,4 @@
-# Configuring a Condor cluster in support of `Condor_run_R`.
+# Configuring a Condor cluster in support of `Condor_run_R`
 This page, currently in draft form, collects information on how to set up or re-configure a Condor cluster in support of the `Condor_run_R` submit scripts. In particular the bundle caching feature requires a bit of specialized support on the execute host side.
 
 ## Configuring templates for a different cluster
