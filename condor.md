@@ -15,9 +15,29 @@ powershell ListOrDeleteFilesAfterNumberOfDays.ps1 -FolderPath d:\condor\bundles 
 
 On Linux, the `find` command can be used. For example [`find <cache directory> -mtime +1 -delete`](https://manpages.debian.org/bullseye/findutils/find.1.en.html) command that will delete all bundles with a timestamp older than one day. This can be scheduled via a [crontab entry](https://en.wikipedia.org/wiki/Cron) or a timer/service pair of SystemD unit files.
 
+## Advertising capabilities
+
+For a job to run on an execute host, certain capabilities may need to be in place. For examle, a language interpreter may need to be installed. To ensure that jobs get scheduled on execute hosts that have the capability to run them, the user can configure [`REQUIREMENTS`](configuring.md#requirements) for a run of jobs. When these match the advertised capabilities of an execute host, the host becomes eligable.
+
+To advertise custom capabilities of execute hosts, ydefine ClassAds in their HTCondor configuration. This is done by editing the `condor_config.local` configuration file on each host. For example, to advertise that both an R and GAMS language interpreter are available and on-path, add the following lines:
+```
+# Have a GAMS installation on-path
+GAMS = True
+
+# Have an R installation on-path.
+R = True
+
+STARTD_ATTRS = \
+  GAMS, \
+  R, \
+  $(STARTD_ATTRS)
+```
+
+After configuring custom capabilities, notify the users of your cluster what capabilities are available, and how to configure requirements to select that capability for their job runs.
+
 ## Configuring [templates](configuring.md#templates) for a different cluster
 
-The [template](configuring.md#templates) default values work with the IIASA Limpopo cluster. To configure the templates for a different cluster, override [`SEED_JOB_TEMPLATE`](configuring.md#seed_job_template) and [`JOB_TEMPLATE`](configuring.md#job_template) found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. In addition, override [`SEED_BAT_TEMPLATE`](configuring.md##seed_bat_template) and [`BAT_TEMPLATE`](configuring.md##bat_template) to generate batch files or shell scripts that will run the jobs on your cluster's execute hosts.
+The [template](configuring.md#templates) default values work with the IIASA Limpopo cluster. To configure the templates for a different cluster, override [`SEED_JOB_TEMPLATE`](configuring.md#seed_job_template) and [`JOB_TEMPLATE`](configuring.md#job_template) found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. In addition, override [`SEED_BAT_TEMPLATE`](configuring.md#seed_bat_template) and [`BAT_TEMPLATE`](configuring.md##bat_template) to generate batch files or shell scripts that will run the jobs on your cluster's execute hosts.
 
 As Condor administrator, you can adjust the configuration of execute hosts to accommodate their seeding with bundles. Though seeding jobs request minimal resources, Condor nevertheless does not schedule them when there is not at least one unoccupied CPU (the HTCondor concept of "CPU", which is basically a single hardware thread resource) or a minimum of disk, swap, and memory available on execute hosts. Presumably, Condor internally amends a job's stated resource requirements to make them more realistic. Unfortuntely, this means that when one or more execute hosts are fully occupied, submitting a new run through `Condor_run_R` scripting will have the seeding jobs of hosts remain idle (queued).
 
