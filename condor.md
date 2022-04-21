@@ -1,10 +1,24 @@
 # Configuring a Condor cluster in support of `Condor_run_R`
 This page, currently in draft form, collects information on how to set up or re-configure a Condor cluster in support of the `Condor_run_R` submit scripts. In particular the bundle caching feature requires a bit of specialized support on the execute host side.
 
-## Configuring [templates](configuring.md#templates) for a different cluster
-The [template](configuring.md#templates) default values work with the IIASA Limpopo cluster. To configure the templates for a different cluster, override [`SEED_JOB_TEMPLATE`](configuring.md#seed_job_template) and [`JOB_TEMPLATE`](configuring.md#job_template) found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. In addition, override [`SEED_BAT_TEMPLATE`](configuring.md##seed_bat_template) and [`BAT_TEMPLATE`](configuring.md##bat_template) to generate batch files or shell scripts that will run the jobs on your cluster's execute hosts.
+## Setting up a bundles cache
 
-Each execute host should provide a directory where the bundles can be cached, and should periodically delete old bundles in those caches so as to prevent their disks from filling up, e.g. using a crontab entry and a [`find <cache directory> -mtime +1 -delete`](https://manpages.debian.org/bullseye/findutils/find.1.en.html) command that will delete all bundles with a timestamp older than one day. The `bat_template` uses [touch](https://linux.die.net/man/1/touch) to update the timestamp of the bundle to the current time. This ensures that that a bundle will not be deleted as long as jobs continue to get scheduled from it.
+To support receiving and caching bundles, each execute host should provide a directory with appropriate access rights where the bundles can be cached, and should periodically delete old bundles in those caches so as to prevent their disks from filling up. The batch/shell script that launches a job should contain a [touch](https://linux.die.net/man/1/touch) to update the timestamp of the bundle to the current time. This ensures that that a bundle will not be deleted as long as jobs continue to get scheduled from it. This batch/shell script is generated from the [`BAT_TEMPLATE`](configuring.md##bat_template) whose default value includes an invocation of `touch`.
+
+### Windows
+
+On Windows, you can schedule cache cleanup via the [Task Scheduler](https://docs.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-start-page). For an example of a PowerShell script that deletes old files [see here](https://github.com/chrisdee/Scripts/blob/master/PowerShell/Working/files/ListOrDeleteFilesAfterNumberOfDays.ps1). An example invocation that deletes files older than two days is:
+```
+powershell ListOrDeleteFilesAfterNumberOfDays.ps1 -FolderPath d:\condor\bundles -FileAge 2 -LogFile d:\condor\deleteold.log
+```
+
+#### Linux
+
+On Linux, the `find` command can be used. For example [`find <cache directory> -mtime +1 -delete`](https://manpages.debian.org/bullseye/findutils/find.1.en.html) command that will delete all bundles with a timestamp older than one day. This can be scheduled via a [crontab entry](https://en.wikipedia.org/wiki/Cron) or a timer/service pair of SystemD unit files.
+
+## Configuring [templates](configuring.md#templates) for a different cluster
+
+The [template](configuring.md#templates) default values work with the IIASA Limpopo cluster. To configure the templates for a different cluster, override [`SEED_JOB_TEMPLATE`](configuring.md#seed_job_template) and [`JOB_TEMPLATE`](configuring.md#job_template) found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. In addition, override [`SEED_BAT_TEMPLATE`](configuring.md##seed_bat_template) and [`BAT_TEMPLATE`](configuring.md##bat_template) to generate batch files or shell scripts that will run the jobs on your cluster's execute hosts.
 
 As Condor administrator, you can adjust the configuration of execute hosts to accommodate their seeding with bundles. Though seeding jobs request minimal resources, Condor nevertheless does not schedule them when there is not at least one unoccupied CPU or a minimum of disk, swap, and memory available on execute hosts. Presumably, Condor internally amends a job's stated resource requirements to make them more realistic. Unfortuntely, this means that when one or more execute hosts are fully occupied, submitting a new run through `Condor_run_R` scripting will have the seeding jobs of hosts remain idle (queued).
 
