@@ -208,6 +208,8 @@ Default value: `""`
 
 Path of log file for capturing cluster number. No such file is written when set to an empty string.
 
+This feature provides a simple way of communicating the cluster number to post-processing scripting. Such scripting will need to know the cluster number in order to access the output files belonging to the run: output files are uniquely named by including the cluster number in their file name.
+
 ### CLEAR_LINES
 Default value: `TRUE`
 
