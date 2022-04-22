@@ -34,7 +34,7 @@ STARTD_ATTRS = \
   $(STARTD_ATTRS)
 ```
 
-After configuring custom capabilities, notify the users of your cluster what capabilities are available, and how to configure requirements to select that capability for their job runs.
+Note that any valid (but preferably descriptive) ClassId name that is not in use yet can be used to identify a custom capability. After configuring custom capabilities, notify the users of your cluster what capabilities are available, and how to configure requirements to select custom capabilities for their job runs.
 
 ## Configuring [templates](configuring.md#templates) for a different cluster
 The [template](configuring.md#templates) default values work with the IIASA Limpopo cluster. To configure the templates for a different cluster, override [`SEED_JOB_TEMPLATE`](configuring.md#seed_job_template) and [`JOB_TEMPLATE`](configuring.md#job_template) found in both `Condor_run.R` and `Condor_run_basic.R` to generate Condor job files appropriate for the cluster. In addition, override [`SEED_BAT_TEMPLATE`](configuring.md#seed_bat_template) and [`BAT_TEMPLATE`](configuring.md##bat_template) to generate batch files or shell scripts that will run the jobs on your cluster's execute hosts.
