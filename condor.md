@@ -45,6 +45,17 @@ The default [seed job configuration template](configuring.md#seed_job_template) 
 
 To resolve the question of what consitutes a *small quantity*, the test script in `tests/seeding` can be used to fully occupy a cluster or a specific execute host (use the `HOST_REGEXP` config setting) and subsequently try seeding. Perform a bisection search of the excecute host's seeding slot disk, swap, memory resource allocation—changing the allocation between tests—to determine the rough minimum allocation values that allow seeding jobs to be accepted. These values should be minimized so as to make it unlikely that a resource-requesting job gets scheduled in the slot. The slot also needs at least one CPU dedicated to it. Make sure that the Condor daemons on the execute host being tested pick up the configuration after you change it and before running the test again.
 
+A basic configuration  with two partitionable slots, one for scheduling computational jobs, and a minimized slot 2 for receiving bundles might look like this:
+```
+SLOT_TYPE_1 = cpus=63/64, ram=63/64, swap=63/64, disk=63/64
+SLOT_TYPE_2 = cpus=1/64  ram=1/4096, swap=1/4096, disk=1/4096
+NUM_SLOTS_TYPE_1 = 1
+NUM_SLOTS_TYPE_2 = 1
+SLOT_TYPE_1_PARTITIONABLE = True
+SLOT_TYPE_2_PARTITIONABLE = True
+```
+These lines can be included in the `condor_config.local` file of an execute host. More complex setups that use `ENFORCE_CPU_AFFINITY = TRUE` and `SLOT?_CPU_AFFINITY` can be configured to limit slots to [NUMA](https://en.wikipedia.org/wiki/Non-uniform_memory_access) nodes or separate out the primary threads of each core from the secondary threads so as to postpone on-core thread contention until over half are occupied. The OS scheduler should be smart about this, but particularly Windows can make a mess out of certain workloads: the bother of setting up and testing a custom affinity configuration might be worthwhile.
+
 ## POSIX commands for Windows execute hosts
 The default values for [`BAT_TEMPLATE`](configuring.md##bat_template) and [`SEED_BAT_TEMPLATE`](configuring.md##seed_bat_template) use [POSIX](https://en.wikipedia.org/wiki/POSIX) commands that are by default **not** available on Windows. For example batch/shell script that launches a job should contains a [touch](https://linux.die.net/man/1/touch) to update the timestamp of the bundle to the current time. This ensures that that a bundle will not be deleted as long as jobs continue to get scheduled from it. This batch/shell script is generated from the [`BAT_TEMPLATE`](configuring.md##bat_template) whose default value includes an invocation of `touch`.
 
