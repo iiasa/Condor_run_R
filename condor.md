@@ -5,7 +5,7 @@ This page provides information on how to set up or re-configure a Condor cluster
 To support receiving and caching [7-Zip](https://en.wikipedia.org/wiki/7-Zip) bundles, each execute host should provide a directory with appropriate access rights where the bundles can be cached, should periodically delete old bundles in those caches to prevent their disks from filling up, and should have a `7x` executable/binary on-path so that jobs can extract a bundle on startup.
 
 #### Linux
-Most Linux distributions provide a p7zip package that is typically not installed by default. After installation, the `7z` binary should be on-path. A more up-to-data Linux port of 7-Zip is in the works but at the time of this writing has not been released yet.
+Most Linux distributions provide a p7zip package that is typically not installed by default. After installation, the `7z` binary should be on-path. A refreshed Linux port of 7-Zip is in the works but at the time of this writing has not been released yet.
 
 On Linux, the `find` command can be used to delete old bundles. For example [`find <cache directory> -mtime +1 -delete`](https://manpages.debian.org/bullseye/findutils/find.1.en.html) command that will delete all bundles with a timestamp older than one day. This can be scheduled via a [crontab entry](https://en.wikipedia.org/wiki/Cron) or a timer/service pair of SystemD unit files.
 
