@@ -65,4 +65,14 @@ NUM_SLOTS_TYPE_2 = 1
 SLOT_TYPE_1_PARTITIONABLE = True
 SLOT_TYPE_2_PARTITIONABLE = True
 ```
-These lines can be included in the `condor_config.local` file of an execute host. More complex setups that use `ENFORCE_CPU_AFFINITY = TRUE` and `SLOT?_CPU_AFFINITY` can be configured to limit slots to [NUMA](https://en.wikipedia.org/wiki/Non-uniform_memory_access) nodes or separate out the primary threads of each core from the secondary threads so as to postpone on-core thread contention until over half are occupied. The OS scheduler should be smart about this, but particularly Windows can make a mess out of certain workloads: the bother of setting up and testing a custom affinity configuration might be worthwhile.
+These lines can be included in the `condor_config.local` file of an execute host.
+
+## Tuning Performance
+
+Throughput can be improved by tuning the configuration of execute hosts. See [this Linux performance tuning](https://wiki.archlinux.org/title/Improving_performance) or [Microsoft's Windows Server 2022 performance tuning](https://docs.microsoft.com/en-us/windows-server/administration/performance-tuning/) guide.
+
+But even with a tuned OS you may still notice that jobs are migrated between [NUMA](https://en.wikipedia.org/wiki/Non-uniform_memory_access) nodes, or that secondary threads of CPU cores are occupied while other cores sit idle. This means that throughput can sometimes be improved further by configuring affinity/pinning to particular subsets of core threads (CPUs in Condor-speak) via the `condor_config.local` configuration of the execute host.
+
+For affinity, configurables to look at are [`ENFORCE_CPU_AFFINITY`](https://htcondor.readthedocs.io/en/latest/admin-manual/configuration-macros.html#ENFORCE_CPU_AFFINITY) and [`SLOT<N>_CPU_AFFINITY`](https://htcondor.readthedocs.io/en/latest/admin-manual/configuration-macros.html#SLOT<N>_CPU_AFFINITY). For prioritizing how slots get filled, pertinent configuration settings include [`NEGOTIATOR_PRE_JOB_RANK`](https://htcondor.readthedocs.io/en/latest/admin-manual/configuration-macros.html#NEGOTIATOR_PRE_JOB_RANK) and [`NEGOTIATOR_POST_JOB_RANK`](https://htcondor.readthedocs.io/en/latest/admin-manual/configuration-macros.html#NEGOTIATOR_POST_JOB_RANK).
+
+The actual tuning involves performing experiments to determine how well various execute host configurations work. Prepare a representative test workload, and submit it through `Condor_run_basic.R` or `Condor_run.R`. The [`basic` test](tests/basic/purpose.md) can also be used as a test workload. Analyze the results with `Condor_run_stat.R`: it generates a PDF report showing details of throughput as well as slot allocation. [`HOST_REGEXP`](configuring.md#host_regexp) can be used to ensure that jobs get scheduled only on the execute host being tuned.
