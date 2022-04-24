@@ -1,15 +1,19 @@
 # Configuring a Condor cluster in support of `Condor_run_R`
+
 This page provides information on how to set up or re-configure a Condor cluster in support of the `Condor_run_R` submit scripts. In particular the bundle caching feature requires a bit of specialized support on the execute host side.
 
 ## Setting up a bundles cache
+
 To support receiving and caching [7-Zip](https://en.wikipedia.org/wiki/7-Zip) bundles, each execute host should provide a directory with appropriate access rights where the bundles can be cached, should periodically delete old bundles in those caches to prevent their disks from filling up, and should have a `7x` executable/binary on-path so that jobs can extract a bundle on startup.
 
 #### Linux
+
 Most Linux distributions provide a p7zip package that is typically not installed by default. After installation, the `7z` binary should be on-path. A refreshed Linux port of 7-Zip is in the works but at the time of this writing has not been released yet.
 
 On Linux, the `find` command can be used to delete old bundles. For example [`find <cache directory> -mtime +1 -delete`](https://manpages.debian.org/bullseye/findutils/find.1.en.html) command that will delete all bundles with a timestamp older than one day. This can be scheduled via a [crontab entry](https://en.wikipedia.org/wiki/Cron) or a timer/service pair of SystemD unit files.
 
 ### Windows
+
 For Windows, 7-Zip can be obtained [here](https://www.7-zip.org/). Make sure the installation directory containing `7z.exe` is added to the system PATH environment variable.
 
 Cleanup of the bundles cache can be scheduled via the [Task Scheduler](https://docs.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-start-page). For an example of a PowerShell script that deletes old files [see here](https://github.com/chrisdee/Scripts/blob/master/PowerShell/Working/files/ListOrDeleteFilesAfterNumberOfDays.ps1). An example invocation that deletes files older than two days is:
@@ -17,7 +21,14 @@ Cleanup of the bundles cache can be scheduled via the [Task Scheduler](https://d
 powershell ListOrDeleteFilesAfterNumberOfDays.ps1 -FolderPath d:\condor\bundles -FileAge 2 -LogFile d:\condor\deleteold.log
 ```
 
+## POSIX Commands for Windows
+
+The default value for [`BAT_TEMPLATE`](configuring.md##bat_template) and [`SEED_BAT_TEMPLATE`](configuring.md##seed_bat_template) use [POSIX](https://en.wikipedia.org/wiki/POSIX) commands that are normally **not** available on a Windows execute host. For example, [touch](https://linux.die.net/man/1/touch) is used to update the timestamp of the bundle to the current time when a joblaunches. This ensures that that a bundle will not be auto-deleted as long as jobs continue to get launched from it.
+
+Make the needed POSIX commands available on your Windows execute hosts by installing any of many sets of POSIX utilities and adding them to the system `PATH` environment variable. When you have GAMS installed on an execute host, you already have an adequete set of [POSIX utilities](https://www.gams.com/latest/docs/T_POSIX.html) available in the `gbin` subdirectory of the GAMS installation: add that directory to the system `PATH`.
+
 ## Advertising capabilities
+
 For a job to run on an execute host, certain capabilities may need to be in place. For examle, a language interpreter may need to be installed. To ensure that jobs get scheduled on execute hosts that have the capability to run them, the user can configure [`REQUIREMENTS`](configuring.md#requirements) for a run of jobs. When these match the advertised capabilities of an execute host, the host becomes eligable.
 
 To advertise custom capabilities of execute hosts, ydefine ClassAds in their HTCondor configuration. This is done by editing the `condor_config.local` configuration file on each host. For example, to advertise that both an R and GAMS language interpreter are available and on-path, add the following lines:
@@ -55,8 +66,3 @@ SLOT_TYPE_1_PARTITIONABLE = True
 SLOT_TYPE_2_PARTITIONABLE = True
 ```
 These lines can be included in the `condor_config.local` file of an execute host. More complex setups that use `ENFORCE_CPU_AFFINITY = TRUE` and `SLOT?_CPU_AFFINITY` can be configured to limit slots to [NUMA](https://en.wikipedia.org/wiki/Non-uniform_memory_access) nodes or separate out the primary threads of each core from the secondary threads so as to postpone on-core thread contention until over half are occupied. The OS scheduler should be smart about this, but particularly Windows can make a mess out of certain workloads: the bother of setting up and testing a custom affinity configuration might be worthwhile.
-
-## POSIX commands for Windows execute hosts
-The default values for [`BAT_TEMPLATE`](configuring.md##bat_template) and [`SEED_BAT_TEMPLATE`](configuring.md##seed_bat_template) use [POSIX](https://en.wikipedia.org/wiki/POSIX) commands that are by default **not** available on Windows. For example batch/shell script that launches a job should contains a [touch](https://linux.die.net/man/1/touch) to update the timestamp of the bundle to the current time. This ensures that that a bundle will not be deleted as long as jobs continue to get scheduled from it. This batch/shell script is generated from the [`BAT_TEMPLATE`](configuring.md##bat_template) whose default value includes an invocation of `touch`.
-
-Make the needed POSIX commands available on your Windows execute hosts by installing any of many sets of POSIX utilities and adding them to the system `PATH` environment variable. When you have GAMS installed on an execute host, you already have an adequete set of [POSIX utilities](https://www.gams.com/latest/docs/T_POSIX.html) available in the `gbin` subdirectory of the GAMS installation: add that directory to the system `PATH`.
