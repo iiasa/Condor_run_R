@@ -67,7 +67,7 @@ SLOT_TYPE_2_PARTITIONABLE = True
 ```
 These lines can be included in the `condor_config.local` file of an execute host.
 
-## Tuning Performance
+## Tuning Throughput
 
 Throughput can be improved by tuning the configuration of execute hosts. See [this Linux performance tuning](https://wiki.archlinux.org/title/Improving_performance) or [Microsoft's Windows Server 2022 performance tuning](https://docs.microsoft.com/en-us/windows-server/administration/performance-tuning/) guide.
 
