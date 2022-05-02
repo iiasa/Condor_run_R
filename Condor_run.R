@@ -123,12 +123,14 @@ BAT_TEMPLATE <- c(
   '{ifelse(in_gams_curdir(GDX_OUTPUT_DIR) == "", "", str_glue("mkdir \\"{in_gams_curdir(GDX_OUTPUT_DIR)}\\" 2>NUL"))}',
   "set bundle_root=d:\\condor\\bundles",
   "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
+  "set gams_dir=c:\\GAMS\\win64\\{GAMS_VERSION}",
+  "if not exist %gams_dir% set gams_dir=c:\\GAMS\\{major_gams_version}",
   "@echo on",
   "touch %bundle_root%\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7z x %bundle_root%\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
   paste(
-    'C:\\GAMS\\win64\\{GAMS_VERSION}\\gams.exe',
+    '%gams_dir%\\gams',
     "{GAMS_FILE_PATH}",
     '-logOption=3',
     '{ifelse(GAMS_CURDIR != "", str_glue("curDir=\\"{GAMS_CURDIR}\\" "), "")}',
@@ -599,7 +601,8 @@ if (str_detect(GAMS_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G
 version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
 if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
 if (!(GAMS_VERSION %in% EXECUTE_HOST_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The execute hosts have only these GAMS versions installed: {str_c(EXECUTE_HOST_GAMS_VERSIONS, collapse=" ")}')) # {cat(EXECUTE_HOST_GAMS_VERSIONS)}
-dotless_version <- str_glue(version_match[2], version_match[3])
+dotless_gams_version <- str_glue(version_match[2], version_match[3])
+major_gams_version <- version_match[2]
 if (length(JOBS) < 1 && !str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
 for (file in BUNDLE_ADDITIONAL_FILES) {
   if (!(file_exists(path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
@@ -671,7 +674,7 @@ if (RESTART_FILE_PATH != "") {
   if (is.na(restart_version)) {
     warning(str_glue("Cannot determine GAMS version that saved {in_gams_curdir{(RESTART_FILE_PATH)}"))
   } else {
-    if (dotless_version < restart_version) {
+    if (dotless_gams_version < restart_version) {
       stop("The configured host-side GAMS_VERSION is older than the GAMS version that saved the configured restart file (RESTART_FILE_PATH). GAMS will fail!")
     }
   }
