@@ -9,7 +9,7 @@ Albert Brouwer
 
 ___
 
-- [Introduction](#introduction)
+- [Introduction](#%E2%84%B9%EF%B8%8F-introduction)
 - [Installation](#installation)
 - [Test](#test)
 - [Updating](#updating)
@@ -20,7 +20,7 @@ ___
 - [Troubleshooting](troubleshooting.md)
 - [Configuring a Condor cluster in support of `Condor_run_R`](condor.md#configuring-a-condor-cluster-in-support-of-condor_run_r)
 
-## Introduction
+## ℹ️ Introduction
 This repository provides R scripts for submitting a *run* (a set of jobs) to an HT Condor cluster, and for analysing run performance statistics. Four scripts are provided:
 1. [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R): generic submit script suitable for any kind of job.
 2. [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R): submit script with enhanced functionality for [GAMS](https://www.gams.com/) jobs.
@@ -66,7 +66,7 @@ By transferring the bundle once for each execute host instead of once for each j
 
 When a job is run on an execute host, the cached bundle is decompressed in a scratch directory. This creates the file tree that the job needs to run. By passing the job number to the main script of the job, each job in the run can customize the calculation even though it is using the same bundle as input, e.g. by using the job number to select one scenario out of a collection of scenarios.
 
-**Beware:** only when the jobs of the run are queued can an additional run be submitted. This is after the submit script prints the message
+**⚠️Beware:** only when the jobs of the run are queued can an additional run be submitted. This is after the submit script prints the message
 
 `It is now possible to submit additional runs.`
 
