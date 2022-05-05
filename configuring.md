@@ -1,4 +1,5 @@
 # Configuring the Condor submit scripts
+
 Configuration is done via a separate configuration file. This page documents the configuration parameters that can be included. Some parameters are mandatory, most are optional. The path to the configuration file to use is [passed as argument to the `Condor_run_basic.R` and `Condor_run.R` submit scripts](https://github.com/iiasa/Condor_run_R#use). To quickly find the documentation of a particular parameter, click on the drop down menu button located just to the top left of this paragraph when displayed on GitHub: it is a smallish button that looks like three stacked horizontal lines with leading bullets. In the menu, type the partial name of a parameter to filter the entries and select an entry to navigate to its documentation. [See here](https://github.blog/changelog/2021-04-13-table-of-contents-support-in-markdown-files/) for a demo of this feature.
 
 To set up an initial configuration file, copy (do *not* cut) the code block with mandatory configuration parameters located between the *snippy snappy* comments from the chosen submit script (see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L19) and [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L19)) and paste it into a new file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension for the configuration file name will provide syntax highlighting when using a good text editor or RStudio.
@@ -10,6 +11,7 @@ Your configuration may need adaptation to the particulars of your Condor cluster
 IIASA GLOBIOM developers can start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R` which is adapted to the Limpopo cluster. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`. For more information, see the GLOBIOM wiki [here](https://github.com/iiasa/GLOBIOM/wiki/Running-scenarios-in-parallel-on-Limpopo#configuration).
 
 ## Path handling
+
 Since the submit script and configuration file may not be located in the the chosen current working directory, you may need to prefix them with a path on invocation:
 
 `Rscript [<path to>]Condor_run_basic.R [<path to>]my_configuration.R`
@@ -21,11 +23,13 @@ This approach allows you to test jobs on your submit machine, and then easily us
 ## Mandatory configuration parameters
 
 ### JOBS
+
 Specify the job numbers of the jobs to submit. Job numbers start at 0. For example, configuring `c(0:3,7,10)` will start jobs 0 to 3, 8 and 10.
 
 Typically, the script that is run when your jobs are started accepts the job number as an argument so that it knows which variant of the calculation to run. For example, a script that runs a model scenario might map the job number to a particular scenario so that submitting with `JOBS = c(0:9)` will run the first ten scenarios in parallel on the cluster.
 
 ### REQUEST_MEMORY
+
 An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execute host when the sum of their memory requests exceeds the memory allocated to the execution slot of on the host. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the execute host at risk of running out of memory, which can endanger other jobs as well.
 
 It is therefore important to configure a good estimates. You can find a job's memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
@@ -33,6 +37,7 @@ It is therefore important to configure a good estimates. You can find a job's me
 Note that your jobs will get scheduled only in "slots" of execute hosts that have sufficient memory to satisfy your request. To see what memory resources your cluster has available issue [`condor_status -avail`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
 ### WAIT_FOR_RUN_COMPLETION
+
 If `TRUE`, wait for the run to complete while displaying progress monitoring information and, on completion, check the presence of output files, prune empty log files, and analyze resource usage. When submitting a GAMS job through `Condor_run.R`, also perform a merge of the GDX ouput when [`MERGE_GDX_OUTPUT`](#merge_gdx_output)`= TRUE`.
 
 Also useful for custom-scripted processing of output, with processing steps placed subsequent to the [submission invocation](https://github.com/iiasa/Condor_run_R/#use).
@@ -40,33 +45,41 @@ Also useful for custom-scripted processing of output, with processing steps plac
 ## `Condor_run_basic.R`-specific mandatory configuration parameters
 
 ### LAUNCHER
+
 Interpreter/language-runtime with which to launch the [`SCRIPT`](#script) or, when [`SCRIPT`](#script) is empty, the executable/binary to run.
 
 ### ARGUMENTS
+
 Arguments to the script or, when [`SCRIPT`](#script) is empty, the [`LAUNCHER`](#launcher). When submitting multiple jobs, this must include `%1` which expands to the job number.
 
 ## `Condor_run.R`-specific mandatory configuration parameters
 
 ### GAMS_VERSION
+
 GAMS version to run the job with. Must be installed on all selected execute hosts.
 
 Available GAMS versions are configured by [`EXECUTE_HOST_GAMS_VERSIONS`](#execute_host_gams_versions).
 
 ### GAMS_FILE_PATH
+
 Path to GAMS file to run for each job, relative to [`GAMS_CURDIR`](#gams_curdir).
 
 ### GAMS_ARGUMENTS
+
 Additional GAMS arguments, can use {<config>} expansion here. Should include `%1` which expands to the job number.
 
 ## Optional configuration parameters
+
 The below configuration parameters are optional. Add the ones you need to your configuration file (see above).
 
 ### CONDOR_DIR
+
 Default value: `"Condor"`
 
 Parent directory to hold the log directory of the run. The log directory is named via [`LABEL`](#label). Condor and job log files and other run artifacts are stored in the log directory. Excluded from the bundle. Can also be an absolute path. Created when it does not exist, and so too is the log directory.
 
 ### LABEL
+
 Default value: `"{Sys.Date()}"`
 
 Synonyms: NAME, EXPERIMENT, PROJECT
@@ -76,26 +89,31 @@ Label/name of your project/experiment that is conducted by performing the run. T
 Note that in addition a unique sequence number (the Condor "cluster" number) will be used to (re)name the output files, log files, and other run artifacts so that name collisions are avoided when using the same label for multiple runs. It is therefore handy to have an easy means to obtain the cluster number when in need of performing automated processing of output files after run completion. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
 
 ### PREFIX
+
 Default value: `"job"`
 
 Prefix for the file names of the per-job `.err`, `.log`, `.lst` and `.out` log files written to the [log directory of the run](#condor_dir).
 
 ### CLUSTER_NUMBER_LOG
+
 Default value: `""`
 
 Path of log file for capturing cluster number. No such file is written when set to an empty string.
 
 ### BUNDLE_INCLUDE
+
 Default value: `"*"`
 
 What to include in the bundle relative to the current working directory. Recursive. Supports wildcards.
 
 ### BUNDLE_INCLUDE_DIRS
+
 Default value: `c()`
 
 Further directories to include recursively at the root of the bundle. Supports wildcards.
 
 ### BUNDLE_EXCLUDE_DIRS
+
 Default value: `c(".git", ".svn")` for `Condor_run_basic.R`.
 
 Default value: `c(".git", ".svn", "225*")` for `Condor_run.R`.
@@ -103,11 +121,13 @@ Default value: `c(".git", ".svn", "225*")` for `Condor_run.R`.
 Exclude directories recursively. Supports wildcards.
 
 ### BUNDLE_INCLUDE_FILES
+
 Default value: `c()`
 
 Further files to include in the bundle. Supports wildcards.
 
 ### BUNDLE_EXCLUDE_FILES
+
 Default value: `c("**/*.log")` for `Condor_run_basic.R`.
 
 Default value: `c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst")` for `Condor_run.R`.
@@ -115,16 +135,19 @@ Default value: `c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst")` 
 Files to exclude from the bundle. Supports wildcards.
 
 ### BUNDLE_ADDITIONAL_FILES
+
 Default value: `c()`
 
 Files to add to root of bundle during an additional invocation of 7-Zip. Can also use an absolute path for these.
 
 ### RETAIN_BUNDLE
+
 Default value: `FALSE`
 
 Retain the bundle in the run's [`CONDOR_DIR`](#condor_dir) subdirectory when `TRUE`. Can be useful for locally analyzing host-side issues with jobs.
 
 ### SEED_JOB_RELEASES
+
 Default value: `0`
 
 Number of times to auto-release (retry) held bundle-seeding jobs before giving up. Not retrying—by using the 0 default value—is fine when you have plenty of execute hosts in the cluster: hosts that could not receive the bundle are assumed to be unavailable and will be excluded from the subsequent job submission stage. The hosts that could receive the bundle will still process your jobs.
@@ -132,16 +155,19 @@ Number of times to auto-release (retry) held bundle-seeding jobs before giving u
 When the cluster has only one or a couple of execute hosts, or there are intermittent failures on account of networking issues, it may be worthwhile to retry a few times. This can make the seeding process take longer.
 
 ### JOB_RELEASES
+
 Default value: `3`
 
 Number of times to auto-release (retry) held (failed) jobs before giving up. This allows your jobs to recover from transient errors such as a network outage or an execute host running out of memory. When the re-tries have run out, your jobs will remain in the held state. Then the error is likely not transient and requires some analysis as described [here](troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold).
 
 ### JOB_RELEASE_DELAY
+
 Default value: `120`
 
 Number of seconds to wait after a job has entered the *hold* state before auto-releasing it for a retry. The maximum number of retries is set via [`JOB_RELEASES`](#job_releases). When common causes of transient failure on your cluster take long to resolve, set this value to an estimate of the problem half life so as to not exhaust the retries too soon.
 
 ### REQUIREMENTS
+
 Default value: `c()` for `Condor_run_basic.R`.
 
 Default value: `c("GAMS")` for `Condor_run.R`.
@@ -153,14 +179,16 @@ Requirements expressions `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"` respectiv
 For more information on requirement expressions, see the documentation of
 the `requirements` command of the [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands).
 
-**Note:** custom [`ClassAds`] may have been defined on the execute hosts that allow you select their capabilities on a more fine-grained level via requirement expresions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. Ask your cluster administrator.
+**⚠️Note:** custom [`ClassAds`] may have been defined on the execute hosts that allow you select their capabilities on a more fine-grained level via requirement expresions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. Ask your cluster administrator.
 
 ### HOST_REGEXP
+
 Default value: `.*`
 
 A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select a subset of execute hosts from the cluster by hostname. Jobs will be scheduled only on the machines thus selected. The default value selects all available execute hosts.
 
 ### REQUEST_CPUS
+
 Default value: `1`
 
 Number of hardware threads to reserve for each job. The default value is good for jobs that are single-threaded, or mostly so. When your job involves significant multiprocessing, set this value to an estimate of the average number of in-use threads. The `.log` file of a job will record the average hardware thread usage when it completes.
@@ -170,6 +198,7 @@ The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CP
 Note that your jobs will get scheduled only in "slots" of execute hosts that have suffient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
 ### REQUEST_DISK
+
 Default value: `1000000`
 
 Estimate of the amount of execute-host-side disk space required per job for storing transient and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units.
@@ -179,11 +208,13 @@ This value is added to the uncompressed size of the bundle. The sum is used to r
 Note that your jobs will get scheduled only in "slots" of execute hosts that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
   
 ### RUN_AS_OWNER
+
 Default value: `TRUE`
 
 If `TRUE`, jobs will run as you and have access to your account-specific environment. If `FALSE`, jobs will run under a functional user account.
 
 ### NOTIFICATION
+
 Default value: `"Never"`
 
 Specify when to send notification emails. Alternatives are:
@@ -191,19 +222,22 @@ Specify when to send notification emails. Alternatives are:
 - `"Error"`, when a job errors or goes on hold.
 - `"Always"`, when a job completes or reaches checkpoint.
 
-**Beware:** when your run has many jobs, selecting anything other than `"Never"` will be very spammy.
+**⚠️Beware:** when your run has many jobs, selecting anything other than `"Never"` will be very spammy.
 
 ### EMAIL_ADDRESS
+
 Default value: `NULL`
 
 Set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your email from your username.
 
 ### NICE_USER
+
 Default value: `FALSE`
 
 Be nice, give jobs of other users priority by setting this to `TRUE`.
 
 ### CLUSTER_NUMBER_LOG
+
 Default value: `""`
 
 Path of log file for capturing cluster number. No such file is written when set to an empty string.
@@ -211,6 +245,7 @@ Path of log file for capturing cluster number. No such file is written when set 
 This feature provides a simple way of communicating the cluster number to post-processing scripting. Such scripting will need to know the cluster number in order to access the output files belonging to the run: output files are uniquely named by including the cluster number in their file name.
 
 ### CLEAR_LINES
+
 Default value: `TRUE`
 
 Clear status monitoring lines so as to show only the last status, set to FALSE when this does not work. This might be the case when the output goes into the chunk output of an RMarkdown notebook in RStudio while [this RStudio issue](https://github.com/rstudio/rstudio/issues/8040) is not yet resolved in the RStudio version that you are using.
@@ -223,9 +258,11 @@ Default value: `""`
 The script to launch with [`LAUNCHER`](#launcher). When empty (the default) the job is not defined by a script but rather by the executable/binary specified in the [`LAUNCHER`](#launcher) setting.
 
 ### GET_OUTPUT
+
 Default value: `TRUE`
 
 ### OUTPUT_DIR
+
 Default value: `"output"`
 
 Directory for output files. Relative to the current working directory on the execute host side and also on the submit machine when [`OUTPUT_DIR_SUBMIT`](#output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
@@ -233,11 +270,13 @@ Directory for output files. Relative to the current working directory on the exe
 When `OUTPUT_DIR` does not exist on the execute host side, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run_basic.R` will create it.
 
 ### OUTPUT_DIR_SUBMIT
+
 Default value: `NULL`
 
 Directory on the submit machine into where job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`OUTPUT_DIR`](#output_dir) will be used instead.
 
 ### OUTPUT_FILE
+
 Default value: `"output.RData"`
 
 Name of output file as produced by a job on the execute host side. Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
@@ -245,9 +284,11 @@ Name of output file as produced by a job on the execute host side. Will be renam
 ## `Condor_run.R`-specific optional configuration parameters
 
 ### GET_G00_OUTPUT
+
 Default value: `FALSE`
 
 ### G00_OUTPUT_DIR
+
 Default value: `""`
 
 When set (changed from its `""` default), this configures the directory for storing work/save output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute host and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
@@ -255,19 +296,23 @@ When set (changed from its `""` default), this configures the directory for stor
 When set and when `G00_OUTPUT_DIR` does not exist on the execute host side, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` will create it.
 
 ### G00_OUTPUT_DIR_SUBMIT
+
 Default value: `NULL`
 
 Directory on the submit machine into where `.g00` job work/save files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`G00_OUTPUT_DIR`](#g00_output_dir) will be used instead.
 
 ### G00_OUTPUT_FILE
+
 Default value: `""`
 
 Name of work/save file produced by a job on the execute host side via the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
 
 ### GET_GDX_OUTPUT
+
 Default value: `FALSE`
 
 ### GDX_OUTPUT_DIR
+
 Default value: `""`
 
 When set (changed from its `""` default), this sets the directory for storing GDX output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute host side and also on the submit machine side when [`GDX_OUTPUT_DIR_SUBMIT`](#gdx_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
@@ -275,84 +320,99 @@ When set (changed from its `""` default), this sets the directory for storing GD
 When set and when `GDX_OUTPUT_DIR` does not exist on the execute host side, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` will create it.
 
 ### GDX_OUTPUT_DIR_SUBMIT
+
 Default value: `NULL`
 
 Directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`GDX_OUTPUT_DIR`](#gdx_output_dir) will be used instead.
 
 ### GDX_OUTPUT_FILE
+
 Default value: `""`
 
 Name of the GDX output file produced by a job on the execute host side via the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
 
 ### EXECUTE_HOST_GAMS_VERSIONS
+
 Default value: `c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2")`
 
 GAMS versions installed on execute hosts.
 
 ### GAMS_CURDIR
+
 Default value: `""`
 
 Working directory for GAMS and its arguments relative to the current working directory. The value `""` defaults to the current working directory.
 
 ### RESTART_FILE_PATH
+
 Default value: `""`
 
 Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the [work/restart file](https://www.gams.com/latest/docs/UG_SaveRestart.html) to launch GAMS with on the execute host side. Included in bundle if set.
 
-**Beware:** the restart file will not work if the GAMS version on the execute host side (see [GAMS_VERSION](#gams_version)) is older than the GAMS version used to generated it. The `Condor_run.R` submit script will throw an explanatory error in that case to prevent the run's jobs from later going on hold for this somewhat obscure reason.
+**⚠️Beware:** the restart file will not work if the GAMS version on the execute host side (see [GAMS_VERSION](#gams_version)) is older than the GAMS version used to generated it. The `Condor_run.R` submit script will throw an explanatory error in that case to prevent the run's jobs from later going on hold for this somewhat obscure reason.
 
 If you are unsure which GAMS version a restart file was generated with, you can determine that by using the [`restart_version.R`](https://github.com/iiasa/Condor_run_R/blob/master/restart_version.R) script.
 
 ### MERGE_GDX_OUTPUT
+
 Default value: `FALSE`
 
 If `TRUE`, use [GDXMERGE](https://www.gams.com/latest/docs/T_GDXMERGE.html) on the GDX output files when all jobs in the run are done. Requires that the GDXMERGE executable (located in the GAMS system directory) is on-path and that [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`.
 
-**Beware:** GDXMERGE is limited. It sometimes gives "Symbol is too large" errors, and neither the `big=` (via the [`MERGE_BIG`](#merge_big) configuration setting below) nor running GDXMERGE on a large-memory machine can avoid that. Moreover, no non-zero return code results in case of such errors, so silent failures are possible. This may or may not have improved in more recent versions of GDXMERGE.
+**⚠️Beware:** GDXMERGE is limited. It sometimes gives "Symbol is too large" errors, and neither the `big=` (via the [`MERGE_BIG`](#merge_big) configuration setting below) nor running GDXMERGE on a large-memory machine can avoid that. Moreover, no non-zero return code results in case of such errors, so silent failures are possible. This may or may not have improved in more recent versions of GDXMERGE.
 
 ### MERGE_BIG
+
 Default value: `NULL`
 
 Symbol size cutoff beyond which GDXMERGE writes symbols one-by-one to avoid running out of memory (see https://www.gams.com/latest/docs/T_GDXMERGE.html).
 
 ### MERGE_ID
+
 Default value: `NULL`
 
 Comma-separated list of symbols to include in the merge. String-valued. The `NULL` default includes all symbols.
 
 ### MERGE_EXCLUDE
+
 Default value: `NULL`
 
 Comma-separated list of symbols to exclude from the merge. String-valued. The `NULL` default excludes no symbols.
 
 ### REMOVE_MERGED_GDX_FILES
+
 Default value: `FALSE`
 
 When `TRUE`, remove per-job GDX output files after having been merged.
 
 ## Templates
+
 The template parameters configure Condor `.job` files and job launch scripts (that run on the execute-host side). These files are generated from the templates on submitting a run. The template strings can use `{}` expansion to include other configuration parameters and run-time state in the generated files.
 
-**Note:** Templates are cluster-specific. Your cluster administrator can provide templates adapted to your cluster. To do so, cluster administrators can follow the guidance on [configuring templates for a different cluster](condor.md#configuring-templates-for-a-different-cluster).
+**⚠️Note:** Templates are cluster-specific. Your cluster administrator can provide templates adapted to your cluster. To do so, cluster administrators can follow the guidance on [configuring templates for a different cluster](condor.md#configuring-templates-for-a-different-cluster).
 
-**Caution:** When [updating to a new release](README.md#updating) additional functionality may be present in the default template values, in particular there where `{}` expansions are used. When overriding templates, it is therefore important to keep an eye on the [release notes](https://github.com/iiasa/Condor_run_R/releases) to see if template default values were changed: you may need to update your templates, for example by applying your template customizations to the new defaults.
+**⚠️Caution:** When [updating to a new release](README.md#updating) additional functionality may be present in the default template values, in particular there where `{}` expansions are used. When overriding templates, it is therefore important to keep an eye on the [release notes](https://github.com/iiasa/Condor_run_R/releases) to see if template default values were changed: you may need to update your templates, for example by applying your template customizations to the new defaults.
 
 ### JOB_TEMPLATE
+
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L67) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L79).
 
 Template of the Condor `.job` file to submit the run with. The `.job` file produced with this template is preserved in the [log directory of the run](#condor_dir).
 
 ### BAT_TEMPLATE
+
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L101) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L113).
 
 Template for the `.bat` file that launches jobs on the execute host side. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir).
 
 ### SEED_JOB_TEMPLATE
+
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L125) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L149).
 
 Template of the Condor `.job` file to submit the bundle seed jobs with. The `.job` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
 
 ### SEED_BAT_TEMPLATE
+
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L150) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L174).
 
 Template for the `.bat` file that caches the bundle on the execute host side for a seeding job. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
