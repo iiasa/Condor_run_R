@@ -34,7 +34,7 @@ An estimate of the amount of memory (in MiB) required per job. Condor will stop 
 
 It is therefore important to configure a good estimates. You can find a job's memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
 
-Note that your jobs will get scheduled only in "slots" of execute hosts that have sufficient memory to satisfy your request. To see what memory resources your cluster has available issue [`condor_status -avail`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+**:point_right:Note:** your jobs will get scheduled only in "slots" of execute hosts that have sufficient memory to satisfy your request. To see what memory resources your cluster has available issue [`condor_status -avail`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
 ### WAIT_FOR_RUN_COMPLETION
 
@@ -179,7 +179,7 @@ Requirements expressions `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"` respectiv
 For more information on requirement expressions, see the documentation of
 the `requirements` command of the [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands).
 
-**⚠️Note:** custom [`ClassAds`] may have been defined on the execute hosts that allow you select their capabilities on a more fine-grained level via requirement expresions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. Ask your cluster administrator.
+**:point_right:Note:** custom [`ClassAds`] may have been defined on the execute hosts that allow you select their capabilities on a more fine-grained level via requirement expresions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. Ask your cluster administrator.
 
 ### HOST_REGEXP
 
@@ -195,7 +195,7 @@ Number of hardware threads to reserve for each job. The default value is good fo
   
 The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CPU can contain multiple processing cores, with each core potentially able to run multiple hardware threads, typially two per core. It is those hardware threads—each able to support and independent parallel execution context—that this setting and the statistic in the `.log` file refers to.
 
-Note that your jobs will get scheduled only in "slots" of execute hosts that have suffient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+**:point_right:Note** your jobs will get scheduled only in "slots" of execute hosts that have suffient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
 ### REQUEST_DISK
 
@@ -205,7 +205,7 @@ Estimate of the amount of execute-host-side disk space required per job for stor
 
 This value is added to the uncompressed size of the bundle. The sum is used to reserve disk space for a job when it is started on an execute host. You can find a job's summed memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
 
-Note that your jobs will get scheduled only in "slots" of execute hosts that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+**:point_right**Note:** your jobs will get scheduled only in "slots" of execute hosts that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
   
 ### RUN_AS_OWNER
 
@@ -222,7 +222,7 @@ Specify when to send notification emails. Alternatives are:
 - `"Error"`, when a job errors or goes on hold.
 - `"Always"`, when a job completes or reaches checkpoint.
 
-**⚠️Beware:** when your run has many jobs, selecting anything other than `"Never"` will be very spammy.
+**:warning:Beware:** when your run has many jobs, selecting anything other than `"Never"` will be very spammy.
 
 ### EMAIL_ADDRESS
 
@@ -349,7 +349,7 @@ Default value: `""`
 
 Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the [work/restart file](https://www.gams.com/latest/docs/UG_SaveRestart.html) to launch GAMS with on the execute host side. Included in bundle if set.
 
-**⚠️Beware:** the restart file will not work if the GAMS version on the execute host side (see [GAMS_VERSION](#gams_version)) is older than the GAMS version used to generated it. The `Condor_run.R` submit script will throw an explanatory error in that case to prevent the run's jobs from later going on hold for this somewhat obscure reason.
+**:warning:Beware:** the restart file will not work if the GAMS version on the execute host side (see [GAMS_VERSION](#gams_version)) is older than the GAMS version used to generated it. The `Condor_run.R` submit script will throw an explanatory error in that case to prevent the run's jobs from later going on hold for this somewhat obscure reason.
 
 If you are unsure which GAMS version a restart file was generated with, you can determine that by using the [`restart_version.R`](https://github.com/iiasa/Condor_run_R/blob/master/restart_version.R) script.
 
@@ -359,7 +359,7 @@ Default value: `FALSE`
 
 If `TRUE`, use [GDXMERGE](https://www.gams.com/latest/docs/T_GDXMERGE.html) on the GDX output files when all jobs in the run are done. Requires that the GDXMERGE executable (located in the GAMS system directory) is on-path and that [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`.
 
-**⚠️Beware:** GDXMERGE is limited. It sometimes gives "Symbol is too large" errors, and neither the `big=` (via the [`MERGE_BIG`](#merge_big) configuration setting below) nor running GDXMERGE on a large-memory machine can avoid that. Moreover, no non-zero return code results in case of such errors, so silent failures are possible. This may or may not have improved in more recent versions of GDXMERGE.
+**:warning:Beware:** GDXMERGE is limited. It sometimes gives "Symbol is too large" errors, and neither the `big=` (via the [`MERGE_BIG`](#merge_big) configuration setting below) nor running GDXMERGE on a large-memory machine can avoid that. Moreover, no non-zero return code results in case of such errors, so silent failures are possible. This may or may not have improved in more recent versions of GDXMERGE.
 
 ### MERGE_BIG
 
@@ -389,9 +389,9 @@ When `TRUE`, remove per-job GDX output files after having been merged.
 
 The template parameters configure Condor `.job` files and job launch scripts (that run on the execute-host side). These files are generated from the templates on submitting a run. The template strings can use `{}` expansion to include other configuration parameters and run-time state in the generated files.
 
-**⚠️Note:** Templates are cluster-specific. Your cluster administrator can provide templates adapted to your cluster. To do so, cluster administrators can follow the guidance on [configuring templates for a different cluster](condor.md#configuring-templates-for-a-different-cluster).
+**:point_right:Note:** Templates are cluster-specific. Your cluster administrator can provide templates adapted to your cluster. To do so, cluster administrators can follow the guidance on [configuring templates for a different cluster](condor.md#configuring-templates-for-a-different-cluster).
 
-**⚠️Caution:** When [updating to a new release](README.md#updating) additional functionality may be present in the default template values, in particular there where `{}` expansions are used. When overriding templates, it is therefore important to keep an eye on the [release notes](https://github.com/iiasa/Condor_run_R/releases) to see if template default values were changed: you may need to update your templates, for example by applying your template customizations to the new defaults.
+**:warning:Caution:** When [updating to a new release](README.md#updating) additional functionality may be present in the default template values, in particular there where `{}` expansions are used. When overriding templates, it is therefore important to keep an eye on the [release notes](https://github.com/iiasa/Condor_run_R/releases) to see if template default values were changed: you may need to update your templates, for example by applying your template customizations to the new defaults.
 
 ### JOB_TEMPLATE
 
