@@ -195,7 +195,7 @@ Number of hardware threads to reserve for each job. The default value is good fo
   
 The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CPU can contain multiple processing cores, with each core potentially able to run multiple hardware threads, typially two per core. It is those hardware threads—each able to support and independent parallel execution context—that this setting and the statistic in the `.log` file refers to.
 
-**:point_right:Note** your jobs will get scheduled only in "slots" of execute hosts that have suffient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+**:point_right:Note:** your jobs will get scheduled only in "slots" of execute hosts that have suffient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
 ### REQUEST_DISK
 
