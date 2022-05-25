@@ -74,7 +74,7 @@ PREFIX = "job"
 
 # ---- Configuration parameters, optional templates ----
 
-# When customizing how jobs are submitted and how execute hosts launch them,
+# When customizing how jobs are submitted and how execute points launch them,
 # you may need to add adapted versions of these to your configuration file.
 JOB_TEMPLATE <- c(
   "executable = {bat_path}",
@@ -113,7 +113,7 @@ JOB_TEMPLATE <- c(
 BAT_TEMPLATE <- c(
   '@echo off',
   'if not "%~1"=="" goto continue',
-  'echo This batch file runs on an execute host with a job number as only argument.',
+  'echo This batch file runs on an execute point with a job number as only argument.',
   'exit /b 1',
   ':continue',
   'grep "^Machine = " .machine.ad || exit /b %errorlevel%',
@@ -158,7 +158,7 @@ SEED_JOB_TEMPLATE <- c(
   "error = {log_dir}/_seed_{hostname}.err",
   "",
   "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
-  "periodic_remove = (JobStatus == 1) && (time() - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute host is not responding
+  "periodic_remove = (JobStatus == 1) && (time() - EnteredCurrentStatus > 120 )", # if seed job remains idle for more than 2 minutes, remove it as presumably the execute point is not responding
   "",
   "{build_requirements_expression(REQUIREMENTS, hostdom)}",
   "request_memory = 0",
@@ -287,7 +287,7 @@ constraints <- function(requirements) {
 }
 
 # Build a combined pretty-printed expression from zero or more requirements
-# expressions as well as a list of zero or more execute host names to
+# expressions as well as a list of zero or more names of execute points to
 # which the submission should be limited. The build expression can be
 # included in a .job description file.
 #
@@ -600,7 +600,7 @@ if (str_detect(GAMS_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G
 }
 version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
 if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
-if (!(GAMS_VERSION %in% EXECUTE_HOST_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The execute hosts have only these GAMS versions installed: {str_c(EXECUTE_HOST_GAMS_VERSIONS, collapse=" ")}')) # {cat(EXECUTE_HOST_GAMS_VERSIONS)}
+if (!(GAMS_VERSION %in% EXECUTE_HOST_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The execute points have only these GAMS versions installed: {str_c(EXECUTE_HOST_GAMS_VERSIONS, collapse=" ")}')) # {cat(EXECUTE_HOST_GAMS_VERSIONS)}
 dotless_gams_version <- str_glue(version_match[2], version_match[3])
 major_gams_version <- version_match[2]
 if (length(JOBS) < 1 && !str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
@@ -690,28 +690,28 @@ if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
 log_dir <- path(CONDOR_DIR, LABEL)
 if (!dir_exists(log_dir)) dir_create(log_dir)
 
-# ---- Check status of execute hosts ----
+# ---- Check status of execute points ----
 
 # Check that required Condor binaries are available
 check_on_path(c("condor_submit", "condor_status", "condor_q", "condor_reschedule"))
 
-# Construct clause stating what execute hosts are selected by
+# Construct clause stating what execute points are selected by
 selected_by <- str_glue(
   "{ifelse(HOST_REGEXP == '.*', '', ' matching HOST_REGEXP')}",
   "{ifelse(HOST_REGEXP == '.*' || length(REQUIREMENTS) == 0,'', ' and')}",
   "{ifelse(length(REQUIREMENTS) == 0, '', ' meeting REQUIREMENTS')}"
 )
 
-cat(str_glue("Available resources on execute hosts{selected_by}:"), sep="\n")
+cat(str_glue("Available resources on execute points{selected_by}:"), sep="\n")
 error_code <- system2("condor_status", args=c("-compact", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
 if (error_code > 0) stop("Cannot show Condor pool status! Probably, your submit machine is unable to connect to the central manager. Possibly, you are running a too-old (< V8.7.2) Condor version.")
 cat("\n")
 
-# Collect host name and domain of available execute hosts matching HOST_REGEXP and meeting REQUIREMENTS
+# Collect host name and domain of available execute points matching HOST_REGEXP and meeting REQUIREMENTS
 hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machine", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE))
 if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
 if (length(hostdoms) == 0) {
-  stop(str_glue("No available execute hosts{selected_by}!"))
+  stop(str_glue("No available execute points{selected_by}!"))
 }
 
 # ---- Bundle the files needed to run the jobs ----
@@ -765,16 +765,16 @@ request_disk <- REQUEST_DISK + ceiling((byte_size + added_size + restart_size) /
 # Determine the bundle size in KiB
 bundle_size <- floor(file_size(bundle_path) / 1024)
 
-# ---- Seed available execute hosts with the bundle ----
+# ---- Seed available execute points with the bundle ----
 
-# Apply settings to  template and write batch file / shell script that launches jobs on the execute host side 
+# Apply settings to  template and write batch file / shell script that launches jobs on the execute point 
 seed_bat <- path(temp_dir, str_glue("_seed.bat"))
 bat_conn<-file(seed_bat, open="wt")
 writeLines(unlist(lapply(SEED_BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
 
-# Transfer bundle to each available execute host
+# Transfer bundle to each available execute point
 # Execute-host-side automated bundle cleanup is assumed to be active:
 # https://mis.iiasa.ac.at/portal/page/portal/IIASA/Content/TicketS/Ticket?defpar=1%26pWFLType=24%26pItemKey=103034818402942720
 cluster_regexp <- "submitted to cluster (\\d+)[.]$"
@@ -834,9 +834,9 @@ if (all(failed_seeds)) {
 }
 if (any(failed_seeds)) {
   if (length(failed_seeds[failed_seeds == TRUE]) == 1) {
-    warning(str_glue("A seeding job failed, will refrain from scheduling jobs on the affected execute host {hostnames[failed_seeds]}. Probably, this host is currently unavailable."))
+    warning(str_glue("A seeding job failed, will refrain from scheduling jobs on the affected execute point {hostnames[failed_seeds]}. Probably, this host is currently unavailable."))
   } else {
-    warning(str_glue("Seeding jobs failed, will refrain from scheduling jobs on the affected execute hosts {str_c(hostnames[failed_seeds], collapse=', ')}. Probably, these hosts are currently unavailable."))
+    warning(str_glue("Seeding jobs failed, will refrain from scheduling jobs on the affected execute point {str_c(hostnames[failed_seeds], collapse=', ')}. Probably, these hosts are currently unavailable."))
   }
   hostdoms <- hostdoms[!failed_seeds]
   hostnames <- hostnames[!failed_seeds]
@@ -855,9 +855,9 @@ for (hostname in hostnames) {
 
 # Report that seeding is done
 if (length(hostnames) == 1) {
-  cat(str_glue("Seeding done: execute host {hostnames} has received and cached the bundle.\n"))
+  cat(str_glue("Seeding done: execute point {hostnames} has received and cached the bundle.\n"))
 } else {
-  cat(str_glue("Seeding done: execute hosts {str_c(hostnames, collapse=', ')} have received and cached the bundle.\n"))
+  cat(str_glue("Seeding done: execute point {str_c(hostnames, collapse=', ')} have received and cached the bundle.\n"))
 }
 cat("\n")
 rm(hostnames)
@@ -916,7 +916,7 @@ if (is.na(cluster)) {
 if (cluster != predicted_cluster) {
   # system2("condor_rm", args=str_glue("{cluster}")) # should do this, but it does not work due to some weird Condor/R/Windows bug.
   file_delete(bundle_path)
-  stop(str_glue("Submission cluster number {cluster} not equal to prediction {predicted_cluster}! You probably submitted something else via Condor while this submission was ongoing, causing the cluster number (sequence count of your submissions) to increment. As a result, log files have been named with a wrong cluster number.\n\nPlease do not submit additional Condor jobs until after a submission has completed. Note that this does not mean that you have to wait for the run to complete before submitting further runs, just wait for the submission to make it to the point where the execute hosts have been handed the jobs. Please try again.\n\nYou should first remove the run's jobs with: condor_rm {cluster}."))
+  stop(str_glue("Submission cluster number {cluster} not equal to prediction {predicted_cluster}! You probably submitted something else via Condor while this submission was ongoing, causing the cluster number (sequence count of your submissions) to increment. As a result, log files have been named with a wrong cluster number.\n\nPlease do not submit additional Condor jobs until after a submission has completed. Note that this does not mean that you have to wait for the run to complete before submitting further runs, just wait for the submission to make it to the point where the execute points have been handed the jobs. Please try again.\n\nYou should first remove the run's jobs with: condor_rm {cluster}."))
 }
 
 # Log a listing of the bundle contents
