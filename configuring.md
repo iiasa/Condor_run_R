@@ -58,7 +58,7 @@ Arguments to the script or, when [`SCRIPT`](#script) is empty, the [`LAUNCHER`](
 
 GAMS version to run the job with. Must be installed on all selected execution points.
 
-Available GAMS versions are configured by [`EXECUTE_HOST_GAMS_VERSIONS`](#execute_host_gams_versions).
+Available GAMS versions are configured by [`AVAILABLE_GAMS_VERSIONS`](#available_gams_versions).
 
 ### GAMS_FILE_PATH
 
@@ -331,7 +331,7 @@ Default value: `""`
 
 Name of the GDX output file produced by a job on the execution point the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
 
-### EXECUTE_HOST_GAMS_VERSIONS
+### AVAILABLE_GAMS_VERSIONS
 
 Default value: `c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2")`
 
@@ -347,7 +347,7 @@ Working directory for GAMS and its arguments relative to the current working dir
 
 Default value: `""`
 
-Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the [work/restart file](https://www.gams.com/latest/docs/UG_SaveRestart.html) to launch GAMS with on the exucute point. Included in bundle if set.
+Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the [work/restart file](https://www.gams.com/latest/docs/UG_SaveRestart.html) to launch GAMS with on the execution point. Included in bundle if set.
 
 **:warning:Beware:** the restart file will not work if the GAMS version on the EP (see [GAMS_VERSION](#gams_version)) is older than the GAMS version used to generated it. The `Condor_run.R` submit script will throw an explanatory error in that case to prevent the run's jobs from later going on hold for this somewhat obscure reason.
 
