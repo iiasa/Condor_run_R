@@ -31,9 +31,9 @@ The advantages of using these scripts over using [`condor_submit`](https://htcon
 - Manages submission of a set of related jobs in one go.
 - Conveniently collect many files into a submit bundle.
   * For jobs using many source and/or data files.
-- Replicate the project file tree on your submit machine to the remote scratch directory on the machine where a job is executed (execute host).
-- The submit bundle is compressed and takes less time to send to an execute host.
-- Execute hosts cache the bundle so that it needs to be sent over only once per host instead of once per job, avoiding network contention or the hassle of instead setting up a shared network-accessible filesystem.
+- Replicate the project file tree on your submit machine to the remote scratch directory on the machine where a job is executed: an Execute Point (EP) in HTCondor terminology.
+- The submit bundle is compressed and takes less time to send to an EP.
+- EPs cache the bundle so that it needs to be sent over only once per host instead of once per job, avoiding network contention or the hassle of instead setting up a shared network-accessible filesystem.
 - Jobs can be [monitored until they complete](configuring.md#wait_for_run_completion) so that it becomes easy to automate handling of run output.
 - Provides for configurable retry of on-hold jobs so as to recover from transient errors.
 
@@ -54,17 +54,17 @@ It is recommended to always update to the [latest release of the scripts](https:
 
 ## Function of submit scripts
 1. Bundle up the job files using 7-Zip.
-2. Seed the execute hosts with the bundle.
-   - Seeding jobs transfer the bundle once for each execute host.
-   - The execute hosts cache the bundle for use by your jobs.
+2. Seed the execute points (EPs) with the bundle.
+   - Seeding jobs transfer the bundle once for each EP.
+   - The EP cache the bundle for use by your jobs.
 3. Submit the jobs.
    - Jobs unpack the cached bundle when run.
 5. Optionally [wait for the jobs to finish](configuring.md#wait_for_run_completion).
 6. Optionally [merge GAMS GDX output files](configuring.md#merge_gdx_output) (`Condor_run.R`)
 
-By transferring the bundle once for each execute host instead of once for each job in the run, network bandwidth requirements are minimized.
+By transferring the bundle once for each EP instead of once for each job in the run, network bandwidth requirements are minimized.
 
-When a job is run on an execute host, the cached bundle is decompressed in a scratch directory. This creates the file tree that the job needs to run. By passing the job number to the main script of the job, each job in the run can customize the calculation even though it is using the same bundle as input, e.g. by using the job number to select one scenario out of a collection of scenarios.
+When a job is run on an EP, the cached bundle is decompressed in a scratch directory. This creates the file tree that the job needs to run. By passing the job number to the main script of the job, each job in the run can customize the calculation even though it is using the same bundle as input, e.g. by using the job number to select one scenario out of a collection of scenarios.
 
 **⚠️Beware:** only when the jobs of the run are queued can an additional run be submitted. This is after the submit script prints the message
 
