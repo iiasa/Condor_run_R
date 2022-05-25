@@ -179,7 +179,7 @@ Requirements expressions `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"` respectiv
 For more information on requirement expressions, see the documentation of
 the `requirements` command of the [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands).
 
-**:point_right:Note:** custom [`ClassAds`] may have been defined on the EPs that allow you select their capabilities on a more fine-grained level via requirement expresions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. Ask your cluster administrator.
+**:point_right:Note:** custom [`ClassAds`] may have been defined on the EPs that allow you select their capabilities on a more fine-grained level via requirement expressions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. Ask your cluster administrator.
 
 ### HOST_REGEXP
 
@@ -193,9 +193,9 @@ Default value: `1`
 
 Number of hardware threads to reserve for each job. The default value is good for jobs that are single-threaded, or mostly so. When your job involves significant multiprocessing, set this value to an estimate of the average number of in-use threads. The `.log` file of a job will record the average hardware thread usage when it completes.
   
-The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CPU can contain multiple processing cores, with each core potentially able to run multiple hardware threads, typially two per core. It is those hardware threads—each able to support and independent parallel execution context—that this setting and the statistic in the `.log` file refers to.
+The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CPU can contain multiple processing cores, with each core potentially able to run multiple hardware threads, typically two per core. It is those hardware threads—each able to support and independent parallel execution context—that this setting and the statistic in the `.log` file refers to.
 
-**:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have suffient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+**:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
 ### REQUEST_DISK
 

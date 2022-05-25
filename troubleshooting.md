@@ -101,7 +101,7 @@ The cluster may be busy. To see who else has submitted jobs, issue [`condor_stat
 
 Check your network connection. Check if your submit machine can reach machines in the pool, e.g. by issuing a `ping` command on the command line.
 
-If there is no issue with the above, it might instead be that a stale IP adress was cached, in particular if the error looks something like:
+If there is no issue with the above, it might instead be that a outdated IP address was cached, in particular if the error looks something like:
 ```
 > condor_q
 -- Failed to fetch ads from: <123.234.145.156:9618?addrs=123.234.145.156-9618&noUDP&sock=3728_5f68_3> : pcname.orgname.local
