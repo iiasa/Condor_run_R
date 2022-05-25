@@ -31,7 +31,7 @@ The advantages of using these scripts over using [`condor_submit`](https://htcon
 - Manages submission of a set of related jobs in one go.
 - Conveniently collect many files into a submit bundle.
   * For jobs using many source and/or data files.
-- Replicate the project file tree on your submit machine to the remote scratch directory on the machine where a job is executed: an Execute Point (EP) in HTCondor terminology.
+- Replicate the project file tree on your submit machine to the remote scratch directory on the machine where a job is executed: an Execution Point (EP) in HTCondor terminology.
 - The submit bundle is compressed and takes less time to send to an EP.
 - EPs cache the bundle so that it needs to be sent over only once per host instead of once per job, avoiding network contention or the hassle of instead setting up a shared network-accessible filesystem.
 - Jobs can be [monitored until they complete](configuring.md#wait_for_run_completion) so that it becomes easy to automate handling of run output.
@@ -54,7 +54,7 @@ It is recommended to always update to the [latest release of the scripts](https:
 
 ## Function of submit scripts
 1. Bundle up the job files using 7-Zip.
-2. Seed the execute points (EPs) with the bundle.
+2. Seed the execution points (EPs) with the bundle.
    - Seeding jobs transfer the bundle once for each EP.
    - The EP cache the bundle for use by your jobs.
 3. Submit the jobs.

@@ -247,7 +247,7 @@ for (i in seq_along(roots)) {
   dtstr <- mat[2]
   ipstr <- mat[3]
   if (is.na(dtstr)) stop(str_glue("Cannot decode execution start time from {roots[[i]]}.log"))
-  if (is.na(ipstr)) stop(str_glue("Cannot decode execution host IP from {roots[[i]]}.log"))
+  if (is.na(ipstr)) stop(str_glue("Cannot decode the IP of the execution point from {roots[[i]]}.log"))
   start_times[[i]] <- parse_datetime(dtstr, "start", roots[[i]])
   if (is.na(hostname_map[ipstr])) host <- ipstr
   else host <- hostname_map[ipstr]
