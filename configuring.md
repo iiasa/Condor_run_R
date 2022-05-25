@@ -6,7 +6,7 @@ To set up an initial configuration file, copy (do *not* cut) the code block with
 
 After completing the above, you have the mandatory configuration parameters in your configuration flie. Their values will need to be adapted. Please see the documentation of these parameters to learn what they do. You may also wish to add some of the optional configuration parameters. Their defaults are located below the last *snippy snappy* comment. These concern configuration settings with default values that will work for most people.
 
-Your configuration may need adaptation to the particulars of your Condor cluster. For example, [`REQUIREMENTS`](#requirements) filters execute hosts based on their capabilities as advertised via their the Condor configuration of each host. Also, you may need to [adapt templates](#templates). For general information on Condor cluster configuration in support of the `Condor_run_R` submit scripts, see [this page](condor.md). For details on the specific configuration of your Condor cluster, ask your cluster administrator.
+Your configuration may need adaptation to the particulars of your Condor cluster. For example, [`REQUIREMENTS`](#requirements) filters execute points based on their capabilities as advertised via their the Condor configuration of each host. Also, you may need to [adapt templates](#templates). For general information on Condor cluster configuration in support of the `Condor_run_R` submit scripts, see [this page](condor.md). For details on the specific configuration of your Condor cluster, ask your cluster administrator.
 
 IIASA GLOBIOM developers can start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R` which is adapted to the Limpopo cluster. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`. For more information, see the GLOBIOM wiki [here](https://github.com/iiasa/GLOBIOM/wiki/Running-scenarios-in-parallel-on-Limpopo#configuration).
 
@@ -30,11 +30,11 @@ Typically, the script that is run when your jobs are started accepts the job num
 
 ### REQUEST_MEMORY
 
-An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execute host when the sum of their memory requests exceeds the memory allocated to the execution slot of on the host. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the execute host at risk of running out of memory, which can endanger other jobs as well.
+An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execute point (EP) when the sum of their memory requests exceeds the memory allocated to the execution slot of on the host. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the EP at risk of running out of memory, which can endanger other jobs as well.
 
 It is therefore important to configure a good estimates. You can find a job's memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
 
-**:point_right:Note:** your jobs will get scheduled only in "slots" of execute hosts that have sufficient memory to satisfy your request. To see what memory resources your cluster has available issue [`condor_status -avail`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+**:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient memory to satisfy your request. To see what memory resources your cluster has available issue [`condor_status -avail`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
 ### WAIT_FOR_RUN_COMPLETION
 
@@ -56,7 +56,7 @@ Arguments to the script or, when [`SCRIPT`](#script) is empty, the [`LAUNCHER`](
 
 ### GAMS_VERSION
 
-GAMS version to run the job with. Must be installed on all selected execute hosts.
+GAMS version to run the job with. Must be installed on all selected execute points.
 
 Available GAMS versions are configured by [`EXECUTE_HOST_GAMS_VERSIONS`](#execute_host_gams_versions).
 
@@ -150,15 +150,15 @@ Retain the bundle in the run's [`CONDOR_DIR`](#condor_dir) subdirectory when `TR
 
 Default value: `0`
 
-Number of times to auto-release (retry) held bundle-seeding jobs before giving up. Not retrying—by using the 0 default value—is fine when you have plenty of execute hosts in the cluster: hosts that could not receive the bundle are assumed to be unavailable and will be excluded from the subsequent job submission stage. The hosts that could receive the bundle will still process your jobs.
+Number of times to auto-release (retry) held bundle-seeding jobs before giving up. Not retrying—by using the 0 default value—is fine when you have plenty of execute points (EPs) in the cluster: hosts that could not receive the bundle are assumed to be unavailable and will be excluded from the subsequent job submission stage. The hosts that could receive the bundle will still process your jobs.
 
-When the cluster has only one or a couple of execute hosts, or there are intermittent failures on account of networking issues, it may be worthwhile to retry a few times. This can make the seeding process take longer.
+When the cluster has only one or a couple of EPs, or there are intermittent failures on account of networking issues, it may be worthwhile to retry a few times. This can make the seeding process take longer.
 
 ### JOB_RELEASES
 
 Default value: `3`
 
-Number of times to auto-release (retry) held (failed) jobs before giving up. This allows your jobs to recover from transient errors such as a network outage or an execute host running out of memory. When the re-tries have run out, your jobs will remain in the held state. Then the error is likely not transient and requires some analysis as described [here](troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold).
+Number of times to auto-release (retry) held (failed) jobs before giving up. This allows your jobs to recover from transient errors such as a network outage or an execute point running out of memory. When the re-tries have run out, your jobs will remain in the held state. Then the error is likely not transient and requires some analysis as described [here](troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold).
 
 ### JOB_RELEASE_DELAY
 
@@ -172,20 +172,20 @@ Default value: `c()` for `Condor_run_basic.R`.
 
 Default value: `c("GAMS")` for `Condor_run.R`.
 
-Requirement expressions that select the execute hosts to submit to based on their capabilities. The expressions must all evaluated to True for an execute host to be selected. For convenience, bare ClassId identifiers are accepted and converted to valid `<identifier> =?= True` expressions.
+Requirement expressions that select the execute points (EPs) to submit to based on their capabilities. The expressions must all evaluated to True for an EP to be selected. For convenience, bare ClassId identifiers are accepted and converted to valid `<identifier> =?= True` expressions.
 
-Requirements expressions `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"` respectively select execute hosts that run the Linux operating system and have a 64-bit AMD/Intel processor architecture. Using `'OpSys ==  "WINDOWS"'` you can select Windows execute hosts. **Such OS and architecture selection is normally not necessary** because by default, when omitting such requirements, execute hosts are required to have the same `OpSys` and `Arch` as the machine you submit from, which is likely the desired behavior. However, if your code can run on both Linux and Windows—for example because it is Python code, and a Python interpreter is available on all execute hosts—add ```'OpSys == "LINUX" || OpSys == "WINDOWS"'``` as a requirement.
+Requirements expressions `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"` respectively select EPs that run the Linux operating system and have a 64-bit AMD/Intel processor architecture. Using `'OpSys ==  "WINDOWS"'` you can select Windows EPs. **Such OS and architecture selection is normally not necessary** because by default, when omitting such requirements, EPs are required to have the same `OpSys` and `Arch` as the machine you submit from, which is likely the desired behavior. However, if your code can run on both Linux and Windows—for example because it is Python code, and a Python interpreter is available on all EPs—add ```'OpSys == "LINUX" || OpSys == "WINDOWS"'``` as a requirement.
 
 For more information on requirement expressions, see the documentation of
 the `requirements` command of the [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands).
 
-**:point_right:Note:** custom [`ClassAds`] may have been defined on the execute hosts that allow you select their capabilities on a more fine-grained level via requirement expresions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. Ask your cluster administrator.
+**:point_right:Note:** custom [`ClassAds`] may have been defined on the EPs that allow you select their capabilities on a more fine-grained level via requirement expresions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. Ask your cluster administrator.
 
 ### HOST_REGEXP
 
 Default value: `.*`
 
-A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select a subset of execute hosts from the cluster by hostname. Jobs will be scheduled only on the machines thus selected. The default value selects all available execute hosts.
+A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select a subset of EPs from the cluster by hostname. Jobs will be scheduled only on the machines thus selected. The default value selects all available EPs.
 
 ### REQUEST_CPUS
 
@@ -195,7 +195,7 @@ Number of hardware threads to reserve for each job. The default value is good fo
   
 The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CPU can contain multiple processing cores, with each core potentially able to run multiple hardware threads, typially two per core. It is those hardware threads—each able to support and independent parallel execution context—that this setting and the statistic in the `.log` file refers to.
 
-**:point_right:Note:** your jobs will get scheduled only in "slots" of execute hosts that have suffient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+**:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have suffient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
 ### REQUEST_DISK
 
@@ -203,9 +203,9 @@ Default value: `1000000`
 
 Estimate of the amount of execute-host-side disk space required per job for storing transient and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units.
 
-This value is added to the uncompressed size of the bundle. The sum is used to reserve disk space for a job when it is started on an execute host. You can find a job's summed memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
+This value is added to the uncompressed size of the bundle. The sum is used to reserve disk space for a job when it is started on an EP. You can find a job's summed memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
 
-**:point_right**Note:** your jobs will get scheduled only in "slots" of execute hosts that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+**:point_right**Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
   
 ### RUN_AS_OWNER
 
@@ -265,9 +265,9 @@ Default value: `TRUE`
 
 Default value: `"output"`
 
-Directory for output files. Relative to the current working directory on the execute host side and also on the submit machine when [`OUTPUT_DIR_SUBMIT`](#output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
+Directory for output files. Relative to the current working directory on the execute point and also on the submit machine when [`OUTPUT_DIR_SUBMIT`](#output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
 
-When `OUTPUT_DIR` does not exist on the execute host side, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run_basic.R` will create it.
+When `OUTPUT_DIR` does not exist on the EP, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run_basic.R` will create it.
 
 ### OUTPUT_DIR_SUBMIT
 
@@ -279,7 +279,7 @@ Directory on the submit machine into where job output files are transferred. Can
 
 Default value: `"output.RData"`
 
-Name of output file as produced by a job on the execute host side. Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
+Name of output file as produced by a job on the execute point. Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
 
 ## `Condor_run.R`-specific optional configuration parameters
 
@@ -291,9 +291,9 @@ Default value: `FALSE`
 
 Default value: `""`
 
-When set (changed from its `""` default), this configures the directory for storing work/save output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute host and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
+When set (changed from its `""` default), this configures the directory for storing work/save output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execite point (EP) and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
 
-When set and when `G00_OUTPUT_DIR` does not exist on the execute host side, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` will create it.
+When set and when `G00_OUTPUT_DIR` does not exist on the EP the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` will create it.
 
 ### G00_OUTPUT_DIR_SUBMIT
 
@@ -305,7 +305,7 @@ Directory on the submit machine into where `.g00` job work/save files are transf
 
 Default value: `""`
 
-Name of work/save file produced by a job on the execute host side via the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
+Name of work/save file produced by a job on the execute point the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
 
 ### GET_GDX_OUTPUT
 
@@ -315,9 +315,9 @@ Default value: `FALSE`
 
 Default value: `""`
 
-When set (changed from its `""` default), this sets the directory for storing GDX output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute host side and also on the submit machine side when [`GDX_OUTPUT_DIR_SUBMIT`](#gdx_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
+When set (changed from its `""` default), this sets the directory for storing GDX output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute point also on the submit machine when [`GDX_OUTPUT_DIR_SUBMIT`](#gdx_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
 
-When set and when `GDX_OUTPUT_DIR` does not exist on the execute host side, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` will create it.
+When set and when `GDX_OUTPUT_DIR` does not exist on the EP the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` will create it.
 
 ### GDX_OUTPUT_DIR_SUBMIT
 
@@ -329,13 +329,13 @@ Directory on the submit machine into where GDX job output files are transferred.
 
 Default value: `""`
 
-Name of the GDX output file produced by a job on the execute host side via the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
+Name of the GDX output file produced by a job on the execute point the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
 
 ### EXECUTE_HOST_GAMS_VERSIONS
 
 Default value: `c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2")`
 
-GAMS versions installed on execute hosts.
+GAMS versions installed on execute points advertising the `GAMS`` requirement.
 
 ### GAMS_CURDIR
 
@@ -347,9 +347,9 @@ Working directory for GAMS and its arguments relative to the current working dir
 
 Default value: `""`
 
-Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the [work/restart file](https://www.gams.com/latest/docs/UG_SaveRestart.html) to launch GAMS with on the execute host side. Included in bundle if set.
+Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the [work/restart file](https://www.gams.com/latest/docs/UG_SaveRestart.html) to launch GAMS with on the exucute point. Included in bundle if set.
 
-**:warning:Beware:** the restart file will not work if the GAMS version on the execute host side (see [GAMS_VERSION](#gams_version)) is older than the GAMS version used to generated it. The `Condor_run.R` submit script will throw an explanatory error in that case to prevent the run's jobs from later going on hold for this somewhat obscure reason.
+**:warning:Beware:** the restart file will not work if the GAMS version on the EP (see [GAMS_VERSION](#gams_version)) is older than the GAMS version used to generated it. The `Condor_run.R` submit script will throw an explanatory error in that case to prevent the run's jobs from later going on hold for this somewhat obscure reason.
 
 If you are unsure which GAMS version a restart file was generated with, you can determine that by using the [`restart_version.R`](https://github.com/iiasa/Condor_run_R/blob/master/restart_version.R) script.
 
@@ -403,7 +403,7 @@ Template of the Condor `.job` file to submit the run with. The `.job` file produ
 
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L101) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L113).
 
-Template for the `.bat` file that launches jobs on the execute host side. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir).
+Template for the `.bat` file that launches jobs on the execute point (EP). The default uses POSIX commands which are not normally available on Windows EPs and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir).
 
 ### SEED_JOB_TEMPLATE
 
@@ -415,4 +415,4 @@ Template of the Condor `.job` file to submit the bundle seed jobs with. The `.jo
 
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L150) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L174).
 
-Template for the `.bat` file that caches the bundle on the execute host side for a seeding job. The default uses POSIX commands which are not normally available on Windows execute hosts and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
+Template for the `.bat` file that caches the bundle on the execute point for a seeding job. The default uses POSIX commands which are not normally available on Windows EPs and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
