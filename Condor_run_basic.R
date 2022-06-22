@@ -166,8 +166,8 @@ if (length(config_names) == 0) {stop("Default configuration is absent! Please re
 config_types <- lapply(lapply(config_names, get), typeof)
 
 # Load required packages
-library(fs)
-library(stringr)
+suppressWarnings(library(fs))
+suppressWarnings(library(stringr))
 
 # Determine the platform file separator and the temp directory with R-default separators
 temp_dir <- tempdir()
