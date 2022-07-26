@@ -9,7 +9,7 @@ When you have an issue with getting your jobs to run or with retrieving output, 
 - [Seeding jobs remain idle and then abort through the PeriodicRemove expression](#seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
 - [Seeding jobs stay in the running state indefinitely](#seeding-jobs-stay-in-the-running-state-indefinitely)
 - [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
-- [Jobs go on hold without producing matching `.log` files](#jobs-go-on-hold-without-producing-matching-log-files)
+- [Seeding fails or jobs go on hold without producing matching `.log` files](#jobs-go-on-hold-without-producing-matching-log-files)
 - [Jobs run but at the end fail to send and write output files](#jobs-run-but-at-the-end-fail-to-send-and-write-output-files)
 - [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
 - [`Condor_run_stats.R` produces empty plots](#condor_run_statsr-produces-empty-plots)
@@ -86,9 +86,9 @@ When your analysis indicates that the error might still be transient, you can re
 
 When you are done analyzing the held jobs, use [`condor_rm`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_rm.html) (with a cluster number or your user name as argument) to remove them from the queue. This will clean up their working directories on the execution point.
 
-## Jobs go on hold without producing matching `.log` files
+## Seeding fails or jobs go on hold without producing matching `.log` files
 
-When your job produced no `.log` files in a subdirectory of [`CONDOR_DIR`](configuring.md#condor_dir) there are three likely causes:
+When seeding or regular jobs produce no `.log` files in a subdirectory of [`CONDOR_DIR`](configuring.md#condor_dir) there are three likely causes:
 
 1. The pool credentials are not stored or outdated. Store the pool password again using [`condor_store_cred -c add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) and retry. Ask your cluster administrator for the pool password.
 
