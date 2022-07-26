@@ -707,7 +707,14 @@ monitor(clusters)
 rm(clusters)
 
 # Determine which seed jobs failed
-return_values <- get_return_values(log_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
+tryCatch(
+  return_values <- get_return_values(log_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log")))),
+  error=function(cond) {
+    file_delete(bundle_path)
+    message("Cannot read log files of seeding jobs!")
+    stop(str_glue("Aborting, see https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#seeding-fails-or-jobs-go-on-hold-without-producing-matching-log-files for possible solutions."))
+  }
+)
 err_file_sizes <-  lapply(hostnames, function(hostname) return(file_size(path(log_dir, str_glue("_seed_{hostname}.err")))))
 failed_seeds <- is.na(return_values) | return_values != 0 | err_file_sizes != 0
 rm(return_values, err_file_sizes)
