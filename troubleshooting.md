@@ -9,7 +9,7 @@ When you have an issue with getting your jobs to run or with retrieving output, 
 - [Seeding jobs remain idle and then abort through the PeriodicRemove expression](#seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
 - [Seeding jobs stay in the running state indefinitely](#seeding-jobs-stay-in-the-running-state-indefinitely)
 - [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
-- [Seeding fails or jobs go on hold without producing matching `.log` files](#jobs-go-on-hold-without-producing-matching-log-files)
+- [Seeding fails or jobs go on hold without producing matching `.log` files](#seeding-fails-or-jobs-go-on-hold-without-producing-matching-log-files)
 - [Jobs run but at the end fail to send and write output files](#jobs-run-but-at-the-end-fail-to-send-and-write-output-files)
 - [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
 - [`Condor_run_stats.R` produces empty plots](#condor_run_statsr-produces-empty-plots)
