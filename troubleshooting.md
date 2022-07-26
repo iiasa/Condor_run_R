@@ -93,9 +93,9 @@ When seeding or regular jobs produce no `.log` files in a subdirectory of [`COND
 1. The pool credentials are not stored or outdated. Store the pool password again using [`condor_store_cred -c add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) and retry. Ask your cluster administrator for the pool password.
 
 2. [`CONDOR_DIR`](configuring.md#condor_dir) is on a network share that your user account can access but the locally running Condor daemon/service cannot. This can be resolved in several ways:
-  - Move the whole project file tree containing `CONDOR_DIR` from the network share to a local disk.
-  - Reconfigure [`CONDOR_DIR`](configuring.md#condor_dir) to point to a directory on a local disk (absolute paths are allowed) that Condor can access.
-  - Try to reconfigure the Condor service/daemon to run from a different account or with additional rights as needed to access the network share.
+  1. Move the whole project file tree containing `CONDOR_DIR` from the network share to a local disk.
+  2. Reconfigure [`CONDOR_DIR`](configuring.md#condor_dir) to point to a directory on a local disk (absolute paths are allowed) that Condor can access.
+  3. Try to reconfigure the Condor service/daemon to run from a different account or with additional rights as needed to access the network share.
 
 3. The permissions on [`CONDOR_DIR`](configuring.md#condor_dir) prevent access by the locally running Condor daemon/service. Either change the permissions on [`CONDOR_DIR`](configuring.md#condor_dir) to give Condor access or reconfigure the Condor daemon/service to run from a different account or with additional rights as needed to access the [`CONDOR_DIR`](configuring.md#condor_dir) directory.
 
