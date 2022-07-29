@@ -407,12 +407,12 @@ monitor <- function(clusters) {
 }
 
 # Get the return values of job log files, or NA when a job did not terminate normally.
-get_return_values <- function(log_dir, log_file_names) {
+get_return_values <- function(log_file_paths) {
   return_values <- c()
   return_value_regexp <- "\\(1\\) Normal termination \\(return value (\\d+)\\)"
-  for (name in log_file_names) {
+  for (lfp in log_file_paths) {
     tryCatch({
-        loglines <- readLines(path(log_dir, name))
+        loglines <- readLines(lfp)
         return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
         return_values <- c(return_values, return_value)
       },
@@ -712,15 +712,15 @@ cat("Waiting for bundle seeding to complete...\n")
 monitor(clusters)
 rm(clusters)
 
-# Check if any seeding jobs produced .log files
+# Check if any seed jobs produced .log files
 if (!any(file_exists(path(log_dir, str_glue("_seed_{hostnames}.log"))))) {
-  message("None of the seeding jobs produced a .log file!")
+  message("None of the seed jobs produced a .log file!")
   file_delete(bundle_path)
   stop(str_glue("Aborting, see https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#seeding-fails-or-jobs-go-on-hold-without-producing-matching-log-files for possible solutions."))
 }
 
 # Determine which seed jobs failed
-return_values <- get_return_values(log_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
+return_values <- get_return_values(path(log_dir, str_glue("_seed_{hostnames}.log")))
 err_file_sizes <-  lapply(hostnames, function(hostname) return(file_size(path(log_dir, str_glue("_seed_{hostname}.err")))))
 failed_seeds <- is.na(return_values) | return_values != 0 | err_file_sizes != 0
 rm(return_values, err_file_sizes)
@@ -862,7 +862,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
     output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR_SUBMIT, 'output_{LABEL}_{cluster}.{sprintf("%06d", job)}.{output_extension}', output_extension)
   }
 
-  return_values <- get_return_values(log_dir, lapply(JOBS, function(job) return(str_glue("{PREFIX}_{cluster}.{job}.log"))))
+  return_values <- get_return_values(path(log_dir, str_glue("{PREFIX}_{cluster}.{JOBS}.log")))
   if (any(is.na(return_values))) {
     stop(str_glue("Abnormal termination of job(s) {summarize_jobs(JOBS[is.na(return_values)])}! For details, see the {PREFIX}_{cluster}.* files in {log_dir}"))
   }
