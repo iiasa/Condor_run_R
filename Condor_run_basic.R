@@ -411,9 +411,15 @@ get_return_values <- function(log_dir, log_file_names) {
   return_values <- c()
   return_value_regexp <- "\\(1\\) Normal termination \\(return value (\\d+)\\)"
   for (name in log_file_names) {
-    loglines <- readLines(path(log_dir, name))
-    return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
-    return_values <- c(return_values, return_value)
+    tryCatch({
+        loglines <- readLines(path(log_dir, name))
+        return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
+        return_values <- c(return_values, return_value)
+      },
+      error=function(cond) {
+        return_values <- c(return_values, NA)
+      }
+    )
   }
   return(return_values)
 }
@@ -652,7 +658,7 @@ bundle_size <- floor(file_size(bundle_path) / 1024)
 
 # ---- Seed available execution points with the bundle ----
 
-# Apply settings to  template and write batch file / shell script that launches jobs on the execution point side 
+# Apply settings to  template and write batch file / shell script that launches jobs on the execution point 
 seed_bat <- path(temp_dir, str_glue("_seed.bat"))
 bat_conn<-file(seed_bat, open="wt")
 writeLines(unlist(lapply(SEED_BAT_TEMPLATE, str_glue)), bat_conn)
@@ -706,15 +712,15 @@ cat("Waiting for bundle seeding to complete...\n")
 monitor(clusters)
 rm(clusters)
 
+# Check if any seeding jobs produced .log files
+if (!any(file_exists(path(log_dir, str_glue("_seed_{hostnames}.log"))))) {
+  message("None of the seeding jobs produced a .log file!")
+  file_delete(bundle_path)
+  stop(str_glue("Aborting, see https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#seeding-fails-or-jobs-go-on-hold-without-producing-matching-log-files for possible solutions."))
+}
+
 # Determine which seed jobs failed
-tryCatch(
-  return_values <- get_return_values(log_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log")))),
-  error=function(cond) {
-    file_delete(bundle_path)
-    message("Cannot read log files of seeding jobs!")
-    stop(str_glue("Aborting, see https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#seeding-fails-or-jobs-go-on-hold-without-producing-matching-log-files for possible solutions."))
-  }
-)
+return_values <- get_return_values(log_dir, lapply(hostnames, function(hostname) return(str_glue("_seed_{hostname}.log"))))
 err_file_sizes <-  lapply(hostnames, function(hostname) return(file_size(path(log_dir, str_glue("_seed_{hostname}.err")))))
 failed_seeds <- is.na(return_values) | return_values != 0 | err_file_sizes != 0
 rm(return_values, err_file_sizes)
