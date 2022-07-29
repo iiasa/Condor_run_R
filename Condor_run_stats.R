@@ -476,11 +476,11 @@ jobs %>%
 # Tabulate summaries
 if (exists("grid.table")) {
   # produce graphical tables
-  grid.table(summary, theme=ttheme_default(base_size = 9.2))
+  grid.table(summary, theme=ttheme_default(base_size = 6.2))
   print(ggplot() + theme_void())
   grid.table(summary_grouped)
   print(ggplot() + theme_void())
-  grid.table(resource_summary, theme=ttheme_default(base_size = 10.0))
+  grid.table(resource_summary, theme=ttheme_default(base_size = 7.0))
 } else {
   # produce tables formatted as text
   print(summary)

@@ -721,7 +721,7 @@ if (!any(file_exists(path(log_dir, str_glue("_seed_{hostnames}.log"))))) {
 
 # Determine which seed jobs failed
 return_values <- get_return_values(path(log_dir, str_glue("_seed_{hostnames}.log")))
-err_file_sizes <-  lapply(hostnames, function(hostname) return(file_size(path(log_dir, str_glue("_seed_{hostname}.err")))))
+err_file_sizes <-  file_size(path(log_dir, str_glue("_seed_{hostnames}.err")))
 failed_seeds <- is.na(return_values) | return_values != 0 | err_file_sizes != 0
 rm(return_values, err_file_sizes)
 
