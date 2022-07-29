@@ -7,7 +7,7 @@
 #
 # Author:   Albert Brouwer
 # Based on: GLOBIOM-limpopo scripts by David Leclere
-# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2022-04-15
+# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2022-07-29
 
 # Remove any objects from active environment so that below it will contain only the default configuration
 rm(list=ls())
@@ -847,9 +847,9 @@ if (all(failed_seeds)) {
 }
 if (any(failed_seeds)) {
   if (length(failed_seeds[failed_seeds == TRUE]) == 1) {
-    warning(str_glue("A seeding job failed, will refrain from scheduling jobs on the affected execution point {hostnames[failed_seeds]}. Probably, this host is currently unavailable."))
+    warning(str_glue("A seeding job failed, will refrain from scheduling jobs on the affected execution point {hostnames[failed_seeds]}."))
   } else {
-    warning(str_glue("Seeding jobs failed, will refrain from scheduling jobs on the affected execution points {str_c(hostnames[failed_seeds], collapse=', ')}. Probably, these hosts are currently unavailable."))
+    warning(str_glue("Seeding jobs failed, will refrain from scheduling jobs on the affected execution points {str_c(hostnames[failed_seeds], collapse=', ')}."))
   }
   hostdoms <- hostdoms[!failed_seeds]
   hostnames <- hostnames[!failed_seeds]
