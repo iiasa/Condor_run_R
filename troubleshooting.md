@@ -111,7 +111,7 @@ There are two likely causes:
 
 The cluster may be busy. To see who else has submitted jobs, issue [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue [`condor_userprio`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_userprio.html). Large numbers mean low priority. Your cluster administrator can set your priority.
 
-If the cluster has unused capacity, it may be that your jobs remain idle (queued and waiting to be scheduled) because they are requesting more memory or other resources than currently available. For details, see [`REQUEST_MEMORY`](configuring.md#request_memory), [`REQUEST_DISK`](configuring.md#request_disk), and [`REQUEST_CPUS`](configuring.md#output_cpus). Either wait for sufficient resources to become available, or reduce the requested resources if possible. **:warning:Beware:** use the right units for each of the request configurations!
+If the cluster has unused capacity, it may be that your jobs remain idle (queued and waiting to be scheduled) because they are requesting more memory or other resources than currently available. For details, see [`REQUEST_MEMORY`](configuring.md#request_memory), [`REQUEST_DISK`](configuring.md#request_disk), and [`REQUEST_CPUS`](configuring.md#reqiest_cpus). Either wait for sufficient resources to become available, or reduce the requested resources if possible. **:warning:Beware:** use the right units for each of the request configurations!
 
 ## Condor commands like `condor_q` fail
 
