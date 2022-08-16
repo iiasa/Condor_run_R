@@ -339,9 +339,9 @@ GAMS versions installed on execution points advertising the `GAMS`` requirement.
 
 ### GAMS_CURDIR
 
-Default value: `""`
+Default value: `"."`
 
-Working directory for GAMS and its arguments relative to the current working directory. The value `""` defaults to the current working directory.
+Working directory for GAMS and its arguments relative to the current working directory. The value `"."` defaults to the current working directory.
 
 ### RESTART_FILE_PATH
 
