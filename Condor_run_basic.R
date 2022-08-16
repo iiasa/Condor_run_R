@@ -565,7 +565,7 @@ if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR
 if (GET_OUTPUT) {
   if (is.null(OUTPUT_DIR_SUBMIT)) {
     # Use OUTPUT_DIR on the submit machine side as well.
-    if (!(file_exists(OUTPUT_DIR))) stop(str_glue('Configured OUTPUT_DIR "{OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
+    if (!(file_exists(OUTPUT_DIR))) stop(str_glue('Configured OUTPUT_DIR "{OUTPUT_DIR}" does not exist!'))
     OUTPUT_DIR_SUBMIT <- OUTPUT_DIR
   } else {
     # Use a separate OUTPUT_DIR_SUBMIT configuration on the submit machine side.
