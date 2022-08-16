@@ -3,6 +3,7 @@ be run via the `test.bat` (Windows) or `test.sh` (MacOS/Linux) scripts present i
 
 Tests listing:
 - [basic](basic/purpose.md)
+- [bundling](bundling/purpose.md)
 - [disconnect](disconnect/purpose.md)
 - [noscript](noscript/purpose.md)
 - [parallel](parallel/purpose.md)
