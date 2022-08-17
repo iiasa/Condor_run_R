@@ -144,7 +144,7 @@ Files to add to root of bundle during an additional invocation of 7-Zip. Can als
 
 Default value: `FALSE`
 
-Set to `TRUE` to test only the bundling without subsequent submission. On completion of bundling, the submit script will quit with an explanatory message. The message states where the bundle is located so that you can inspect it.
+Set to `TRUE` to test only the bundling without subsequent submission. The 7-Zip invocation command lines will be echoed to the console for reference. On completion of bundling, the submit script will quit with an explanatory message. The message states where the bundle is located so that you can inspect it.
 
 ### RETAIN_BUNDLE
 

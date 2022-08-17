@@ -191,6 +191,10 @@ check_on_path <- function(binaries) {
 # Bundle files with 7-Zip, check success and output, and return the overall byte size of the input files
 bundle_with_7z <- function(args_for_7z) {
   check_on_path("7z")
+  if (BUNDLE_ONLY) {
+    message("Invoking 7-Zip via the following command line:")
+    message(str_c(c("7z", args_for_7z), collapse = " "))
+  }
   out <- system2("7z", stdout=TRUE, stderr=TRUE, args=args_for_7z)
   if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
     message("7z failed, likely because of erroneous or too many arguments.\nThe arguments for 7z derived from the BUNDLE_* config options were as follows:")
