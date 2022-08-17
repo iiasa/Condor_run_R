@@ -657,7 +657,7 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
 
 if (BUNDLE_ONLY) {
   tryCatch(
-    file_copy(bundle_path, path(log_dir, str_glue("_bundle.7z"))),
+    file_copy(bundle_path, path(log_dir, str_glue("_bundle.7z")), overwrite = TRUE),
     error=function(cond) {
       message(cond)
       warning("Could not make a reference copy of the bundle!")
