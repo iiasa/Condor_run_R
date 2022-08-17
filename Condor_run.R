@@ -40,6 +40,7 @@ BUNDLE_EXCLUDE_DIRS = c(".git", ".svn", "225*")
 BUNDLE_INCLUDE_FILES = c()
 BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.lst")
 BUNDLE_ADDITIONAL_FILES = c()
+BUNDLE_ONLY = FALSE
 RETAIN_BUNDLE = FALSE
 SEED_JOB_RELEASES = 0
 JOB_RELEASES = 3
@@ -763,6 +764,19 @@ if (RESTART_FILE_PATH != "") {
   args_for_7z <- c("a", bundle_platform_path, in_gams_curdir(RESTART_FILE_PATH))
   restart_size <- bundle_with_7z(args_for_7z)
   cat("\n")
+}
+
+if (BUNDLE_ONLY) {
+  tryCatch(
+    file_copy(bundle_path, path(log_dir, str_glue("_bundle.7z"))),
+    error=function(cond) {
+      message(cond)
+      warning("Could not make a reference copy of the bundle!")
+    }
+  )
+  file_delete(bundle_path) # Delete the copied bundle in the temp directory
+  message(str_glue("BUNDLE_ONLY = TRUE: copied the bundle to {log_dir} and quitting."))
+  q(save = "no")
 }
 
 # Add uncompressed bundle size to the disk request in KiB

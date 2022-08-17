@@ -9,5 +9,5 @@ BUNDLE_INCLUDE = "model"
 BUNDLE_INCLUDE_DIRS = c("data/*.bar", "data/**/*.baz")
 BUNDLE_ADDITIONAL_FILES = c("additionals/additional.file")
 BUNDLE_EXCLUDE_FILES = c("data/**/exclude_me_specifically.baz")
-RETAIN_BUNDLE = TRUE
+BUNDLE_ONLY = TRUE
 WAIT_FOR_RUN_COMPLETION = FALSE
