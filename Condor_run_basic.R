@@ -656,6 +656,7 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
 }
 
 if (BUNDLE_ONLY) {
+  message(str_glue("BUNDLE_ONLY = TRUE: copying bundle into {log_dir} for inspection and quitting."))
   tryCatch(
     file_copy(bundle_path, path(log_dir, str_glue("_bundle.7z")), overwrite = TRUE),
     error=function(cond) {
@@ -664,7 +665,6 @@ if (BUNDLE_ONLY) {
     }
   )
   file_delete(bundle_path) # Delete the copied bundle in the temp directory
-  message(str_glue("BUNDLE_ONLY = TRUE: copied the bundle to {log_dir} and quitting."))
   q(save = "no")
 }
 
