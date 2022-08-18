@@ -5,6 +5,7 @@ Tests listing:
 - [basic](basic/purpose.md)
 - [bundling](bundling/purpose.md)
 - [bundling_GAMS](bundling_GAMS/purpose.md)
+- [bundling_GAMS_CURDIR](bundling_GAMS_CURDIR/purpose.md)
 - [disconnect](disconnect/purpose.md)
 - [noscript](noscript/purpose.md)
 - [parallel](parallel/purpose.md)
