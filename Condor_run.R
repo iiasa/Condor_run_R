@@ -512,6 +512,30 @@ all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
   return(!(any(absentees) || any(empties)))
 }
 
+# Check whether the given directory path can be excluded without
+# conflicting with any of the BUNDLE_INCLUDE_* parameters.
+excludable <- function(dir_path) {
+  if (path_has_parent(BUNDLE_INCLUDE, dir_path)) return(FALSE)
+  for (f in BUNDLE_INCLUDE_FILES) {
+    if (path_has_parent(f, dir_path)) return(FALSE)
+  }
+  for (d in BUNDLE_INCLUDE_DIRS) {
+    if (path_has_parent(d, dir_path)) return(FALSE)
+  }
+  return(TRUE)
+}
+
+# Define a function to turn a path relative to GAMS_CURDIR into a path relative to the working directory when GAMS_CURDIR is set.
+in_gams_curdir <- function(path) {
+  if (GAMS_CURDIR == "") {
+    # Needed because path_norm() with an empty path builds an absolute path
+    return(path)
+  } 
+  else {
+    return(path_norm(path(GAMS_CURDIR, path)))
+  }
+}
+
 # ---- Process environment and run config settings ----
 
 # Read config file if specified via an argument, check presence and types.
@@ -571,17 +595,6 @@ if (length(args) > 0) {
     }
   }
   close(config_conn)
-}
-
-# Define a function to turn a path relative to GAMS_CURDIR into a path relative to the working directory when GAMS_CURDIR is set.
-in_gams_curdir <- function(path) {
-  if (GAMS_CURDIR == "") {
-    # Needed because path_norm() with an empty path builds an absolute path
-    return(path)
-  } 
-  else {
-    return(path_norm(path(GAMS_CURDIR, path)))
-  }
 }
 
 # Check and massage specific config settings
@@ -743,10 +756,9 @@ args_for_7z <- unlist(lapply(c(
   unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!",  p)))),
   unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
   unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
-  "-xr!{CONDOR_DIR}",
-   ifelse(G00_OUTPUT_DIR_SUBMIT != "", "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
-   ifelse(G00_OUTPUT_DIR_SUBMIT != "", "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
-  "-xr!{GDX_OUTPUT_DIR_SUBMIT}",
+  ifelse(excludable(CONDOR_DIR), "-xr!{CONDOR_DIR}", ""),
+  ifelse(excludable(G00_OUTPUT_DIR_SUBMIT), "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
+  ifelse(excludable(GDX_OUTPUT_DIR_SUBMIT), "-xr!{GDX_OUTPUT_DIR_SUBMIT}", ""),
   bundle_platform_path,
   "{BUNDLE_INCLUDE}"
 ), str_glue))

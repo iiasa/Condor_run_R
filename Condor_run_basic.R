@@ -486,6 +486,19 @@ all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
   return(!(any(absentees) || any(empties)))
 }
 
+# Check whether the given directory path can be excluded without
+# conflicting with any of the BUNDLE_INCLUDE_* parameters.
+excludable <- function(dir_path) {
+  if (path_has_parent(BUNDLE_INCLUDE, dir_path)) return(FALSE)
+  for (f in BUNDLE_INCLUDE_FILES) {
+    if (path_has_parent(f, dir_path)) return(FALSE)
+  }
+  for (d in BUNDLE_INCLUDE_DIRS) {
+    if (path_has_parent(d, dir_path)) return(FALSE)
+  }
+  return(TRUE)
+}
+
 # ---- Process environment and run config settings ----
 
 # Read config file if specified via an argument, check presence and types.
@@ -638,8 +651,8 @@ args_for_7z <- unlist(lapply(c(
   unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!",  p)))),
   unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
   unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
-  "-xr!{CONDOR_DIR}",
-  ifelse(OUTPUT_DIR_SUBMIT != "", "-xr!{OUTPUT_DIR_SUBMIT}", ""),
+  ifelse(excludable(CONDOR_DIR), "-xr!{CONDOR_DIR}", ""),
+  ifelse(excludable(OUTPUT_DIR_SUBMIT), "-xr!{OUTPUT_DIR_SUBMIT}", ""),
   bundle_platform_path,
   "{BUNDLE_INCLUDE}"
 ), str_glue))
