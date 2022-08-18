@@ -575,11 +575,12 @@ if (length(args) > 0) {
 
 # Define a function to turn a path relative to GAMS_CURDIR into a path relative to the working directory when GAMS_CURDIR is set.
 in_gams_curdir <- function(path) {
-  if (GAMS_CURDIR == "" || GAMS_CURDIR == ".") {
+  if (GAMS_CURDIR == "") {
+    # Needed because path_norm() with an empty path builds an absolute path
     return(path)
   } 
   else {
-    return(path(GAMS_CURDIR, path))
+    return(path_norm(path(GAMS_CURDIR, path)))
   }
 }
 
