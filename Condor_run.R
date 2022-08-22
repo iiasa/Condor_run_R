@@ -247,7 +247,7 @@ list_7z <- function(archive_path) {
     stop(str_glue("Failed to list content of {archive_path}"), call.=FALSE)
   } else {
     # Clip off the header info
-    out <- out[max(1, which(str_detect(out, "Date "))):length(out)]
+    out <- out[max(1, min(which(str_detect(out, "Date ")))):length(out)]
   }
   return(out)
 }
