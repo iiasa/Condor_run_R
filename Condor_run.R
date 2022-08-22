@@ -780,6 +780,7 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("\n")
 }
 
+# Add any GAMS restart file to the bundle
 restart_size <- 0
 if (RESTART_FILE_PATH != "") {
   # Bundle separately so that base directory can be added to BUNDLE_EXCLUDE_DIRS
@@ -789,6 +790,7 @@ if (RESTART_FILE_PATH != "") {
   cat("\n")
 }
 
+# Keep bundle for reference and quit when configured to only perform the bundling.
 if (BUNDLE_ONLY) {
   message(str_glue("BUNDLE_ONLY = TRUE: copying bundle into {log_dir} for inspection and quitting."))
   tryCatch(

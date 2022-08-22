@@ -674,6 +674,7 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("\n")
 }
 
+# Keep bundle for reference and quit when configured to only perform the bundling.
 if (BUNDLE_ONLY) {
   message(str_glue("BUNDLE_ONLY = TRUE: copying bundle into {log_dir} for inspection and quitting."))
   tryCatch(
