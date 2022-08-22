@@ -629,9 +629,6 @@ if (!(GAMS_VERSION %in% AVAILABLE_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VE
 dotless_gams_version <- str_glue(version_match[2], version_match[3])
 major_gams_version <- version_match[2]
 if (length(JOBS) < 1 && !str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
-for (file in BUNDLE_ADDITIONAL_FILES) {
-  if (!(file_exists(path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
-}
 if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
 
 # Check and massage GAMS output config settings

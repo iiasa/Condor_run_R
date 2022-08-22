@@ -576,9 +576,6 @@ if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
 if (SCRIPT != "" && !(file_exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
 if (str_detect(SCRIPT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCRIPT has forbidden character(s)!"))
 if (length(JOBS) > 1 && !str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
-for (file in BUNDLE_ADDITIONAL_FILES) {
-  if (!(file_exists(path(file)))) stop(str_glue('Misconfigured BUNDLE_ADDITIONAL_FILES: "{file}" does not exist!'))
-}
 if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
 if (GET_OUTPUT) {
   if (is.null(OUTPUT_DIR_SUBMIT)) {
