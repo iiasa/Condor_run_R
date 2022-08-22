@@ -671,11 +671,22 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("\n")
 }
 
-# Keep bundle for reference and quit when configured to only perform the bundling.
+# Keep bundle and its content list for reference and quit when configured to only perform the bundling.
 if (BUNDLE_ONLY) {
-  message(str_glue("BUNDLE_ONLY = TRUE: copying bundle into {log_dir} for inspection and quitting."))
-  tryCatch(
-    file_copy(bundle_path, path(log_dir, str_glue("_bundle.7z")), overwrite = TRUE),
+  bundle_list_path <- path(log_dir, str_glue("_bundle_contents.txt"))
+  bundle_copy_path <- path(log_dir, str_glue("_bundle.7z"))
+  message(str_glue("BUNDLE_ONLY = TRUE: listing the bundle content to {bundle_list_path} for reference, copying the bundle to {bundle_copy_path} for inspection, and quitting."))
+  tryCatch({
+      # List the bundle
+      contents_list <- list_7z(bundle_path)
+      list_conn<-file(bundle_list_path, open="wt")
+      writeLines(contents_list, con = list_conn)
+      close(list_conn)
+      # Display the bundle content
+      cat(contents_list, sep="\n")
+      # Copy the bundle
+      file_copy(bundle_path, path(log_dir, str_glue("_bundle.7z")), overwrite = TRUE)
+    },
     error=function(cond) {
       message(cond)
       warning("Could not make a reference copy of the bundle!")
@@ -855,11 +866,11 @@ if (cluster != predicted_cluster) {
 }
 
 # Log a listing of the bundle contents
-list <- list_7z(bundle_path)
+contents_list <- list_7z(bundle_path)
 list_conn<-file(path(log_dir, str_glue("_bundle_{cluster}_contents.txt")), open="wt")
-writeLines(list, con = list_conn)
+writeLines(contents_list, con = list_conn)
 close(list_conn)
-rm(list, list_conn)
+rm(contents_list, list_conn)
 
 # Retain the bundle if so requested, then delete it from temp so that further submissions are no longer blocked
 if (RETAIN_BUNDLE) {
