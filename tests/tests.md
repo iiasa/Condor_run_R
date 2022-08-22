@@ -4,6 +4,7 @@ be run via the `test.bat` (Windows) or `test.sh` (MacOS/Linux) scripts present i
 Tests listing:
 - [basic](basic/purpose.md)
 - [bundling](bundling/purpose.md)
+- [bundling_additionals](bundling_additionals/purpose.md)
 - [bundling_GAMS](bundling_GAMS/purpose.md)
 - [bundling_GAMS_CURDIR](bundling_GAMS_CURDIR/purpose.md)
 - [disconnect](disconnect/purpose.md)
