@@ -765,16 +765,18 @@ cat("Compressing files into bundle...\n")
 byte_size <- bundle_with_7z(args_for_7z)
 cat("\n")
 
-# Add additional files to bundle
+# Add additional files to bundle as separate invocations on 7-Zip
 added_size <- 0
 if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("Bundling additional files...\n")
-  args_for_7z <- c(
-    "a",
-    bundle_platform_path,
-    BUNDLE_ADDITIONAL_FILES
-  )
-  added_size <- bundle_with_7z(args_for_7z)
+  for (af in BUNDLE_ADDITIONAL_FILES) {
+    args_for_7z <- c(
+      "a",
+      bundle_platform_path,
+      af
+    )
+    added_size <- bundle_with_7z(args_for_7z)
+  }
   cat("\n")
 }
 
