@@ -751,7 +751,6 @@ if (file_exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is th
 # Include/exclude files in/from bundle
 args_for_7z <- unlist(lapply(c(
   "a",
-  "-bb0",
   unlist(lapply(BUNDLE_INCLUDE_DIRS,  function(p) return(str_glue("-ir!", p)))),
   unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!",  p)))),
   unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
@@ -770,7 +769,11 @@ cat("\n")
 added_size <- 0
 if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("Bundling additional files...\n")
-  args_for_7z <- c("a", bundle_platform_path, BUNDLE_ADDITIONAL_FILES)
+  args_for_7z <- c(
+    "a",
+    bundle_platform_path,
+    BUNDLE_ADDITIONAL_FILES
+  )
   added_size <- bundle_with_7z(args_for_7z)
   cat("\n")
 }
