@@ -748,9 +748,9 @@ bundle_path <- path(temp_dir_parent, bundle) # Invariant so that it can double-d
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
 if (file_exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing? If so, let that submission end first. If not, delete the file and try again."))
 
+# Include/exclude files in/from bundle
 args_for_7z <- unlist(lapply(c(
   "a",
-  "-mx1",
   "-bb0",
   unlist(lapply(BUNDLE_INCLUDE_DIRS,  function(p) return(str_glue("-ir!", p)))),
   unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!",  p)))),
@@ -766,6 +766,7 @@ cat("Compressing files into bundle...\n")
 byte_size <- bundle_with_7z(args_for_7z)
 cat("\n")
 
+# Add additional files to bundle
 added_size <- 0
 if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("Bundling additional files...\n")
