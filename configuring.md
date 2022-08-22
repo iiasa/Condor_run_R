@@ -104,7 +104,7 @@ Path of log file for capturing cluster number. No such file is written when set 
 
 Default value: `"*"`
 
-What to include in the bundle relative to the current working directory. Recursive. Supports wildcards.
+A path or wildcard pattern specifying the files to include in the bundle. When a path points to a directory, or a wildcard matches a directory, the files contained in that directory will be included recursively.
 
 ### BUNDLE_INCLUDE_DIRS
 
@@ -138,7 +138,9 @@ Files to exclude from the bundle. Supports wildcards.
 
 Default value: `c()`
 
-Files to add to root of bundle during an additional invocation of 7-Zip. Can also use an absolute path for these.
+Paths and wildcards specifying additional files to add to the bundle. When a path points to a directory, or a wildcard matches a directory, the files contained in that directory will be added recursively. Each entry is processed via a separate invocation of 7-Zip so that there are no limits on the number of entries.
+
+**:point_right:Note:** the configuration options that exclude files from the bundle, such as `BUNDLE_EXCLUE_DIR`, do not affect the bundling of additional files.
 
 ### BUNDLE_ONLY
 
@@ -353,7 +355,9 @@ Working directory for GAMS and its arguments relative to the current working dir
 
 Default value: `""`
 
-Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the [work/restart file](https://www.gams.com/latest/docs/UG_SaveRestart.html) to launch GAMS with on the execution point. Included in bundle if set.
+Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the [work/restart file](https://www.gams.com/latest/docs/UG_SaveRestart.html) to launch GAMS with on the execution point. If set, the restart file is added to the bundle via a separate 7-Zip invocation.
+
+**:point_right:Note:** the configuration options that exclude files from the bundle, such as `BUNDLE_EXCLUE_DIR`, do not affect the bundling of the restart file.
 
 **:warning:Beware:** the restart file will not work if the GAMS version on the EP (see [GAMS_VERSION](#gams_version)) is older than the GAMS version used to generated it. The `Condor_run.R` submit script will throw an explanatory error in that case to prevent the run's jobs from later going on hold for this somewhat obscure reason.
 
