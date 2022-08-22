@@ -245,6 +245,9 @@ list_7z <- function(archive_path) {
   out <- system2("7z", stdout=TRUE, stderr=TRUE, args=c("l", archive_path))
   if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
     stop(str_glue("Failed to list content of {archive_path}"), call.=FALSE)
+  } else {
+    # Clip off the header info
+    out <- out[max(1, which(str_detect(out, "Date "))):length(out)]
   }
   return(out)
 }
@@ -787,7 +790,8 @@ if (RESTART_FILE_PATH != "") {
   cat("\n")
 }
 
-# Keep bundle for reference and quit when configured to only perform the bundling.
+# Keep bundle and its contents list for reference and quit when configured to
+# only perform the bundling.
 if (BUNDLE_ONLY) {
   bundle_list_path <- path(log_dir, str_glue("_bundle_contents.txt"))
   bundle_copy_path <- path(log_dir, str_glue("_bundle.7z"))
