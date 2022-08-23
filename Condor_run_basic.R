@@ -7,7 +7,7 @@
 #
 # Author:   Albert Brouwer
 # Based on: GLOBIOM-limpopo scripts by David Leclere
-# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2022-07-29
+# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2022-08-23
 
 # Remove any objects from active environment so that below it will contain only the default configuration
 rm(list=ls())
