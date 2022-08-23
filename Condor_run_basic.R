@@ -188,28 +188,43 @@ check_on_path <- function(binaries) {
   }
 }
 
-# Bundle files with 7-Zip, check success and output, and return the overall byte size of the input files
+# Bundle files with 7-Zip via the given command line arguments.
+# Returns a list with entries "added" and "bundle" holding the number of bytes
+# added to the bundle and the byte size of the bundle file on completion.
 bundle_with_7z <- function(args_for_7z) {
   check_on_path("7z")
   if (BUNDLE_ONLY) {
     message("Invoking 7-Zip via the following command line:")
     message(str_c(c("7z", args_for_7z), collapse = " "))
   }
-  out <- system2("7z", stdout=TRUE, stderr=TRUE, args=args_for_7z)
+  out <- system2("7z",
+                 stdout = TRUE,
+                 stderr = TRUE,
+                 args = args_for_7z)
   if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
-    message("7z failed, likely because of erroneous or too many arguments.\nThe arguments for 7z derived from the BUNDLE_* config options were as follows:")
-    message(paste(args_for_7z, collapse='\n'))
-    message("\nThe invocation of 7z returned:")
-    message(paste(out, collapse='\n'))
-    stop("Bundling failed!", call.=FALSE)
+    message(
+      "7-Zip failed, likely because of erroneous or too many arguments.\nThe arguments for 7z derived from the BUNDLE_* config options were as follows:"
+    )
+    message(paste(args_for_7z, collapse = '\n'))
+    message("\nThe invocation of 7-Zip returned:")
+    message(paste(out, collapse = '\n'))
+    stop("Bundling failed!", call. = FALSE)
   }
   else {
-    cat(out[grep("^Scanning the drive:", out)+1], sep="\n")
-    size_line <- grep("^Archive size:", out, value=TRUE)
-    cat(size_line, sep="\n")
-    byte_size <- as.double(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
-    if (is.na(byte_size)) stop("7zip archive size extraction failed!", call.=FALSE) # 7zip output format has changed?
-    return(byte_size)
+    # Extract the added number of bytes
+    scan_line <- out[[grep("^Scanning the drive:", out) + 1]]
+    cat(scan_line, sep = "\n")
+    added_size <- as.double(str_match(scan_line, ", (\\d+) bytes \\(")[2])
+    if (is.na(added_size))
+      stop("7-Zip added size extraction failed!", call. = FALSE) # 7-zip output format has changed?
+    # Extract the size of the bundle on completion
+    size_line <- grep("^Archive size:", out, value = TRUE)
+    cat(size_line, sep = "\n")
+    bundle_size <- as.double(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
+    if (is.na(bundle_size))
+      stop("7-Zip archive size extraction failed!", call. = FALSE) # 7-zip output format has changed?
+    # Return a list with the added size and bundle size
+    return(list("added" = added_size, "bundle" = bundle_size))
   }
 }
 
@@ -656,11 +671,11 @@ args_for_7z <- unlist(lapply(c(
   "{BUNDLE_INCLUDE}"
 ), str_glue))
 cat("Compressing files into bundle...\n")
-byte_size <- bundle_with_7z(args_for_7z)
+size <- bundle_with_7z(args_for_7z)
+added_size <- size$added
 cat("\n")
 
 # Add additional files to bundle as separate invocations on 7-Zip
-added_size <- 0
 if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("Bundling additional files...\n")
   for (af in BUNDLE_ADDITIONAL_FILES) {
@@ -669,7 +684,8 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
       bundle_platform_path,
       af
     )
-    added_size <- bundle_with_7z(args_for_7z)
+    size <- bundle_with_7z(args_for_7z)
+    added_size <- added_size + size$added
   }
   cat("\n")
 }
@@ -701,7 +717,7 @@ if (BUNDLE_ONLY) {
 }
 
 # Add uncompressed bundle size to the disk request in KiB
-request_disk <- REQUEST_DISK + ceiling((byte_size + added_size) / 1024)
+request_disk <- REQUEST_DISK + ceiling(added_size / 1024)
 
 # Determine the bundle size in KiB
 bundle_size <- floor(file_size(bundle_path) / 1024)
