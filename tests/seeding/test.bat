@@ -5,7 +5,7 @@ Rscript ..\..\Condor_run_basic.R config1.R || (
     exit /b 1
 )
 echo Waiting for occupation to settle...
-timeout 120 /nobreak
+timeout 600 /nobreak
 Rscript ..\..\Condor_run_basic.R config2.R || (
     popd
     exit /b 1
