@@ -487,7 +487,7 @@ all_exist_and_not_empty <- function(dir, output_file_name_template, warn=TRUE) {
     paths <- path(dir, str_glue(output_file_name_template))
     absent <- !file_exists(paths)
     absentees <- c(absentees, any(absent))
-    empty <- file_size(paths) == 0
+    empty <- !absent & (file_size(paths) == 0)
     empties <- c(empties, any(empty))
     file_delete(paths[empty])
   }
