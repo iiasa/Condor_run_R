@@ -92,7 +92,7 @@ JOB_TEMPLATE <- c(
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
   'transfer_output_files = {ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_DIR}/{OUTPUT_FILES}"), collapse=","), "")}',
-  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_FILES}={OUTPUT_DIR_SUBMIT}/{output_prefixes}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extensions}"), collapse=","), "")}"',
+  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_FILES}={OUTPUT_DIR_SUBMIT}/{output_prefixes}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extensions}"), collapse=";"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
