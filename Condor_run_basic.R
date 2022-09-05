@@ -91,8 +91,8 @@ JOB_TEMPLATE <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_output_files = {ifelse(GET_OUTPUT, str_glue("{OUTPUT_DIR}/{OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_glue("{OUTPUT_FILE}={OUTPUT_DIR_SUBMIT}/{output_prefix}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extension}"), "")}"',
+  'transfer_output_files = {ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_DIR}/{OUTPUT_FILES}"), collapse=","), "")}',
+  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_FILES}={OUTPUT_DIR_SUBMIT}/{output_prefixes}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extensions}"), collapse=","), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -471,35 +471,31 @@ summarize_jobs <- function(jobs) {
   return(str_c(summary, collapse=""))
 }
 
-# A function that for all given jobs tests if a file exists and is not empty.
+# Tests for all JOBS whether output files exist and are not empty.
 # Empty files are deleted.
 #
-# The file_template is a template of the filename that is run through str_glue
-# and can make use of variables defined in the calling context. The dir parameter
-# indicates the directory containing the files.
-#
+# dir: directory containing the files.
+# output_file_name_template: str_glue() template, can use variables defined in the calling context. 
+# warn: if TRUE, generate warnings when oututfiles are absent or empty.
 # Warnings are generated when files are absent or empty.
+#
 # The boolean return value is TRUE when all files exist and are not empty.
-all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
+all_exist_and_not_empty <- function(dir, output_file_name_template, warn=TRUE) {
   absentees <- c()
   empties <- c()
   for (job in JOBS) {
-    path <- path(dir, str_glue(file_template))
-    absent <- !file_exists(path)
-    absentees <- c(absentees, absent)
-    if (absent) {
-      empties <- c(empties, FALSE)
-    } else {
-      empty <- file_size(path) == 0
-      if (empty) file_delete(path)
-      empties <- c(empties, empty)
-    }
+    paths <- path(dir, str_glue(file_name_template))
+    absent <- !file_exists(paths)
+    absentees <- c(absentees, any(absent))
+    empty <- file_size(paths) == 0
+    empties <- c(empties, any(empty))
+    file_delete(path[empty])
   }
   if (warn && any(absentees)) {
-    warning(str_glue("No {file_type} files returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
+    warning(str_glue("Some output files were not returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
   }
   if (warn && any(empties)) {
-    warning(str_glue("Empty {file_type} files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were deleted."), call.=FALSE)
+    warning(str_glue("Empty output files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were deleted."), call.=FALSE)
   }
   return(!(any(absentees) || any(empties)))
 }
@@ -579,6 +575,7 @@ if (length(args) > 0) {
 if (exists("NAME")) LABEL <- NAME # allowed synonym
 if (exists("EXPERIMENT")) LABEL <- EXPERIMENT # allowed synonym
 if (exists("PROJECT")) LABEL <- PROJECT # allowed synonym
+if (exists("OUTPUT_FILE")) OUTPUT_FILES <- OUTPUT_FILE # allowed synonym
 LABEL <- str_glue(LABEL)
 if (str_detect(LABEL, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured LABEL/NAME/PROJECT/EXPERIMENT for run has forbidden character(s)!"))
 if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
@@ -608,10 +605,10 @@ if (GET_OUTPUT) {
   if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
   if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
   if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
-  if (str_detect(OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured OUTPUT_FILE has forbidden character(s)!"))
+  if (any(str_detect(OUTPUT_FILES, ',[<>|:?*" \\t/\\\\]'))) stop(str_glue("Configured OUTPUT_FILE or OUTPUT_FILES has forbidden character(s)!"))
 }
-output_prefix <- tools::file_path_sans_ext(OUTPUT_FILE)
-output_extension <- tools::file_ext(OUTPUT_FILE)
+output_prefixes <- tools::file_path_sans_ext(OUTPUT_FILES)
+output_extensions <- tools::file_ext(OUTPUT_FILES)
 script_prefix <- tools::file_path_sans_ext(SCRIPT)
 script_extension <- tools::file_ext(SCRIPT)
 
@@ -923,9 +920,9 @@ if (WAIT_FOR_RUN_COMPLETION) {
   monitor(cluster)
 
   # Check that result files exist and are not empty, warn otherwise and delete empty files
-  all_exist_and_not_empty(log_dir, "_{PREFIX}_{cluster}.{job}.err", ".err", warn=FALSE)
+  all_exist_and_not_empty(log_dir, "_{PREFIX}_{cluster}.{job}.err", warn=FALSE)
   if (GET_OUTPUT) {
-    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR_SUBMIT, 'output_{LABEL}_{cluster}.{sprintf("%06d", job)}.{output_extension}', output_extension)
+    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR_SUBMIT, '{output_prefixes}_{LABEL}_{cluster}.{sprintf("%06d", job)}.{output_extensions}')
   }
 
   return_values <- get_return_values(path(log_dir, str_glue("{PREFIX}_{cluster}.{JOBS}.log")))
@@ -1000,6 +997,8 @@ if (WAIT_FOR_RUN_COMPLETION) {
 } else {
   cat(str_glue("You can monitor progress of the run with: condor_q {cluster}."), sep="\n")
   if (GET_OUTPUT) {
-    cat(str_glue("After the run completes, you can find the output files at: {OUTPUT_DIR_SUBMIT}/{output_prefix}_{LABEL}_{cluster}.*"), sep="\n")
+    cat("After the run completes, you can find the output files at:",
+        str_glue("    {OUTPUT_DIR_SUBMIT}/{output_prefixes}_{LABEL}_{cluster}.*"),
+        sep="\n")
   }
 }
