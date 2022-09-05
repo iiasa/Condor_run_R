@@ -489,7 +489,7 @@ all_exist_and_not_empty <- function(dir, output_file_name_template, warn=TRUE) {
     absentees <- c(absentees, any(absent))
     empty <- file_size(paths) == 0
     empties <- c(empties, any(empty))
-    file_delete(path[empty])
+    file_delete(paths[empty])
   }
   if (warn && any(absentees)) {
     warning(str_glue("Some output files were not returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
