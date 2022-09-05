@@ -1,10 +1,8 @@
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 LABEL = "basic_{Sys.Date()}"
 JOBS = c(0)
-JOB_RELEASES = 10
-JOB_RELEASE_DELAY = 60
 REQUIREMENTS = c("R")
-REQUEST_MEMORY = 200
+REQUEST_MEMORY = 40
 REQUEST_DISK = 40
 LAUNCHER = "Rscript"
 ARGUMENTS = "--help"
