@@ -484,7 +484,7 @@ all_exist_and_not_empty <- function(dir, output_file_name_template, warn=TRUE) {
   absentees <- c()
   empties <- c()
   for (job in JOBS) {
-    paths <- path(dir, str_glue(file_name_template))
+    paths <- path(dir, str_glue(output_file_name_template))
     absent <- !file_exists(paths)
     absentees <- c(absentees, any(absent))
     empty <- file_size(paths) == 0
