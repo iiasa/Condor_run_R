@@ -10,6 +10,7 @@ Tests listing:
 - [disconnect](disconnect/purpose.md)
 - [noscript](noscript/purpose.md)
 - [output_multiple](output_multiple/purpose.md)
+- [output_empty](output_empty/purpose.md)
 - [parallel](parallel/purpose.md)
 - [periodic_release](periodic_release/purpose.md)
 - [seeding](seeding/purpose.md)
