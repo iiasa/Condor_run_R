@@ -9,6 +9,7 @@ Tests listing:
 - [bundling_GAMS_CURDIR](bundling_GAMS_CURDIR/purpose.md)
 - [disconnect](disconnect/purpose.md)
 - [noscript](noscript/purpose.md)
+- [output_multiple](output_multiple/purpose.md)
 - [parallel](parallel/purpose.md)
 - [periodic_release](periodic_release/purpose.md)
 - [seeding](seeding/purpose.md)
