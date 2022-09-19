@@ -285,9 +285,11 @@ Directory on the submit machine into where job output files are transferred. Can
 
 ### OUTPUT_FILE
 
-Default value: `"output.RData"`
+Default value: `c("output.RData")`
 
-Name of output file as produced by a job on the execution point. Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
+Synonym: OUTPUT_FILES
+
+Name(s) of the output file(s) as produced by a job on the execution point. Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
 
 ## `Condor_run.R`-specific optional configuration parameters
 
