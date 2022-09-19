@@ -411,7 +411,7 @@ Template of the Condor `.job` file to submit the run with. The `.job` file produ
 
 ### BAT_TEMPLATE
 
-Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L101) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L113).
+Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L102) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L114).
 
 Template for the `.bat` file that launches jobs on the execution point (EP). The default uses POSIX commands which are not normally available on Windows EPs and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir).
 
