@@ -405,7 +405,7 @@ The template parameters configure Condor `.job` files and job launch scripts (th
 
 ### JOB_TEMPLATE
 
-Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L67) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L79).
+Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L68) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L80).
 
 Template of the Condor `.job` file to submit the run with. The `.job` file produced with this template is preserved in the [log directory of the run](#condor_dir).
 
