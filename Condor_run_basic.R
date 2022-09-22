@@ -44,6 +44,7 @@ RETAIN_BUNDLE = FALSE
 SEED_JOB_RELEASES = 0
 JOB_RELEASES = 3
 JOB_RELEASE_DELAY = 120
+JOB_OVERRIDES = list()
 HOST_REGEXP = ".*"
 REQUIREMENTS = c()
 REQUEST_CPUS = 1
@@ -860,9 +861,19 @@ rm(bat_conn)
 # Apply settings to job template and write the .job file to use for submission
 job_file <- path(log_dir, str_glue("_submit_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
-writeLines(unlist(lapply(JOB_TEMPLATE, str_glue)), job_conn)
+job_lines <- unlist(lapply(JOB_TEMPLATE, str_glue))
+for (s in names(JOB_OVERRIDES)) {
+  ov <- str_starts(job_lines, s)
+  if (!any(ov)) {
+    file_delete(bundle_path)
+    stop(str_glue("Could not apply JOB_OVERRIDES! No line in job template starting with '{s}'."))
+  }
+  job_lines[ov] <- JOB_OVERRIDES[[s]]
+  rm(ov)
+}
+writeLines(job_lines, job_conn)
 close(job_conn)
-rm(job_conn)
+rm(job_conn, job_lines, s)
 
 # ---- Submit the run and clean up temp files ----
 
