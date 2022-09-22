@@ -301,7 +301,7 @@ Default value: `FALSE`
 
 Default value: `""`
 
-When set (changed from its `""` default), this configures the directory for storing work/save output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execite point (EP) and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
+When set (changed from its `""` default), this configures the directory for storing work/save output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute point (EP) and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
 
 When set and when `G00_OUTPUT_DIR` does not exist on the EP the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` will create it.
 
