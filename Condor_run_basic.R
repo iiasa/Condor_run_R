@@ -538,8 +538,8 @@ if (length(args) == 0) {
     if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {config_file_arg}!"))
     type <- typeof(get(name))
     if (type != config_types[[i]] &&
-        type != "integer" && # R has no stable numerical type
-        type != "double" && # R has no stable numerical type
+        config_types[[i]] != "integer" && # R has no stable numerical type
+        config_types[[i]] != "double" && # R has no stable numerical type
         type != "NULL" && # allow for NULL
         config_types[[i]] != "NULL" # allow for default vector being empty
     ) stop(str_glue("{name} set to wrong type in {config_file_arg}, type should be {config_types[[i]]}"))
