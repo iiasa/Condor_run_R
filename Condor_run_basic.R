@@ -602,6 +602,7 @@ if (GET_OUTPUT) {
     if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
     if (!(file_exists(OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured OUTPUT_DIR_SUBMIT "{OUTPUT_DIR_SUBMIT}" does not exist!'))
   }
+  if (OUTPUT_DIR == "") stop(str_glue('Configured OUTPUT_DIR may not be empty! Must be a valid relative path. Configure "." for the working directory.'))
   if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
   if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
   if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
