@@ -497,35 +497,31 @@ summarize_jobs <- function(jobs) {
   return(str_c(summary, collapse=""))
 }
 
-# A function that for all given jobs tests if a file exists and is not empty.
+# Tests for all JOBS whether output files exist and are not empty.
 # Empty files are deleted.
 #
-# The file_template is a template of the filename that is run through str_glue
-# and can make use of variables defined in the calling context. The dir parameter
-# indicates the directory containing the files.
-#
+# dir: directory containing the files.
+# output_file_name_template: str_glue() template, can use variables defined in the calling context. 
+# warn: if TRUE, generate warnings when oututfiles are absent or empty.
 # Warnings are generated when files are absent or empty.
+#
 # The boolean return value is TRUE when all files exist and are not empty.
-all_exist_and_not_empty <- function(dir, file_template, file_type, warn=TRUE) {
+all_exist_and_not_empty <- function(dir, output_file_name_template, warn=TRUE) {
   absentees <- c()
   empties <- c()
   for (job in JOBS) {
-    path <- path(dir, str_glue(file_template))
-    absent <- !file_exists(path)
-    absentees <- c(absentees, absent)
-    if (absent) {
-      empties <- c(empties, FALSE)
-    } else {
-      empty <- file_size(path) == 0
-      if (empty) file_delete(path)
-      empties <- c(empties, empty)
-    }
+    paths <- path(dir, str_glue(output_file_name_template))
+    absent <- !file_exists(paths)
+    absentees <- c(absentees, any(absent))
+    empty <- !absent & (file_size(paths) == 0)
+    empties <- c(empties, any(empty))
+    file_delete(paths[empty])
   }
   if (warn && any(absentees)) {
-    warning(str_glue("No {file_type} files returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
+    warning(str_glue("Some output files were not returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
   }
   if (warn && any(empties)) {
-    warning(str_glue("Empty {file_type} files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were deleted."), call.=FALSE)
+    warning(str_glue("Empty output files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were deleted."), call.=FALSE)
   }
   return(!(any(absentees) || any(empties)))
 }
@@ -1038,13 +1034,13 @@ if (WAIT_FOR_RUN_COMPLETION) {
   monitor(cluster)
 
   # Check that result files exist and are not empty, warn otherwise and delete empty files
-  all_exist_and_not_empty(log_dir, "{PREFIX}_{cluster}.{job}.err", ".err", warn=FALSE)
-  all_exist_and_not_empty(log_dir, "{PREFIX}_{cluster}.{job}.lst", ".lst")
+  all_exist_and_not_empty(log_dir, "_{PREFIX}_{cluster}.{job}.err", warn=FALSE)
+  all_exist_and_not_empty(log_dir, "{PREFIX}_{cluster}.{job}.lst")
   if (GET_G00_OUTPUT) {
-    g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, "{g00_prefix}_{LABEL}_{cluster}.{job}.g00", "work/save (.g00)")
+    g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, "{g00_prefix}_{LABEL}_{cluster}.{job}.g00")
   }
   if (GET_GDX_OUTPUT) {
-    gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR_SUBMIT, '{gdx_prefix}_{LABEL}_{cluster}.{sprintf("%06d", job)}.gdx', "GDX")
+    gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR_SUBMIT, '{gdx_prefix}_{LABEL}_{cluster}.{sprintf("%06d", job)}.gdx')
   }
 
   return_values <- get_return_values(path(log_dir, str_glue("{PREFIX}_{cluster}.{JOBS}.log")))
