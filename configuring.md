@@ -154,6 +154,14 @@ Default value: `FALSE`
 
 Retain the bundle in the run's [`CONDOR_DIR`](#condor_dir) subdirectory when `TRUE`. Can be useful for locally analyzing host-side issues with jobs.
 
+### SEED_JOB_OVERRIDES
+
+Default value: `list()`
+
+Override lines in the `.job` files generated from [`SEED_JOB_TEMPLATE`](#seed_job_template). These [submit description files](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) contain commands that you may wish to override while stopping short from overriding the full template. To do so, the list can be filled with one or more key/value pairs, where each key should exactly match the start of the to-be-replaced line in the submit descriptions, and the value provides a template for the replacement line that is first subjected to `{}` expansion.
+
+**:point_right:Note:** the submit descriptions are derived from the `SEED_JOB_TEMPLATE` via `{}` expansion. Keys in the list are matched to the start of so-expanded lines, not to the unexpanded lines present in the template.
+
 ### SEED_JOB_RELEASES
 
 Default value: `0`
@@ -167,7 +175,7 @@ When the cluster has only one or a couple of EPs, or there are intermittent fail
 Default value: `list()`
 
 Override lines in the `.job` file generated from [`JOB_TEMPLATE`](#job_template). This [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) contains commands that you may wish to override while stopping short from overriding the full template. To do so, the list can be filled with one or more key/value pairs, where each key should exactly match the start of the to-be-replaced line in the submit description, and the value provides a template for the replacement line that is first subjected to `{}` expansion.
-  
+
 **:point_right:Note:** the submit description is derived from the `JOB_TEMPLATE` via `{}` expansion. Keys in the list are matched to the start of so-expanded lines, not to the unexpanded lines present in the template.
 
 ### JOB_RELEASES
@@ -418,7 +426,7 @@ The template parameters configure Condor `.job` files and job launch scripts (th
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L68) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L80).
 
 Template of the Condor `.job` file to submit the run with. The [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) produced with this template through `{}` expansion is preserved in the [log directory of the run](#condor_dir).
-  
+
 **:point_right:Note:** since keeping a custom template up-to-date with new releases is a maintenance burden, consider using [`JOB_OVERRIDES`](#job_overrides) instead. That will suffice when you need to customize only one or a few lines in the submit description.
 
 ### BAT_TEMPLATE
@@ -431,7 +439,9 @@ Template for the `.bat` file that launches jobs on the execution point (EP). The
 
 Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L126) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L152).
 
-Template of the Condor `.job` file to submit the bundle seed jobs with. The `.job` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
+Template of the Condor `.job` file to submit the bundle seed jobs with. The [submit description files](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) produced with this template through `{}` expansion are preserved in the [log directory of the run](#condor_dir) when seeding fails.
+
+**:point_right:Note:** since keeping a custom template up-to-date with new releases is a maintenance burden, consider using [`SEED_JOB_OVERRIDES`](#seed_job_overrides) instead. That will suffice when you need to customize only one or a few lines in the submit description.
 
 ### SEED_BAT_TEMPLATE
 
