@@ -868,7 +868,7 @@ for (hostdom in hostdoms) {
       file_delete(bundle_path)
       stop(str_glue("Could not apply SEED_JOB_OVERRIDES! No line in job template starting with '{s}'."))
     }
-    seed_job_lines[ov] <- SEED_JOB_OVERRIDES[[s]]
+    seed_job_lines[ov] <- str_glue(SEED_JOB_OVERRIDES[[s]])
     rm(ov)
   }
   writeLines(seed_job_lines, seed_job_conn)
@@ -992,7 +992,7 @@ for (s in names(JOB_OVERRIDES)) {
     file_delete(bundle_path)
     stop(str_glue("Could not apply JOB_OVERRIDES! No line in job template starting with '{s}'."))
   }
-  job_lines[ov] <- JOB_OVERRIDES[[s]]
+  job_lines[ov] <- str_glue(JOB_OVERRIDES[[s]])
   rm(ov)
 }
 writeLines(job_lines, job_conn)

@@ -9,5 +9,5 @@ ARGUMENTS = "--help"
 WAIT_FOR_RUN_COMPLETION = TRUE
 GET_OUTPUT = FALSE
 JOB_OVERRIDES = list(
-  "periodic_release" = "periodic_remove = (JobStatus == 5)"
+  "periodic_release" = "periodic_remove = (JobStatus == {2+3})"
 )
