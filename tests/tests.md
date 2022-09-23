@@ -14,6 +14,7 @@ Tests listing:
 - [overrides](overrides/purpose.md)
 - [parallel](parallel/purpose.md)
 - [periodic_release](periodic_release/purpose.md)
+- [seed_overrides](seed_overrides/purpose.md)
 - [seeding](seeding/purpose.md)
 - [transport](transport/purpose.md)
 - [year_guessing](year_guessing/purpose.md)
