@@ -419,7 +419,7 @@ Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/
 
 Template of the Condor `.job` file to submit the run with. The [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) produced with this template through `{}` expansion is preserved in the [log directory of the run](#condor_dir).
   
-**:point_right:Note:** instead of specifying a custom template, you may whish to use [`JOB_OVERRIDES`](#job_overrides) to override only one or a few lines in the submit description.
+**:point_right:Note:** since keeping a custom template up-to-date with new releases is a maintenance burden, consider using [`JOB_OVERRIDES`](#job_overrides) instead. That will suffice when you need to customize only one or a few lines in the submit description.
 
 ### BAT_TEMPLATE
 
