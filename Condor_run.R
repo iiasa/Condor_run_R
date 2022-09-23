@@ -42,6 +42,7 @@ BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.
 BUNDLE_ADDITIONAL_FILES = c()
 BUNDLE_ONLY = FALSE
 RETAIN_BUNDLE = FALSE
+SEED_JOB_OVERRIDES = list()
 SEED_JOB_RELEASES = 0
 JOB_RELEASES = 3
 JOB_RELEASE_DELAY = 120
@@ -860,9 +861,19 @@ for (hostdom in hostdoms) {
   # Apply settings to seed job template and write the .job file to use for submission
   seed_job_file <- path(temp_dir, str_glue("_seed_{hostname}.job"))
   seed_job_conn<-file(seed_job_file, open="wt")
-  writeLines(unlist(lapply(SEED_JOB_TEMPLATE, str_glue)), seed_job_conn)
+  seed_job_lines <- unlist(lapply(SEED_JOB_TEMPLATE, str_glue))
+  for (s in names(SEED_JOB_OVERRIDES)) {
+    ov <- str_starts(seed_job_lines, s)
+    if (!any(ov)) {
+      file_delete(bundle_path)
+      stop(str_glue("Could not apply SEED_JOB_OVERRIDES! No line in job template starting with '{s}'."))
+    }
+    seed_job_lines[ov] <- SEED_JOB_OVERRIDES[[s]]
+    rm(ov)
+  }
+  writeLines(seed_job_lines, seed_job_conn)
   close(seed_job_conn)
-  rm(seed_job_conn)
+  rm(seed_job_conn, seed_job_lines, s)
 
   # Delete any job output left over from an aborted prior run
   delete_if_exists(log_dir, str_glue("_seed_{hostname}.log"))
