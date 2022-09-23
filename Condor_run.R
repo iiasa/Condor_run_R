@@ -42,6 +42,7 @@ BUNDLE_EXCLUDE_FILES = c("**/*.~*", "**/*.log", "**/*.log~*", "**/*.lxi", "**/*.
 BUNDLE_ADDITIONAL_FILES = c()
 BUNDLE_ONLY = FALSE
 RETAIN_BUNDLE = FALSE
+RETAIN_SEED_ARTIFACTS = FALSE
 SEED_JOB_OVERRIDES = list()
 SEED_JOB_RELEASES = 0
 JOB_RELEASES = 3
@@ -932,15 +933,20 @@ if (any(failed_seeds)) {
 }
 rm(failed_seeds)
 
-# Delete seeding log files of normally terminated seed jobs
-file_delete(seed_bat)
-rm(seed_bat)
-for (hostname in hostnames) {
-  delete_if_exists(temp_dir, str_glue("_seed_{hostname}.job"))
-  delete_if_exists(log_dir, str_glue("_seed_{hostname}.log"))
-  delete_if_exists(log_dir, str_glue("_seed_{hostname}.out"))
-  delete_if_exists(log_dir, str_glue("_seed_{hostname}.err"))
+# Delete seeding artifacts of normally terminated seed jobs unless everything is to be retained
+if (RETAIN_SEED_ARTIFACTS) {
+  file_move(dir_ls(temp_dir, regexp="_seed_.*[.]job"), log_dir)
+  file_move(seed_bat, log_dir)
+} else {
+  file_delete(seed_bat)
+  for (hostname in hostnames) {
+    delete_if_exists(temp_dir, str_glue("_seed_{hostname}.job"))
+    delete_if_exists(log_dir, str_glue("_seed_{hostname}.log"))
+    delete_if_exists(log_dir, str_glue("_seed_{hostname}.out"))
+    delete_if_exists(log_dir, str_glue("_seed_{hostname}.err"))
+  }
 }
+rm(seed_bat)
 
 # Report that seeding is done
 if (length(hostnames) == 1) {
