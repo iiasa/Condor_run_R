@@ -152,7 +152,13 @@ Set to `TRUE` to test only the bundling without subsequent submission. The 7-Zip
 
 Default value: `FALSE`
 
-Retain the bundle in the run's [`CONDOR_DIR`](#condor_dir) subdirectory when `TRUE`. Can be useful for locally analyzing host-side issues with jobs.
+Retain the bundle in the [log directory of the run](#condor_dir) when set to `TRUE`. Can be useful for locally analyzing host-side issues with jobs.
+
+### RETAIN_SEED_ARTIFACTS
+
+Default value: `FALSE`
+
+Retain the `.bat`, `.err`, `.job`, `.out`, and `.log` files involved in the seeding in the [log directory of the run](#condor_dir) when set to `TRUE`. This can be useful for troubleshooting the seeding procedure.
 
 ### SEED_JOB_OVERRIDES
 
