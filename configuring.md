@@ -164,7 +164,7 @@ Retain the `.bat`, `.err`, `.job`, `.out`, and `.log` files involved in the seed
 
 Default value: `list()`
 
-Override lines in the `.job` files generated from [`SEED_JOB_TEMPLATE`](#seed_job_template). These [submit description files](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) contain commands that you may wish to override while stopping short from overriding the full template. To do so, the list can be filled with one or more key/value pairs, where each key should exactly match the start of the to-be-replaced line in the submit descriptions, and the value provides a template for the replacement line that is first subjected to `{}` expansion.
+Override lines in the `.job` files generated from [`SEED_JOB_TEMPLATE`](#seed_job_template). These [submit description files](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) contain commands that you may wish to override while stopping short of overriding the full template. To do so, the list can be filled with one or more key/value pairs, where each key should exactly match the start of the to-be-replaced line in the submit descriptions, and the value provides a template for the replacement line that is first subjected to `{}` expansion.
 
 **:point_right:Note:** the submit descriptions are derived from the `SEED_JOB_TEMPLATE` via `{}` expansion. Keys in the list are matched to the start of so-expanded lines, not to the unexpanded lines present in the template.
 
@@ -180,7 +180,7 @@ When the cluster has only one or a couple of EPs, or there are intermittent fail
 
 Default value: `list()`
 
-Override lines in the `.job` file generated from [`JOB_TEMPLATE`](#job_template). This [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) contains commands that you may wish to override while stopping short from overriding the full template. To do so, the list can be filled with one or more key/value pairs, where each key should exactly match the start of the to-be-replaced line in the submit description, and the value provides a template for the replacement line that is first subjected to `{}` expansion.
+Override lines in the `.job` file generated from [`JOB_TEMPLATE`](#job_template). This [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) contains commands that you may wish to override while stopping short of overriding the full template. To do so, the list can be filled with one or more key/value pairs, where each key should exactly match the start of the to-be-replaced line in the submit description, and the value provides a template for the replacement line that is first subjected to `{}` expansion.
 
 **:point_right:Note:** the submit description is derived from the `JOB_TEMPLATE` via `{}` expansion. Keys in the list are matched to the start of so-expanded lines, not to the unexpanded lines present in the template.
 
