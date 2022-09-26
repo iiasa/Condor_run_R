@@ -305,11 +305,11 @@ Default value: `NULL`
 
 Directory on the submit machine into where job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`OUTPUT_DIR`](#output_dir) will be used instead.
 
-### OUTPUT_FILE
+### OUTPUT_FILES
 
 Default value: `c("output.RData")`
 
-Synonym: OUTPUT_FILES
+Synonym: OUTPUT_FILE
 
 Name(s) of the output file(s) as produced by a job on the execution point. Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
 
