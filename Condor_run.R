@@ -591,10 +591,11 @@ if (length(args) == 0) {
 } else {
   stop("Multiple arguments provided! Expecting at most a single configuration file argument.")
 }
+rm(args)
 
 # Copy/write configuration to a file in the temp directory for reference early to minimize the risk of it being edited in the mean time
 temp_config_file <- path(temp_dir, str_glue("config.R"))
-if (length(args) > 0) {
+if (exists("config_file_arg")) {
   tryCatch(
     file_copy(config_file_arg, temp_config_file, overwrite=TRUE),
     error=function(cond) {
@@ -603,6 +604,7 @@ if (length(args) > 0) {
       stop(str_glue("Cannot make a copy of the configuration file {config_file_arg}!"))
     }
   )
+  rm(config_file_arg)
 } else {
   # No configuration file provided, write default configuration defined above (definition order is lost)
   config_conn <- file(temp_config_file, open="wt")
@@ -617,7 +619,7 @@ if (length(args) > 0) {
   rm(config_conn, i)
 }
 
-# Synonyms ensure backwards compatiblity with old config namings and
+# Synonyms ensure backwards compatibility with old config namings and
 # allow a name choice that best fits the configuration value.
 # Copy any synonyms to their canonical configs. This overrides the
 # default value.
@@ -796,6 +798,7 @@ args_for_7z <- unlist(lapply(c(
 ), str_glue))
 cat("Compressing files into bundle...\n")
 size <- bundle_with_7z(args_for_7z)
+rm(args_for_7z)
 added_size <- size$added
 cat("\n")
 
@@ -811,7 +814,7 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
     size <- bundle_with_7z(args_for_7z)
     added_size <- added_size + size$added
   }
-  rm(af)
+  rm(af, args_for_7z)
   cat("\n")
 }
 
@@ -842,19 +845,22 @@ if (BUNDLE_ONLY) {
   tryCatch({
       # List the bundle
       contents_list <- list_7z(bundle_path)
-      list_conn<-file(bundle_list_path, open="wt")
+      list_conn <- file(bundle_list_path, open="wt")
       writeLines(contents_list, con = list_conn)
       close(list_conn)
       # Display the bundle content
       cat(contents_list, sep="\n")
+      rm(contents_list, list_conn)
       # Copy the bundle
-      file_copy(bundle_path, path(log_dir, str_glue("_bundle.7z")), overwrite = TRUE)
+      file_copy(bundle_path, bundle_copy_path, overwrite = TRUE)
     },
     error=function(cond) {
+      file_delete(bundle_path)
       message(cond)
       warning("Could not make a reference copy of the bundle!")
     }
   )
+  rm(bundle_list_path, bundle_copy_path)
   file_delete(bundle_path) # Delete the copied bundle in the temp directory
   q(save = "no")
 }
@@ -1048,7 +1054,7 @@ if (cluster != predicted_cluster) {
 
 # Log a listing of the bundle contents
 contents_list <- list_7z(bundle_path)
-list_conn<-file(path(log_dir, str_glue("_bundle_{cluster}_contents.txt")), open="wt")
+list_conn <- file(path(log_dir, str_glue("_bundle_{cluster}_contents.txt")), open="wt")
 writeLines(contents_list, con = list_conn)
 close(list_conn)
 rm(contents_list, list_conn)
