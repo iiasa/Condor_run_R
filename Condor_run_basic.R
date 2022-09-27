@@ -547,7 +547,7 @@ if (length(args) == 0) {
         config_types[[i]] != "NULL" # allow for default vector being empty
     ) stop(str_glue("{name} set to wrong type in {config_file_arg}, type should be {config_types[[i]]}"))
   }
-  rm(i)
+  rm(i, name, type)
 } else {
   stop("Multiple arguments provided! Expecting at most a single configuration file argument.")
 }
@@ -565,7 +565,7 @@ if (length(args) > 0) {
   )
 } else {
   # No configuration file provided, write default configuration defined above (definition order is lost)
-  config_conn<-file(temp_config_file, open="wt")
+  config_conn <- file(temp_config_file, open="wt")
   for (i in seq_along(config_names)) {
     if (config_types[i] == "character") {
       writeLines(str_glue('{config_names[i]} = "{get(config_names[i])}"'), config_conn)
@@ -573,13 +573,14 @@ if (length(args) > 0) {
       writeLines(str_glue('{config_names[i]} = {get(config_names[i])}'), config_conn)
     }
   }
-  rm(i)
   close(config_conn)
+  rm(config_conn, i)
 }
 
 # Synonyms ensure backwards compatiblity with old config namings and
 # allow a name choice that best fits the configuration value.
-# Copy any synonyms to the canonical configs.
+# Copy any synonyms to their canonical configs. This overrides the
+# default value.
 
 if (exists("NAME")) {
   LABEL <- NAME
@@ -669,6 +670,7 @@ if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("C
 if (length(hostdoms) == 0) {
   stop(str_glue("No available execution points{selected_by}!"))
 }
+rm(selected_by)
 
 # ---- Bundle the files needed to run the jobs ----
 
