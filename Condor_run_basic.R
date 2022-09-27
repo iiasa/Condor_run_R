@@ -244,266 +244,6 @@ list_7z <- function(archive_path) {
   return(out)
 }
 
-# Delete a file if it exists
-delete_if_exists <- function(dir_path, file_name) {
-  file_path <- path(dir_path, file_name)
-  if (file_exists(file_path)) file_delete(file_path)
-}
-
-# Search requirements expressions for bare ClassId identifiers and
-# convert those to `<identifier> =?= True' expressions.
-express_identifiers <- function(requirements) {
-  if (length(requirements) == 0) return(c())
-  m <- str_match(requirements, "^[_.a-zA-Z0-9]+$")
-  for (i in seq_along(m)) {
-    if (!is.na(m[[i]])) {
-      requirements[[i]] <- str_c(requirements[[i]], " =?= True")
-    }
-  }
-  rm(i)
-  return(requirements)
-}
-
-# Turn requirements into multiple '-constraint <expression>' arguments
-# that can be passed to condor_status via system2(). Requires removal
-# of spaces from expressions and escaping of " with backslashes.
-#
-# Tested on Windows and Linux.
-constraints <- function(requirements) {
-  if (length(requirements) == 0) return(c())
-  requirements <- express_identifiers(requirements)
-  requirements <- str_remove_all(requirements, " ")
-  requirements <- str_replace_all(requirements, '"', '\\\\"')
-  str_c("-constraint ", requirements)
-}
-
-# Build a combined pretty-printed expression from zero or more requirements
-# expressions as well as a list of zero or more names of execution points to
-# which the submission should be limited. The build expression can be
-# included in a .job description file.
-#
-# The input requirement expressions are surrounded with ( and ) and
-# concatenated with &&, so all must be true for the combined expression
-# to be true.
-#
-# Any bare ClassId identifiers found in the requirements will be converted
-# to '<identifier> =?= True' expressions for convenience.
-#
-# The input host domain names are concatined with ||.
-build_requirements_expression <- function(requirements, hostdoms) {
-  h <- ""
-  if (length(hostdoms) > 0) {
-    h <- str_c(
-      "  ( \\\n",
-      '    (TARGET.Machine == \"',
-      str_c(hostdoms, collapse = '\") || \\\n    (TARGET.Machine == \"'),
-      "\") \\\n",
-      "  )\n"
-    )
-  }
-  requirements <- express_identifiers(requirements)
-  r <- ""
-  if (length(requirements) > 0) {
-    r <- str_c(
-      "  (",
-      str_c(requirements, collapse = '\") && \\\n  (')
-    )
-    if (h == "")
-      r <- str_c(r, ")\n")
-    else
-      r <- str_c(r, ") && \\\n")
-  }
-  if (r == "" && h == "") {
-    return("")
-  }
-  str_c("requirements = \\\n", r, h)
-}
-
-# Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
-monitor <- function(clusters) {
-  # Clear text displayed on current line and reset cursor to start of line
-  # provided that CLEAR_LINES has been configured to be TRUE. Otherwise,
-  # issue a line feed to move on to the start of the next line.
-  clear_line <- function() {
-    if (CLEAR_LINES)
-      cat("\r                                                                     \r")
-    else
-      cat("\n")
-  }
-
-  warn <- FALSE
-  regexp <- "Total for query: (\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended"
-  #regexp <- "(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
-  reschedule_invocations <- 200 # limit the number of reschedules so it is only done early on to push out the jobs quickly
-  # initial values before first iteration
-  changes_since_reschedule <- FALSE
-  iterations_since_reschedule <- 0
-  q_errors <- 0
-  prior_idle <- -1
-  prior_running <- -1
-  q <- "" # to hold formatted condor_q query result
-  repeat {
-    Sys.sleep(1)
-    
-    # Collect Condor queue information via condor_q
-    outerr <- system2("condor_q", args=c("-totals", "-wide", clusters), stdout=TRUE, stderr=TRUE)
-    if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-      q_errors <- q_errors+1
-      if (q_errors >= 10) {
-        # 10 consecutive condor_q errors, probably not transient, report and stop
-        cat(outerr, sep="\n")
-        stop("Invocation of condor_q failed! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
-      } else {
-        # Fewer than 10 consecutive condor_q errors, retry
-        next
-      }
-    }
-    q_errors <- 0
-    
-    # Extract the totals line and parse it out
-    match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
-    if (is.na(match[1])) {
-      cat(outerr, sep="\n")
-      stop("Monitoring Condor queue status with condor_q failed: unexpected output! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
-    }
-    jobs       <- as.integer(match[2])
-    completed  <- as.integer(match[3])
-    removed    <- as.integer(match[4])
-    idle       <- as.integer(match[5])
-    running    <- as.integer(match[6])
-    held       <- as.integer(match[7])
-    suspended  <- as.integer(match[8])
-    
-    # Format condor_q result
-    new_q <- str_sub(str_glue('{jobs} jobs:{ifelse(completed==0, "", str_glue(" {completed} completed,"))}{ifelse(removed==0, "", str_glue(" {removed} removed;"))}{ifelse(idle==0, "", str_glue(" {idle} idle (queued),"))}{ifelse(running==0, "", str_glue(" {running} running,"))}{ifelse(held==0, "", str_glue(" {held} held,"))}{ifelse(suspended==0, "", str_glue(" {suspended} suspended,"))}'), 1, -2)
-    
-    # Display condor_q result when changed, overwriting old one
-    if (new_q != q) {
-      clear_line()
-      q <- new_q
-      cat(q)
-      flush.console()
-      
-      changes_since_reschedule <- TRUE
-    }
-    # Warn when there are held jobs for the first time
-    if (held > 0 && !warn) {
-      clear_line()
-      message("Jobs are held!")
-      message("To see what this means please read: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold")
-      cat(q)
-      flush.console()
-      warn <- TRUE
-    }
-    # Request rescheduling early
-    if (idle > 0 && idle == prior_idle &&
-        reschedule_invocations > 0 &&
-        running <= prior_running
-        && ((changes_since_reschedule) || iterations_since_reschedule >= 10)
-    ) {
-      outerr <- suppressWarnings(system2("condor_reschedule", stdout=TRUE, stderr=TRUE))
-      if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-        # Try to workaround issue with a seemingly superfluous args=c("reschedule") parameter
-        # because R seems to sometimes call some underlying generic exe that needs a parameter to
-        # resolve which command it should behave as.
-        outerr2 <- suppressWarnings(system2("condor_reschedule", args=c("reschedule"), stdout=TRUE, stderr=TRUE))
-        if (!is.null(attr(outerr2, "status")) && attr(outerr2, "status") != 0) {
-          # Warn about the first error, not the also-failed workaround
-          clear_line()
-          warning(str_c(c("Invocation of condor_reschedule failed with the following output:", outerr), collapse='\n'), call.=FALSE)
-          cat(q)
-          flush.console()
-        }
-      }
-      reschedule_invocations <- reschedule_invocations-1
-      changes_since_reschedule <- FALSE
-      iterations_since_reschedule <- 0
-    } else {
-      iterations_since_reschedule <- iterations_since_reschedule+1
-    }
-    # Store state for next iteration
-    prior_idle <- idle
-    prior_running <- running
-    # Stop if all jobs done
-    if (jobs == 0) {
-      clear_line()
-      flush.console()
-      break
-    }
-  }
-}
-
-# Get the return values of job log files, or NA when a job did not terminate normally.
-get_return_values <- function(log_file_paths) {
-  return_values <- c()
-  return_value_regexp <- "\\(1\\) Normal termination \\(return value (\\d+)\\)"
-  for (lfp in log_file_paths) {
-    tryCatch({
-        loglines <- readLines(lfp)
-        return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
-        return_values <- c(return_values, return_value)
-      },
-      error=function(cond) {
-        return_values <- c(return_values, NA)
-      }
-    )
-  }
-  return(return_values)
-}
-
-# Summarize job numbers by using ranges
-summarize_jobs <- function(jobs) {
-  ranging <- FALSE
-  prior <- NULL
-  for (job in sort(jobs)) {
-    if (is.null(prior)) {
-      summary <- c(job)
-    } else {
-      if (job-prior == 1) {
-        ranging <- TRUE
-      } else {
-        if (ranging) {
-          summary <- c(summary, "-", prior)
-          ranging <- FALSE
-        }
-        summary <- c(summary, ",", job)
-      }
-    }
-    prior <- job
-  }
-  if (ranging) summary <- c(summary, "-", job)
-  return(str_c(summary, collapse=""))
-}
-
-# Tests for all JOBS whether output files exist and are not empty.
-# Empty files are deleted.
-#
-# dir: directory containing the files.
-# output_file_name_template: str_glue() template, can use variables defined in the calling context. 
-# warn: if TRUE, generate warnings when oututfiles are absent or empty.
-# Warnings are generated when files are absent or empty.
-#
-# The boolean return value is TRUE when all files exist and are not empty.
-all_exist_and_not_empty <- function(dir, output_file_name_template, warn=TRUE) {
-  absentees <- c()
-  empties <- c()
-  for (job in JOBS) {
-    paths <- path(dir, str_glue(output_file_name_template))
-    absent <- !file_exists(paths)
-    absentees <- c(absentees, any(absent))
-    empty <- !absent & (file_size(paths) == 0)
-    empties <- c(empties, any(empty))
-    file_delete(paths[empty])
-  }
-  if (warn && any(absentees)) {
-    warning(str_glue("Some output files were not returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
-  }
-  if (warn && any(empties)) {
-    warning(str_glue("Empty output files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were deleted."), call.=FALSE)
-  }
-  return(!(any(absentees) || any(empties)))
-}
-
 # Check whether the given directory path can be excluded without
 # conflicting with any of the BUNDLE_INCLUDE_* parameters.
 excludable <- function(dir_path) {
@@ -726,6 +466,268 @@ if (BUNDLE_ONLY) {
   rm(bundle_list_path, bundle_copy_path)
   file_delete(bundle_path) # Delete the copied bundle in the temp directory
   q(save = "yes")
+}
+
+# ---- Define submission helper functions ----
+
+# Delete a file if it exists
+delete_if_exists <- function(dir_path, file_name) {
+  file_path <- path(dir_path, file_name)
+  if (file_exists(file_path)) file_delete(file_path)
+}
+
+# Search requirements expressions for bare ClassId identifiers and
+# convert those to `<identifier> =?= True' expressions.
+express_identifiers <- function(requirements) {
+  if (length(requirements) == 0) return(c())
+  m <- str_match(requirements, "^[_.a-zA-Z0-9]+$")
+  for (i in seq_along(m)) {
+    if (!is.na(m[[i]])) {
+      requirements[[i]] <- str_c(requirements[[i]], " =?= True")
+    }
+  }
+  rm(i)
+  return(requirements)
+}
+
+# Turn requirements into multiple '-constraint <expression>' arguments
+# that can be passed to condor_status via system2(). Requires removal
+# of spaces from expressions and escaping of " with backslashes.
+#
+# Tested on Windows and Linux.
+constraints <- function(requirements) {
+  if (length(requirements) == 0) return(c())
+  requirements <- express_identifiers(requirements)
+  requirements <- str_remove_all(requirements, " ")
+  requirements <- str_replace_all(requirements, '"', '\\\\"')
+  str_c("-constraint ", requirements)
+}
+
+# Build a combined pretty-printed expression from zero or more requirements
+# expressions as well as a list of zero or more names of execution points to
+# which the submission should be limited. The build expression can be
+# included in a .job description file.
+#
+# The input requirement expressions are surrounded with ( and ) and
+# concatenated with &&, so all must be true for the combined expression
+# to be true.
+#
+# Any bare ClassId identifiers found in the requirements will be converted
+# to '<identifier> =?= True' expressions for convenience.
+#
+# The input host domain names are concatined with ||.
+build_requirements_expression <- function(requirements, hostdoms) {
+  h <- ""
+  if (length(hostdoms) > 0) {
+    h <- str_c(
+      "  ( \\\n",
+      '    (TARGET.Machine == \"',
+      str_c(hostdoms, collapse = '\") || \\\n    (TARGET.Machine == \"'),
+      "\") \\\n",
+      "  )\n"
+    )
+  }
+  requirements <- express_identifiers(requirements)
+  r <- ""
+  if (length(requirements) > 0) {
+    r <- str_c(
+      "  (",
+      str_c(requirements, collapse = '\") && \\\n  (')
+    )
+    if (h == "")
+      r <- str_c(r, ")\n")
+    else
+      r <- str_c(r, ") && \\\n")
+  }
+  if (r == "" && h == "") {
+    return("")
+  }
+  str_c("requirements = \\\n", r, h)
+}
+
+# Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
+monitor <- function(clusters) {
+  # Clear text displayed on current line and reset cursor to start of line
+  # provided that CLEAR_LINES has been configured to be TRUE. Otherwise,
+  # issue a line feed to move on to the start of the next line.
+  clear_line <- function() {
+    if (CLEAR_LINES)
+      cat("\r                                                                     \r")
+    else
+      cat("\n")
+  }
+  
+  warn <- FALSE
+  regexp <- "Total for query: (\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended"
+  #regexp <- "(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
+  reschedule_invocations <- 200 # limit the number of reschedules so it is only done early on to push out the jobs quickly
+  # initial values before first iteration
+  changes_since_reschedule <- FALSE
+  iterations_since_reschedule <- 0
+  q_errors <- 0
+  prior_idle <- -1
+  prior_running <- -1
+  q <- "" # to hold formatted condor_q query result
+  repeat {
+    Sys.sleep(1)
+    
+    # Collect Condor queue information via condor_q
+    outerr <- system2("condor_q", args=c("-totals", "-wide", clusters), stdout=TRUE, stderr=TRUE)
+    if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
+      q_errors <- q_errors+1
+      if (q_errors >= 10) {
+        # 10 consecutive condor_q errors, probably not transient, report and stop
+        cat(outerr, sep="\n")
+        stop("Invocation of condor_q failed! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
+      } else {
+        # Fewer than 10 consecutive condor_q errors, retry
+        next
+      }
+    }
+    q_errors <- 0
+    
+    # Extract the totals line and parse it out
+    match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
+    if (is.na(match[1])) {
+      cat(outerr, sep="\n")
+      stop("Monitoring Condor queue status with condor_q failed: unexpected output! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
+    }
+    jobs       <- as.integer(match[2])
+    completed  <- as.integer(match[3])
+    removed    <- as.integer(match[4])
+    idle       <- as.integer(match[5])
+    running    <- as.integer(match[6])
+    held       <- as.integer(match[7])
+    suspended  <- as.integer(match[8])
+    
+    # Format condor_q result
+    new_q <- str_sub(str_glue('{jobs} jobs:{ifelse(completed==0, "", str_glue(" {completed} completed,"))}{ifelse(removed==0, "", str_glue(" {removed} removed;"))}{ifelse(idle==0, "", str_glue(" {idle} idle (queued),"))}{ifelse(running==0, "", str_glue(" {running} running,"))}{ifelse(held==0, "", str_glue(" {held} held,"))}{ifelse(suspended==0, "", str_glue(" {suspended} suspended,"))}'), 1, -2)
+    
+    # Display condor_q result when changed, overwriting old one
+    if (new_q != q) {
+      clear_line()
+      q <- new_q
+      cat(q)
+      flush.console()
+      
+      changes_since_reschedule <- TRUE
+    }
+    # Warn when there are held jobs for the first time
+    if (held > 0 && !warn) {
+      clear_line()
+      message("Jobs are held!")
+      message("To see what this means please read: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold")
+      cat(q)
+      flush.console()
+      warn <- TRUE
+    }
+    # Request rescheduling early
+    if (idle > 0 && idle == prior_idle &&
+        reschedule_invocations > 0 &&
+        running <= prior_running
+        && ((changes_since_reschedule) || iterations_since_reschedule >= 10)
+    ) {
+      outerr <- suppressWarnings(system2("condor_reschedule", stdout=TRUE, stderr=TRUE))
+      if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
+        # Try to workaround issue with a seemingly superfluous args=c("reschedule") parameter
+        # because R seems to sometimes call some underlying generic exe that needs a parameter to
+        # resolve which command it should behave as.
+        outerr2 <- suppressWarnings(system2("condor_reschedule", args=c("reschedule"), stdout=TRUE, stderr=TRUE))
+        if (!is.null(attr(outerr2, "status")) && attr(outerr2, "status") != 0) {
+          # Warn about the first error, not the also-failed workaround
+          clear_line()
+          warning(str_c(c("Invocation of condor_reschedule failed with the following output:", outerr), collapse='\n'), call.=FALSE)
+          cat(q)
+          flush.console()
+        }
+      }
+      reschedule_invocations <- reschedule_invocations-1
+      changes_since_reschedule <- FALSE
+      iterations_since_reschedule <- 0
+    } else {
+      iterations_since_reschedule <- iterations_since_reschedule+1
+    }
+    # Store state for next iteration
+    prior_idle <- idle
+    prior_running <- running
+    # Stop if all jobs done
+    if (jobs == 0) {
+      clear_line()
+      flush.console()
+      break
+    }
+  }
+}
+
+# Get the return values of job log files, or NA when a job did not terminate normally.
+get_return_values <- function(log_file_paths) {
+  return_values <- c()
+  return_value_regexp <- "\\(1\\) Normal termination \\(return value (\\d+)\\)"
+  for (lfp in log_file_paths) {
+    tryCatch({
+      loglines <- readLines(lfp)
+      return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
+      return_values <- c(return_values, return_value)
+    },
+    error=function(cond) {
+      return_values <- c(return_values, NA)
+    }
+    )
+  }
+  return(return_values)
+}
+
+# Summarize job numbers by using ranges
+summarize_jobs <- function(jobs) {
+  ranging <- FALSE
+  prior <- NULL
+  for (job in sort(jobs)) {
+    if (is.null(prior)) {
+      summary <- c(job)
+    } else {
+      if (job-prior == 1) {
+        ranging <- TRUE
+      } else {
+        if (ranging) {
+          summary <- c(summary, "-", prior)
+          ranging <- FALSE
+        }
+        summary <- c(summary, ",", job)
+      }
+    }
+    prior <- job
+  }
+  if (ranging) summary <- c(summary, "-", job)
+  return(str_c(summary, collapse=""))
+}
+
+# Tests for all JOBS whether output files exist and are not empty.
+# Empty files are deleted.
+#
+# dir: directory containing the files.
+# output_file_name_template: str_glue() template, can use variables defined in the calling context. 
+# warn: if TRUE, generate warnings when outputfiles are absent or empty.
+# Warnings are generated when files are absent or empty.
+#
+# The boolean return value is TRUE when all files exist and are not empty.
+all_exist_and_not_empty <- function(dir, output_file_name_template, warn=TRUE) {
+  absentees <- c()
+  empties <- c()
+  for (job in JOBS) {
+    paths <- path(dir, str_glue(output_file_name_template))
+    absent <- !file_exists(paths)
+    absentees <- c(absentees, any(absent))
+    empty <- !absent & (file_size(paths) == 0)
+    empties <- c(empties, any(empty))
+    file_delete(paths[empty])
+  }
+  if (warn && any(absentees)) {
+    warning(str_glue("Some output files were not returned for job(s) {summarize_jobs(JOBS[absentees])}!"), call.=FALSE)
+  }
+  if (warn && any(empties)) {
+    warning(str_glue("Empty output files resulting from job(s) {summarize_jobs(JOBS[empties])}! These empty files were deleted."), call.=FALSE)
+  }
+  return(!(any(absentees) || any(empties)))
 }
 
 # ---- Check status of execution points ----
