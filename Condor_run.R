@@ -45,9 +45,9 @@ RETAIN_BUNDLE = FALSE
 RETAIN_SEED_ARTIFACTS = FALSE
 SEED_JOB_OVERRIDES = list()
 SEED_JOB_RELEASES = 0
+JOB_OVERRIDES = list()
 JOB_RELEASES = 3
 JOB_RELEASE_DELAY = 120
-JOB_OVERRIDES = list()
 HOST_REGEXP = ".*"
 REQUIREMENTS = c("GAMS")
 REQUEST_CPUS = 1
@@ -614,11 +614,25 @@ if (length(args) > 0) {
   close(config_conn)
 }
 
+# Synonyms ensure backwards compatiblity with old config namings and
+# allow a name choice that best fits the configuration value.
+# Copy any synonyms to the canonical configs.
+
+if (exists("NAME")) {
+  LABEL <- NAME
+  rm(NAME)
+}
+if (exists("EXPERIMENT")) {
+  LABEL <- EXPERIMENT # allowed synonym
+  rm(EXPERIMENT)
+}
+if (exists("PROJECT")) {
+  LABEL <- PROJECT # allowed synonym
+  rm(PROJECT)
+}
+
 # Check and massage specific config settings
 if (GAMS_CURDIR != "" && !dir_exists(GAMS_CURDIR)) stop(str_glue("No {GAMS_CURDIR} directory as configured in GAMS_CURDIR found relative to working directory {getwd()}!"))
-if (exists("NAME")) LABEL <- NAME # allowed synonym
-if (exists("EXPERIMENT")) LABEL <- EXPERIMENT # allowed synonym
-if (exists("PROJECT")) LABEL <- PROJECT # allowed synonym
 LABEL <- str_glue(LABEL)
 if (str_detect(LABEL, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured LABEL/NAME/PROJECT/EXPERIMENT for run has forbidden character(s)!"))
 if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
