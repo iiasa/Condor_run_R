@@ -296,6 +296,7 @@ express_identifiers <- function(requirements) {
       requirements[[i]] <- str_c(requirements[[i]], " =?= True")
     }
   }
+  rm(i)
   return(requirements)
 }
 
@@ -586,6 +587,7 @@ if (length(args) == 0) {
         config_types[[i]] != "NULL" # allow for default vector being empty
     ) stop(str_glue("{name} set to wrong type in {config_file_arg}, type should be {config_types[[i]]}"))
   }
+  rm(i)
 } else {
   stop("Multiple arguments provided! Expecting at most a single configuration file argument.")
 }
@@ -611,6 +613,7 @@ if (length(args) > 0) {
       writeLines(str_glue('{config_names[i]} = {get(config_names[i])}'), config_conn)
     }
   }
+  rm(i)
   close(config_conn)
 }
 
@@ -623,11 +626,11 @@ if (exists("NAME")) {
   rm(NAME)
 }
 if (exists("EXPERIMENT")) {
-  LABEL <- EXPERIMENT # allowed synonym
+  LABEL <- EXPERIMENT
   rm(EXPERIMENT)
 }
 if (exists("PROJECT")) {
-  LABEL <- PROJECT # allowed synonym
+  LABEL <- PROJECT
   rm(PROJECT)
 }
 
@@ -806,6 +809,7 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
     size <- bundle_with_7z(args_for_7z)
     added_size <- added_size + size$added
   }
+  rm(af)
   cat("\n")
 }
 
@@ -819,6 +823,13 @@ if (RESTART_FILE_PATH != "") {
   added_size <- added_size + size$added
   cat("\n")
 }
+
+# Add uncompressed bundle size to the disk request in KiB
+request_disk <- REQUEST_DISK + ceiling(added_size / 1024)
+rm(added_size)
+
+# Determine the bundle size in KiB
+bundle_size <- floor(file_size(bundle_path) / 1024)
 
 # Keep bundle and its contents list for reference and quit when configured to
 # only perform the bundling.
@@ -846,11 +857,6 @@ if (BUNDLE_ONLY) {
   q(save = "no")
 }
 
-# Add uncompressed bundle size to the disk request in KiB
-request_disk <- REQUEST_DISK + ceiling(added_size / 1024)
-
-# Determine the bundle size in KiB
-bundle_size <- floor(file_size(bundle_path) / 1024)
 
 # ---- Seed available execution points with the bundle ----
 
