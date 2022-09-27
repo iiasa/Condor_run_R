@@ -749,31 +749,6 @@ if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
 log_dir <- path(CONDOR_DIR, LABEL)
 if (!dir_exists(log_dir)) dir_create(log_dir)
 
-# ---- Check status of execution points ----
-
-# Check that required Condor binaries are available
-check_on_path(c("condor_submit", "condor_status", "condor_q", "condor_reschedule"))
-
-# Construct clause stating what execution points are selected by
-selected_by <- str_glue(
-  "{ifelse(HOST_REGEXP == '.*', '', ' matching HOST_REGEXP')}",
-  "{ifelse(HOST_REGEXP == '.*' || length(REQUIREMENTS) == 0,'', ' and')}",
-  "{ifelse(length(REQUIREMENTS) == 0, '', ' meeting REQUIREMENTS')}"
-)
-
-cat(str_glue("Available resources on execution points{selected_by}:"), sep="\n")
-error_code <- system2("condor_status", args=c("-compact", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
-if (error_code > 0) stop("Cannot show Condor pool status! Probably, your submit machine is unable to connect to the central manager. Possibly, you are running a too-old (< V8.7.2) Condor version.")
-cat("\n")
-
-# Collect host name and domain of available execution points matching HOST_REGEXP and meeting REQUIREMENTS
-hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machine", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE))
-if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
-if (length(hostdoms) == 0) {
-  stop(str_glue("No available execution points{selected_by}!"))
-}
-rm(selected_by)
-
 # ---- Bundle the files needed to run the jobs ----
 
 # Set R-default and platform-specific paths to the bundle
@@ -864,6 +839,31 @@ if (BUNDLE_ONLY) {
   file_delete(bundle_path) # Delete the copied bundle in the temp directory
   q(save = "no")
 }
+
+# ---- Check status of execution points ----
+
+# Check that required Condor binaries are available
+check_on_path(c("condor_submit", "condor_status", "condor_q", "condor_reschedule"))
+
+# Construct clause stating what execution points are selected by
+selected_by <- str_glue(
+  "{ifelse(HOST_REGEXP == '.*', '', ' matching HOST_REGEXP')}",
+  "{ifelse(HOST_REGEXP == '.*' || length(REQUIREMENTS) == 0,'', ' and')}",
+  "{ifelse(length(REQUIREMENTS) == 0, '', ' meeting REQUIREMENTS')}"
+)
+
+cat(str_glue("Available resources on execution points{selected_by}:"), sep="\n")
+error_code <- system2("condor_status", args=c("-compact", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
+if (error_code > 0) stop("Cannot show Condor pool status! Probably, your submit machine is unable to connect to the central manager. Possibly, you are running a too-old (< V8.7.2) Condor version.")
+cat("\n")
+
+# Collect host name and domain of available execution points matching HOST_REGEXP and meeting REQUIREMENTS
+hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machine", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE))
+if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
+if (length(hostdoms) == 0) {
+  stop(str_glue("No available execution points{selected_by}!"))
+}
+rm(selected_by)
 
 # ---- Seed available execution points with the bundle ----
 
