@@ -276,16 +276,6 @@ delete_if_exists <- function(dir_path, file_name) {
   if (file_exists(file_path)) file_delete(file_path)
 }
 
-# Clear text displayed on current line and reset cursor to start of line
-# provided that CLEAR_LINES has been configured to be TRUE. Otherwise,
-# issue a line feed to move on to the start of the next line.
-clear_line <- function() {
-  if (CLEAR_LINES)
-    cat("\r                                                                     \r")
-  else
-    cat("\n")
-}
-
 # Search requirements expressions for bare ClassId identifiers and
 # convert those to `<identifier> =?= True' expressions.
 express_identifiers <- function(requirements) {
@@ -357,6 +347,16 @@ build_requirements_expression <- function(requirements, hostdoms) {
 
 # Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
 monitor <- function(clusters) {
+  # Clear text displayed on current line and reset cursor to start of line
+  # provided that CLEAR_LINES has been configured to be TRUE. Otherwise,
+  # issue a line feed to move on to the start of the next line.
+  clear_line <- function() {
+    if (CLEAR_LINES)
+      cat("\r                                                                     \r")
+    else
+      cat("\n")
+  }
+
   warn <- FALSE
   regexp <- "Total for query: (\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended"
   #regexp <- "(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
@@ -864,7 +864,6 @@ if (BUNDLE_ONLY) {
   file_delete(bundle_path) # Delete the copied bundle in the temp directory
   q(save = "no")
 }
-
 
 # ---- Seed available execution points with the bundle ----
 
