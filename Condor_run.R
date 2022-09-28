@@ -871,7 +871,11 @@ rm(selected_by)
 # Define a unique bundle file name for the execute point side. This serves
 # to keep multiple cached bundles separate. Expanded via str_glue() in the
 # BAT templates.
-unique_bundle <- str_glue('bundle_{str_replace_all(Sys.time(), "[- :]", "")}.7z')
+now_time <- Sys.time()
+now_seconds <- as.numeric(format(Sys.time(), "%OS3"))
+now_millis <- round(1000 * (now_seconds - floor(now_seconds)))
+unique_bundle <- str_glue('bundle_{str_replace_all(now_time, "[- :]", "")}.{sprintf("%03d", now_millis))}.7z')
+rm(now_time, now_seconds, now_millis)
 
 # Apply settings to  template and write batch file / shell script that launches jobs on the execution point 
 seed_bat <- path(temp_dir, str_glue("_seed.bat"))
