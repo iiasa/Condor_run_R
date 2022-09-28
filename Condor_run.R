@@ -872,9 +872,9 @@ rm(selected_by)
 # to keep multiple cached bundles separate. Expanded via str_glue() in the
 # BAT templates.
 now_time <- Sys.time()
-now_seconds <- as.numeric(format(Sys.time(), "%OS3"))
+now_seconds <- as.numeric(format(now_time, "%OS3"))
 now_millis <- round(1000 * (now_seconds - floor(now_seconds)))
-unique_bundle <- str_glue('bundle_{str_replace_all(now_time, "[- :]", "")}.{sprintf("%03d", now_millis))}.7z')
+unique_bundle <- str_glue('bundle_{str_replace_all(now_time, "[- :]", "")}.{sprintf("%03d", now_millis)}.7z')
 rm(now_time, now_seconds, now_millis)
 
 # Apply settings to  template and write batch file / shell script that launches jobs on the execution point 
