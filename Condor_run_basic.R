@@ -179,7 +179,7 @@ fsep <- ifelse(str_detect(temp_dir, fixed("\\") ), "\\", ".Platform$file.sep") #
 temp_dir <- str_replace_all(temp_dir, fixed(fsep), .Platform$file.sep)
 temp_dir_parent <- dirname(temp_dir) # Move up from the R-session-specific random sub directory to get a temp dir identical between sessions
 
-# ---- Define some helper functions ----
+# ---- Define helper functions ----
 
 # Check that the given binaries are on-path
 check_on_path <- function(binaries) {
@@ -393,7 +393,6 @@ if (!dir_exists(log_dir)) dir_create(log_dir)
 
 # Set R-default and platform-specific paths to the bundle
 bundle <- "_bundle.7z"
-unique_bundle <- str_glue('bundle_{str_replace_all(Sys.time(), "[- :]", "")}.7z') # To keep multiple cached bundles separate
 bundle_path <- path(temp_dir_parent, bundle) # Invariant so that it can double-duty as a lock file blocking interfering parallel submissions
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
 if (file_exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing? If so, let that submission end first. If not, delete the file and try again."))
@@ -416,7 +415,7 @@ rm(args_for_7z)
 added_size <- size$added
 cat("\n")
 
-# Add additional files to bundle as separate invocations on 7-Zip
+# Add additional files to bundle via separate invocations on 7-Zip
 if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("Bundling additional files...\n")
   for (af in BUNDLE_ADDITIONAL_FILES) {
@@ -465,7 +464,7 @@ if (BUNDLE_ONLY) {
   )
   rm(bundle_list_path, bundle_copy_path)
   file_delete(bundle_path) # Delete the copied bundle in the temp directory
-  q(save = "yes")
+  q(save = "no")
 }
 
 # ---- Define submission helper functions ----
@@ -756,6 +755,11 @@ if (length(hostdoms) == 0) {
 rm(selected_by)
 
 # ---- Seed available execution points with the bundle ----
+
+# Define a unique bundle file name for the execute point side. This serves
+# to keep multiple cached bundles separate. Expanded via str_glue() in the
+# BAT templates.
+unique_bundle <- str_glue('bundle_{str_replace_all(Sys.time(), "[- :]", "")}.7z')
 
 # Apply settings to  template and write batch file / shell script that launches jobs on the execution point 
 seed_bat <- path(temp_dir, str_glue("_seed.bat"))
