@@ -318,6 +318,7 @@ if (exists("config_file_arg")) {
   close(config_conn)
   rm(config_conn, i)
 }
+rm(config_types)
 
 # Synonyms ensure backwards compatibility with old config namings and
 # allow a name choice that best fits the configuration value.
@@ -411,8 +412,8 @@ args_for_7z <- unlist(lapply(c(
 ), str_glue))
 cat("Compressing files into bundle...\n")
 size <- bundle_with_7z(args_for_7z)
-rm(args_for_7z)
 added_size <- size$added
+rm(args_for_7z, size)
 cat("\n")
 
 # Add additional files to bundle via separate invocations on 7-Zip
@@ -427,7 +428,7 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
     size <- bundle_with_7z(args_for_7z)
     added_size <- added_size + size$added
   }
-  rm(af, args_for_7z)
+  rm(af, args_for_7z, size)
   cat("\n")
 }
 
