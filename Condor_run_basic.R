@@ -659,18 +659,18 @@ monitor <- function(clusters) {
   }
 }
 
-# Get the return values of job log files, or NA when a job did not terminate normally.
+# Get the return values of job log files, or NA when a job did not terminate normally or the log file is absent.
 get_return_values <- function(log_file_paths) {
-  return_values <- c()
+  return_values <- rep(NA, length(log_file_paths))
   return_value_regexp <- "\\(1\\) Normal termination \\(return value (\\d+)\\)"
-  for (lfp in log_file_paths) {
+  for (i in seq_along(log_file_paths)) {
     tryCatch({
-      loglines <- readLines(lfp)
+      loglines <- suppressWarnings(readLines(log_file_paths[[i]]))
       return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
-      return_values <- c(return_values, return_value)
+      return_values[[i]] <- return_value
     },
     error=function(cond) {
-      return_values <- c(return_values, NA)
+      # NA already set for entry
     }
     )
   }
@@ -818,7 +818,7 @@ for (hostdom in hostdoms) {
       message(str_glue("{outerr}"))
       if (tries_left > 0) {
         message("Retrying...")
-        # Let some time pass to give any transient error condition time to disappear
+        # Wait a bit to give transient error conditions time to disappear
         Sys.sleep(10)
       } else {
         message(str_glue("No retries left, giving up on execute point '{hostname}'."))
