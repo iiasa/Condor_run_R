@@ -773,8 +773,8 @@ writeLines(unlist(lapply(SEED_BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
 
-# Transfer bundle to each available execution point
-# Execute-host-side automated bundle cleanup is assumed to be active:
+# Try to seed each available execution point with the bundle by submitting seed jobs.
+# Caching and automated bundle cleanup is assumed to be active on execute points, see ticket:
 # https://mis.iiasa.ac.at/portal/page/portal/IIASA/Content/TicketS/Ticket?defpar=1%26pWFLType=24%26pItemKey=103034818402942720
 cluster_regexp <- "submitted to cluster (\\d+)[.]$"
 clusters <- c()
@@ -802,28 +802,50 @@ for (hostdom in hostdoms) {
   close(seed_job_conn)
   rm(seed_job_conn, seed_job_lines, s)
 
-  # Delete any job output left over from an aborted prior run
-  delete_if_exists(log_dir, str_glue("_seed_{hostname}.log"))
-  delete_if_exists(log_dir, str_glue("_seed_{hostname}.out"))
-  delete_if_exists(log_dir, str_glue("_seed_{hostname}.err"))
+  # Try to submit the seed job to the current execute point
+  tries_left <- 2
+  while (tries_left > 0) {
+    tries_left <- tries_left - 1
 
-  outerr <- system2("condor_submit", args=seed_job_file, stdout=TRUE, stderr=TRUE)
-  if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-    cat(outerr, sep="\n")
-    file_delete(bundle_path)
-    stop("Submission of bundle seed job failed!")
+    # Delete any job output left over from an aborted prior run or previous try
+    delete_if_exists(log_dir, str_glue("_seed_{hostname}.log"))
+    delete_if_exists(log_dir, str_glue("_seed_{hostname}.out"))
+    delete_if_exists(log_dir, str_glue("_seed_{hostname}.err"))
+
+    outerr <- suppressWarnings(system2("condor_submit", args=seed_job_file, stdout=TRUE, stderr=TRUE))
+    if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
+      message(str_glue("Invoking condor_submit for transfer of bundle to execute point '{hostname}' failed:"))
+      message(str_glue("{outerr}"))
+      if (tries_left > 0) {
+        message("Retrying...")
+        # Let some time pass to give any transient error condition time to disappear
+        Sys.sleep(10)
+      } else {
+        message(str_glue("No retries left, giving up on execute point '{hostname}'."))
+      }
+    } else {
+      # Seed job submitted, extract the cluster number
+      tries_left <- 0
+      cluster <- as.integer(str_match(tail(grep(cluster_regexp, outerr, value=TRUE), 1), cluster_regexp)[2])
+      if (is.na(cluster)) {
+        file_delete(bundle_path)
+        stop("Cannot extract cluster number from condor_submit output!")
+      }
+      clusters <- c(clusters, cluster)
+      rm(cluster)
+    }
   }
-  rm(seed_job_file)
-  cluster <- as.integer(str_match(tail(grep(cluster_regexp, outerr, value=TRUE), 1), cluster_regexp)[2])
-  if (is.na(cluster)) {
-    file_delete(bundle_path)
-    stop("Cannot extract cluster number from condor_submit output!")
-  }
-  clusters <- c(clusters, cluster)
+  rm(tries_left, seed_job_file)
 }
 
-# Predict the cluster number for the actual run
-predicted_cluster <- cluster+1
+# Stop when none of the condor_submit invocations returned a cluster number
+if (length(clusters) == 0) {
+  file_delete(bundle_path)
+  stop("No seed jobs could be submitted!")
+}
+
+# Predict the cluster number for the actual run from the highest extracted cluster number
+predicted_cluster <- max(clusters) + 1
 
 # Wait until seed jobs complete
 cat("Waiting for bundle seeding to complete...\n")
@@ -846,13 +868,13 @@ rm(return_values, err_file_sizes)
 # Check whether seed jobs failed
 if (all(failed_seeds)) {
   file_delete(bundle_path)
-  stop(str_glue("All seeding jobs failed! For details, see the _seed_* files in {log_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
+  stop(str_glue("All seed jobs failed! For details, see the _seed_* files in {log_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
 }
 if (any(failed_seeds)) {
   if (length(failed_seeds[failed_seeds == TRUE]) == 1) {
-    warning(str_glue("A seeding job failed, will refrain from scheduling jobs on the affected execution point {hostnames[failed_seeds]}."))
+    warning(str_glue("A seed job failed, will refrain from scheduling jobs on the affected execution point {hostnames[failed_seeds]}."))
   } else {
-    warning(str_glue("Seeding jobs failed, will refrain from scheduling jobs on the affected execution points {str_c(hostnames[failed_seeds], collapse=', ')}."))
+    warning(str_glue("Seed jobs failed, will refrain from scheduling jobs on the affected execution points {str_c(hostnames[failed_seeds], collapse=', ')}."))
   }
   hostdoms <- hostdoms[!failed_seeds]
   hostnames <- hostnames[!failed_seeds]
