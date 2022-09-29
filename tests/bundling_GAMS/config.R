@@ -5,8 +5,8 @@ REQUEST_MEMORY = 100
 GAMS_FILE_PATH = "model/model.gms"
 GAMS_ARGUMENTS = "gdx=output"
 GAMS_VERSION = "32.2"
-BUNDLE_INCLUDE = "model"
-BUNDLE_INCLUDE_DIRS = c("data/*.bar", "data/**/*.baz")
+BUNDLE_INCLUDE = c("model", "data/*.bar")
+BUNDLE_INCLUDE_DIRS = c("data/more_data")
 BUNDLE_ADDITIONAL_FILES = c("additionals/additional.file")
 BUNDLE_EXCLUDE_FILES = c("data/**/exclude_me_specifically.baz")
 BUNDLE_ONLY = TRUE
