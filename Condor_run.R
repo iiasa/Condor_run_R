@@ -94,7 +94,7 @@ JOB_TEMPLATE <- c(
   "error = {log_dir}/{PREFIX}_$(cluster).$(job).err",
   "stream_error = True",
   "", # If a job goes on hold for more than JOB_RELEASE_DELAY seconds, release it up to JOB_RELEASES times
-  "periodic_release =  (NumJobStarts <= {JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > {JOB_RELEASE_DELAY})",
+  "periodic_release = (NumJobStarts <= {JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > {JOB_RELEASE_DELAY})",
   "",
   "{build_requirements_expression(REQUIREMENTS, hostdoms)}",
   "request_memory = {REQUEST_MEMORY}",
@@ -184,7 +184,7 @@ SEED_BAT_TEMPLATE <- c(
   "set bundle_dir=%bundle_root%\\{username}",
   "if not exist %bundle_dir%\\ mkdir %bundle_dir% || exit /b %errorlevel%",
   "@echo on",
-  "move /Y {bundle} %bundle_dir%\\{unique_bundle}"
+  "move /Y {basename(bundle_path)} %bundle_dir%\\{unique_bundle}"
 )
 
 # ---- Get set ----
@@ -203,7 +203,6 @@ suppressWarnings(library(stringr))
 temp_dir <- tempdir()
 fsep <- ifelse(str_detect(temp_dir, fixed("\\") ), "\\", ".Platform$file.sep") # Get the platform file separator: .Platform$file.sep is set to / on Windows
 temp_dir <- str_replace_all(temp_dir, fixed(fsep), .Platform$file.sep)
-temp_dir_parent <- dirname(temp_dir) # Move up from the R-session-specific random sub directory to get a temp dir identical between sessions
 
 # ---- Define helper functions ----
 
@@ -358,7 +357,7 @@ if (exists("config_file_arg")) {
   close(config_conn)
   rm(config_conn, i)
 }
-rm(config_types)
+rm(config_names, config_types)
 
 # Synonyms ensure backwards compatibility with old config namings and
 # allow a name choice that best fits the configuration value.
@@ -492,9 +491,10 @@ if (!dir_exists(log_dir)) dir_create(log_dir)
 
 # ---- Bundle the files needed to run the jobs ----
 
-# Set R-default and platform-specific paths to the bundle
-bundle <- "_bundle.7z"
-bundle_path <- path(temp_dir_parent, bundle) # Invariant so that it can double-duty as a lock file blocking interfering parallel submissions
+# Construct R and platform-specific paths for the bundle.
+# Move up from the R-session-specific temp subdirectory to get the parent temp directory which is identical between ivocations.
+# This allows the bundle to do double-duty as a lock file blocking interfering parallel submissions.
+bundle_path <- path(dirname(temp_dir), "_bundle.7z")
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
 if (file_exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing? If so, let that submission end first. If not, delete the file and try again."))
 
@@ -668,7 +668,7 @@ monitor <- function(clusters) {
     else
       cat("\n")
   }
-  
+
   warn <- FALSE
   regexp <- "Total for query: (\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended"
   #regexp <- "(\\d+) jobs; (\\d+) completed, (\\d+) removed, (\\d+) idle, (\\d+) running, (\\d+) held, (\\d+) suspended$"
