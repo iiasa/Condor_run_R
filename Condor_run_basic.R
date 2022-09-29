@@ -33,7 +33,7 @@ mandatory_config_names <- ls()
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 LABEL = "{Sys.Date()}"
 SCRIPT = ""
-BUNDLE_INCLUDE = "*"
+BUNDLE_INCLUDE = c("*")
 BUNDLE_INCLUDE_DIRS = c()
 BUNDLE_EXCLUDE_DIRS = c(".git", ".svn")
 BUNDLE_INCLUDE_FILES = c()
@@ -835,7 +835,7 @@ for (hostdom in hostdoms) {
       rm(cluster)
     }
   }
-  rm(tries_left, seed_job_file)
+  rm(hostname, tries_left, seed_job_file)
 }
 
 # Stop when none of the condor_submit invocations returned a cluster number
@@ -894,6 +894,7 @@ if (RETAIN_SEED_ARTIFACTS) {
     delete_if_exists(log_dir, str_glue("_seed_{hostname}.out"))
     delete_if_exists(log_dir, str_glue("_seed_{hostname}.err"))
   }
+  rm(hostname)
 }
 rm(seed_bat)
 

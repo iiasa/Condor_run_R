@@ -102,9 +102,9 @@ Path of log file for capturing cluster number. No such file is written when set 
 
 ### BUNDLE_INCLUDE
 
-Default value: `"*"`
+Default value: `c("*")`
 
-A path or wildcard pattern specifying the files to include in the bundle. When a path points to a directory, or a wildcard matches a directory, the files contained in that directory will be included recursively.
+Paths or wildcard patterns specifying the files to include in the bundle. When a path points to a directory, or a wildcard matches a directory, the files contained in that directory will be included recursively.
 
 ### BUNDLE_INCLUDE_DIRS
 
