@@ -30,9 +30,9 @@ Typically, the script that is run when your jobs are started accepts the job num
 
 ### REQUEST_MEMORY
 
-An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execution point (EP) when the sum of their memory requests exceeds the memory allocated to the execution slot of on the host. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the EP at risk of running out of memory, which can endanger other jobs as well.
+An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execution point (EP) when the sum of their memory requests exceeds the memory allocated to the execution slot of on the host. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the EP at risk of running out of memory, which can endanger other jobs as well. It is therefore important to configure a good estimate.
 
-It is therefore important to configure a good estimate. You can find a job's memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
+You can find a job's actual, requested, and allocated memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
 
 **:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient memory to satisfy your request. To see what memory resources your cluster has available issue [`condor_status -avail`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
