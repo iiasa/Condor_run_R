@@ -95,7 +95,7 @@ JOB_TEMPLATE <- c(
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
   'transfer_output_files = {ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_DIR}/{OUTPUT_FILES}"), collapse=","), "")}',
-  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_FILES}={OUTPUT_DIR_SUBMIT}/{output_prefixes}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extensions}"), collapse=";"), "")}"',
+  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_FILES}={OUTPUT_DIR_SUBMIT}/{output_prefixes}.$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extensions}"), collapse=";"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -372,8 +372,7 @@ if (GET_OUTPUT) {
   if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
   if (any(str_detect(OUTPUT_FILES, ',[<>|:?*" \\t/\\\\]'))) stop(str_glue("Configured OUTPUT_FILE or OUTPUT_FILES has forbidden character(s)!"))
 }
-output_prefixes <- tools::file_path_sans_ext(OUTPUT_FILES)
-output_extensions <- tools::file_ext(OUTPUT_FILES)
+
 script_prefix <- tools::file_path_sans_ext(SCRIPT)
 script_extension <- tools::file_ext(SCRIPT)
 
@@ -461,7 +460,7 @@ if (BUNDLE_ONLY) {
   )
   rm(bundle_list_path, bundle_copy_path)
   file_delete(bundle_path) # Delete the copied bundle in the temp directory
-  q(save = "yes")
+  q(save = "no")
 }
 
 # ---- Define submission helper functions ----
@@ -701,8 +700,8 @@ summarize_jobs <- function(jobs) {
 # Empty files are deleted.
 #
 # dir: directory containing the files.
-# output_file_name_template: str_glue() template, can use variables defined in the calling context. 
-# warn: if TRUE, generate warnings when outputfiles are absent or empty.
+# output_file_name_template: str_glue() template, can use job variable as well as variables defined in the calling context.
+# warn: if TRUE, generate warnings when output files are absent or empty.
 # Warnings are generated when files are absent or empty.
 #
 # The boolean return value is TRUE when all files exist and are not empty.
@@ -1004,6 +1003,11 @@ if (CLUSTER_NUMBER_LOG != "") {
 
 # ---- Handle run results ----
 
+# Generate output file remapping prefixes for keeping output files of different runs separate.
+# Separating the output files of different jobs within a run is handled in the job template.
+output_prefixes <- str_glue("{tools::file_path_sans_ext(OUTPUT_FILES)}_{LABEL}_{cluster}")
+output_extensions <- tools::file_ext(OUTPUT_FILES)
+
 if (WAIT_FOR_RUN_COMPLETION) {
   # Monitor the run until it completes
   cat(str_glue('Waiting for run "{LABEL}" to complete...'), sep="\n")
@@ -1012,7 +1016,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   # Check that result files exist and are not empty, warn otherwise and delete empty files
   all_exist_and_not_empty(log_dir, "_{PREFIX}_{cluster}.{job}.err", warn=FALSE)
   if (GET_OUTPUT) {
-    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR_SUBMIT, '{output_prefixes}_{LABEL}_{cluster}.{sprintf("%06d", job)}.{output_extensions}')
+    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR_SUBMIT, '{output_prefixes}.{sprintf("%06d", job)}.{output_extensions}')
   }
 
   return_values <- get_return_values(path(log_dir, str_glue("{PREFIX}_{cluster}.{JOBS}.log")))
@@ -1088,7 +1092,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   cat(str_glue("You can monitor progress of the run with: condor_q {cluster}."), sep="\n")
   if (GET_OUTPUT) {
     cat("After the run completes, you can find the output files at:",
-        str_glue("    {OUTPUT_DIR_SUBMIT}/{output_prefixes}_{LABEL}_{cluster}.*"),
+        str_glue("    {OUTPUT_DIR_SUBMIT}/{output_prefixes}.*"),
         sep="\n")
   }
 }

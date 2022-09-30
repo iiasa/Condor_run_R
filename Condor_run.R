@@ -199,8 +199,8 @@ config_types <- lapply(lapply(config_names, get), typeof)
 suppressWarnings(library(fs))
 suppressWarnings(library(stringr))
 
-# Determine the platform file separator and the temp directory with R-default separators
-fsep <- ifelse(str_detect(tempdir(), fixed("\\") ), "\\", ".Platform$file.sep") # Get the platform file separator: .Platform$file.sep is set to / on Windows
+# Get the platform file separator: .Platform$file.sep is set to / on Windows
+fsep <- ifelse(str_detect(tempdir(), fixed("\\") ), "\\", ".Platform$file.sep")
 
 # ---- Define helper functions ----
 
@@ -818,8 +818,8 @@ summarize_jobs <- function(jobs) {
 # Empty files are deleted.
 #
 # dir: directory containing the files.
-# output_file_name_template: str_glue() template, can use variables defined in the calling context. 
-# warn: if TRUE, generate warnings when outputfiles are absent or empty.
+# output_file_name_template: str_glue() template, can use job variable as well as variables defined in the calling context.
+# warn: if TRUE, generate warnings when output files are absent or empty.
 # Warnings are generated when files are absent or empty.
 #
 # The boolean return value is TRUE when all files exist and are not empty.
