@@ -173,10 +173,8 @@ config_types <- lapply(lapply(config_names, get), typeof)
 suppressWarnings(library(fs))
 suppressWarnings(library(stringr))
 
-# Determine the platform file separator and the temp directory with R-default separators
-temp_dir <- tempdir()
-fsep <- ifelse(str_detect(temp_dir, fixed("\\") ), "\\", ".Platform$file.sep") # Get the platform file separator: .Platform$file.sep is set to / on Windows
-temp_dir <- str_replace_all(temp_dir, fixed(fsep), .Platform$file.sep)
+# Get the platform file separator: .Platform$file.sep is set to / on Windows
+fsep <- ifelse(str_detect(tempdir(), fixed("\\") ), "\\", ".Platform$file.sep")
 
 # ---- Define helper functions ----
 
@@ -293,7 +291,7 @@ if (length(args) == 0) {
 rm(args)
 
 # Copy/write configuration to a file in the temp directory for reference early to minimize the risk of it being edited in the mean time
-temp_config_file <- path(temp_dir, str_glue("config.R"))
+temp_config_file <- path(tempdir(), str_glue("config.R"))
 if (exists("config_file_arg")) {
   tryCatch(
     file_copy(config_file_arg, temp_config_file, overwrite=TRUE),
@@ -394,7 +392,7 @@ if (!dir_exists(log_dir)) dir_create(log_dir)
 # Construct R and platform-specific paths for the bundle.
 # Move up from the R-session-specific temp subdirectory to get the parent temp directory which is identical between ivocations.
 # This allows the bundle to do double-duty as a lock file blocking interfering parallel submissions.
-bundle_path <- path(dirname(temp_dir), "_bundle.7z")
+bundle_path <- path(dirname(tempdir()), "_bundle.7z")
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
 if (file_exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing? If so, let that submission end first. If not, delete the file and try again."))
 
@@ -463,7 +461,7 @@ if (BUNDLE_ONLY) {
   )
   rm(bundle_list_path, bundle_copy_path)
   file_delete(bundle_path) # Delete the copied bundle in the temp directory
-  q(save = "no")
+  q(save = "yes")
 }
 
 # ---- Define submission helper functions ----
@@ -765,7 +763,7 @@ unique_bundle <- str_glue('bundle_{str_replace_all(now_time, "[- :]", "")}.{spri
 rm(now_time, now_seconds, now_millis)
 
 # Apply settings to  template and write batch file / shell script that launches jobs on the execution point 
-seed_bat <- path(temp_dir, str_glue("_seed.bat"))
+seed_bat <- path(tempdir(), str_glue("_seed.bat"))
 bat_conn<-file(seed_bat, open="wt")
 writeLines(unlist(lapply(SEED_BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
@@ -784,7 +782,7 @@ for (hostdom in hostdoms) {
   cat(str_glue("Starting transfer of bundle to {hostname}."), sep="\n")
 
   # Apply settings to seed job template and write the .job file to use for submission
-  seed_job_file <- path(temp_dir, str_glue("_seed_{hostname}.job"))
+  seed_job_file <- path(tempdir(), str_glue("_seed_{hostname}.job"))
   seed_job_conn<-file(seed_job_file, open="wt")
   seed_job_lines <- unlist(lapply(SEED_JOB_TEMPLATE, str_glue))
   for (s in names(SEED_JOB_OVERRIDES)) {
@@ -882,12 +880,12 @@ rm(failed_seeds)
 
 # Delete seeding artifacts of normally terminated seed jobs unless everything is to be retained
 if (RETAIN_SEED_ARTIFACTS) {
-  file_move(dir_ls(temp_dir, regexp="_seed_.*[.]job"), log_dir)
+  file_move(dir_ls(tempdir(), regexp="_seed_.*[.]job"), log_dir)
   file_move(seed_bat, log_dir)
 } else {
   file_delete(seed_bat)
   for (hostname in hostnames) {
-    delete_if_exists(temp_dir, str_glue("_seed_{hostname}.job"))
+    delete_if_exists(tempdir(), str_glue("_seed_{hostname}.job"))
     delete_if_exists(log_dir, str_glue("_seed_{hostname}.log"))
     delete_if_exists(log_dir, str_glue("_seed_{hostname}.out"))
     delete_if_exists(log_dir, str_glue("_seed_{hostname}.err"))
