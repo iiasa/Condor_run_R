@@ -87,7 +87,7 @@ JOB_TEMPLATE <- c(
   "{build_requirements_expression(REQUIREMENTS, hostdoms)}",
   "request_memory = {REQUEST_MEMORY}",
   "request_cpus = {REQUEST_CPUS}", # Number of "CPUs" (hardware threads) to reserve for each job
-  "request_disk = {request_disk}",
+  "request_disk = {REQUEST_DISK}",
   "",
   '+IIASAGroup = "ESM"', # Identifies you as part of the group allowed to use ESM cluster
   "run_as_owner = {ifelse(RUN_AS_OWNER, 'True', 'False')}",
@@ -141,7 +141,7 @@ SEED_JOB_TEMPLATE <- c(
   "{build_requirements_expression(REQUIREMENTS, hostdom)}",
   "request_memory = 0",
   "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
-  "request_disk = {2*bundle_size+500}", # KiB, twice needed for move, add some for the extra files
+  "request_disk = {2*floor(file_size(bundle_path)/1024)+500}", # KiB, twice needed for move, add some for the extra files
   "",
   '+IIASAGroup = "ESM"',
   "run_as_owner = False",
@@ -431,13 +431,11 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   rm(af, args_for_7z, size)
   cat("\n")
 }
+rm(bundle_platform_path)
 
 # Add uncompressed bundle size to the disk request in KiB
-request_disk <- REQUEST_DISK + ceiling(added_size / 1024)
+REQUEST_DISK <- REQUEST_DISK + ceiling(added_size / 1024)
 rm(added_size)
-
-# Determine the bundle size in KiB
-bundle_size <- floor(file_size(bundle_path) / 1024)
 
 # Keep bundle and its contents list for reference and quit when configured to
 # only perform the bundling.
