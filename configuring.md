@@ -231,11 +231,11 @@ The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CP
 
 Default value: `1000000`
 
-Estimate of the amount of execute-host-side disk space required per job for storing transient and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units.
+An estimate of the amount of execute-host-side disk space required per job for storing intermediate and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add to the uncompressed size of the bundle to yield an estimate of the overall storage requirement of the job. This sum is used to allocate disk space for a job when it is started on an EP.
+  
+You can find a job's actual, requested (with added uncompressed bundle size), and allocated disk space at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
 
-This value is added to the uncompressed size of the bundle. The sum is used to reserve disk space for a job when it is started on an EP. You can find a job's summed memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
-
-**:point_right**Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+**:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
   
 ### RUN_AS_OWNER
 
