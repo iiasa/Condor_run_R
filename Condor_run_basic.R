@@ -937,7 +937,7 @@ rm(bat_conn)
 
 # Generate output file remapping prefixes for keeping output files of different runs separate.
 # Separating the output files of different jobs within a run is handled in the job template.
-output_prefixes <- str_glue("{tools::file_path_sans_ext(OUTPUT_FILES)}_{LABEL}_{predicted_cluster}")
+output_prefixes <- str_glue("{tools::file_path_sans_ext(OUTPUT_FILES)}_{predicted_cluster}")
 output_extensions <- tools::file_ext(OUTPUT_FILES)
 
 # Apply settings to job template and write the .job file to use for submission
