@@ -935,6 +935,11 @@ writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
 
+# Generate output file remapping prefixes for keeping output files of different runs separate.
+# Separating the output files of different jobs within a run is handled in the job template.
+output_prefixes <- str_glue("{tools::file_path_sans_ext(OUTPUT_FILES)}_{LABEL}_{predicted_cluster}")
+output_extensions <- tools::file_ext(OUTPUT_FILES)
+
 # Apply settings to job template and write the .job file to use for submission
 job_file <- path(log_dir, str_glue("_submit_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
@@ -1002,11 +1007,6 @@ if (CLUSTER_NUMBER_LOG != "") {
 }
 
 # ---- Handle run results ----
-
-# Generate output file remapping prefixes for keeping output files of different runs separate.
-# Separating the output files of different jobs within a run is handled in the job template.
-output_prefixes <- str_glue("{tools::file_path_sans_ext(OUTPUT_FILES)}_{LABEL}_{cluster}")
-output_extensions <- tools::file_ext(OUTPUT_FILES)
 
 if (WAIT_FOR_RUN_COMPLETION) {
   # Monitor the run until it completes
