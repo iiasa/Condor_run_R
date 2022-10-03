@@ -913,18 +913,6 @@ tryCatch(
 )
 file_delete(temp_config_file)
 
-# Copy the SCRIPT to the log directory for reference
-if (SCRIPT != "") {
-  tryCatch(
-    file_copy(SCRIPT, path(log_dir, str_glue("_{tools::file_path_sans_ext(SCRIPT)}_{predicted_cluster}.{tools::file_ext(SCRIPT)}")), overwrite=TRUE),
-    error=function(cond) {
-      file_delete(bundle_path)
-      message(cond)
-      stop(str_glue("Cannot copy the configured SCRIPT file to {log_dir}!"))
-    }
-  )
-}
-
 # Apply settings to BAT_TEMPLATE and write the batch file / shell script to launch jobs with
 bat_path <- path(log_dir, str_glue("_launch_{predicted_cluster}.bat"))
 bat_conn<-file(bat_path, open="wt")
