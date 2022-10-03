@@ -491,9 +491,7 @@ if (!dir_exists(log_dir)) dir_create(log_dir)
 # ---- Bundle the files needed to run the jobs ----
 
 # Construct R and platform-specific paths for the bundle.
-# Move up from the R-session-specific temp subdirectory to get the parent temp directory which is identical between ivocations.
-# This allows the bundle to do double-duty as a lock file blocking interfering parallel submissions.
-bundle_path <- path(dirname(tempdir()), "_bundle.7z")
+bundle_path <- path(tempdir(), "_bundle.7z")
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
 if (file_exists(bundle_path)) stop(str_glue("{bundle_path} already exists! Is there another submission ongoing? If so, let that submission end first. If not, delete the file and try again."))
 
@@ -1090,7 +1088,7 @@ writeLines(contents_list, con = list_conn)
 close(list_conn)
 rm(contents_list, list_conn)
 
-# Retain the bundle if so requested, then delete it from temp so that further submissions are no longer blocked
+# Retain the bundle if so requested, then delete it from the temporary directory
 if (RETAIN_BUNDLE) {
   tryCatch(
     file_copy(bundle_path, path(log_dir, str_glue("_bundle_{cluster}.7z"))),
@@ -1100,9 +1098,10 @@ if (RETAIN_BUNDLE) {
     }
   )
 }
-file_delete(bundle_path) # Deleting the bundle unblocks this script for another submission
+file_delete(bundle_path)
 message(str_glue('Run "{LABEL}" with cluster number {cluster} has been submitted.'))
 message(str_glue("Run log directory: {path_abs(log_dir)}"))
+# TODO: delete lockfile here
 message("It is now possible to submit additional runs.")
 
 # Log the cluster number if requested. If you parse the above stdout, you can parse out the cluster number.

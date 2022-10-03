@@ -59,9 +59,9 @@ The crude way to restart Condor is to reboot the submit machine. The better way 
 
 ## Seeding jobs stay in the running state indefinitely
 
-This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke [`condor_restart -schedd`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_restart.html), and try to submit again. You will be asked to delete the bundle first.
+This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke [`condor_restart -schedd`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_restart.html), and try to submit again.
 
-If the resubmission also stays stuck in the running state when transferring the bundle, stop the script, reboot, and then try to submit again. If your temp directory survives reboots, you will again be asked to delete the bundle first.
+If the resubmission also stays stuck in the running state when transferring the bundle, stop the script, reboot, and then try to submit again.
 
 ## Jobs do not run but instead go on hold
 
