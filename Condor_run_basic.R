@@ -373,9 +373,6 @@ if (GET_OUTPUT) {
   if (any(str_detect(OUTPUT_FILES, ',[<>|:?*" \\t/\\\\]'))) stop(str_glue("Configured OUTPUT_FILE or OUTPUT_FILES has forbidden character(s)!"))
 }
 
-script_prefix <- tools::file_path_sans_ext(SCRIPT)
-script_extension <- tools::file_ext(SCRIPT)
-
 # Get username in a way that works on MacOS, Linux, and Windows
 username <- Sys.getenv("USERNAME")
 if (username == "") username <- Sys.getenv("USER")
@@ -919,7 +916,7 @@ file_delete(temp_config_file)
 # Copy the SCRIPT to the log directory for reference
 if (SCRIPT != "") {
   tryCatch(
-    file_copy(SCRIPT, path(log_dir, str_glue("_{script_prefix}_{predicted_cluster}.{script_extension}")), overwrite=TRUE),
+    file_copy(SCRIPT, path(log_dir, str_glue("_{tools::file_path_sans_ext(SCRIPT)}_{predicted_cluster}.{tools::file_ext(SCRIPT)}")), overwrite=TRUE),
     error=function(cond) {
       file_delete(bundle_path)
       message(cond)
