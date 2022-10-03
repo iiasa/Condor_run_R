@@ -6,7 +6,7 @@ To set up an initial configuration file, copy (do *not* cut) the code block with
 
 After completing the above, you have the mandatory configuration parameters in your configuration flie. Their values will need to be adapted. Please see the documentation of these parameters to learn what they do. You may also wish to add some of the optional configuration parameters. Their defaults are located below the last *snippy snappy* comment. These concern configuration settings with default values that will work for most people.
 
-Your configuration may need adaptation to the particulars of your Condor cluster. For example, [`REQUIREMENTS`](#requirements) filters execution points based on their capabilities as advertised via their the Condor configuration of each host. Also, you may need to [adapt templates](#templates). For general information on Condor cluster configuration in support of the `Condor_run_R` submit scripts, see [this page](condor.md). For details on the specific configuration of your Condor cluster, ask your cluster administrator.
+Your configuration may need adaptation to the particulars of your Condor cluster. For example, [`REQUIREMENTS`](#requirements) filters execution points based on their capabilities as advertised via their the Condor configuration of each execute point. Also, you may need to [adapt templates](#templates). For general information on Condor cluster configuration in support of the `Condor_run_R` submit scripts, see [this page](condor.md). For details on the specific configuration of your Condor cluster, ask your cluster administrator.
 
 IIASA GLOBIOM developers can start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R` which is adapted to the Limpopo cluster. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`. For more information, see the GLOBIOM wiki [here](https://github.com/iiasa/GLOBIOM/wiki/Running-scenarios-in-parallel-on-Limpopo#configuration).
 
@@ -30,7 +30,7 @@ Typically, the script that is run when your jobs are started accepts the job num
 
 ### REQUEST_MEMORY
 
-An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execution point (EP) when the sum of their memory requests exceeds the memory allocated to the execution slot of on the host. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the EP at risk of running out of memory, which can endanger other jobs as well. It is therefore important to configure a good estimate.
+An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execution point (EP) when the sum of their memory requests exceeds the memory allocated to the execution slot of on the execute point. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the EP at risk of running out of memory, which can endanger other jobs as well. It is therefore important to configure a good estimate.
 
 You can find a job's actual, requested, and allocated memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
 
@@ -150,7 +150,7 @@ Set to `TRUE` to test only the bundling without subsequent submission. The 7-Zip
 
 Default value: `FALSE`
 
-Retain the bundle in the [log directory of the run](#condor_dir) when set to `TRUE`. Can be useful for locally analyzing host-side issues with jobs.
+Retain the bundle in the [log directory of the run](#condor_dir) when set to `TRUE`. Can be useful for locally analyzing execute-point-side issues with jobs.
 
 ### RETAIN_SEED_ARTIFACTS
 
@@ -170,7 +170,7 @@ Override lines in the `.job` files generated from [`SEED_JOB_TEMPLATE`](#seed_jo
 
 Default value: `0`
 
-Number of times to auto-release (retry) held bundle-seeding jobs before giving up. Not retrying—by using the 0 default value—is fine when you have plenty of execution points (EPs) in the cluster: hosts that could not receive the bundle are assumed to be unavailable and will be excluded from the subsequent job submission stage. The hosts that could receive the bundle will still process your jobs.
+Number of times to auto-release (retry) held bundle-seeding jobs before giving up. Not retrying—by using the 0 default value—is fine when you have plenty of execution points (EPs) in the cluster: execute points that could not receive the bundle are assumed to be unavailable and will be excluded from the subsequent job submission stage. The execute points that could receive the bundle will still process your jobs.
 
 When the cluster has only one or a couple of EPs, or there are intermittent failures on account of networking issues, it may be worthwhile to retry a few times. This can make the seeding process take longer.
 
@@ -213,7 +213,7 @@ the `requirements` command of the [submit description file](https://htcondor.rea
 
 Default value: `.*`
 
-A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select a subset of EPs from the cluster by hostname. Jobs will be scheduled only on the machines thus selected. The default value selects all available EPs.
+A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select a subset of execute points from the cluster by hostname. Jobs will be scheduled only on the machines thus selected. The default value selects all available EPs.
 
 ### REQUEST_CPUS
 
@@ -229,7 +229,7 @@ The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CP
 
 Default value: `1000000`
 
-An estimate of the amount of execute-host-side disk space required per job for storing intermediate and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add to the uncompressed size of the bundle to yield an estimate of the overall storage requirement of the job. This sum is used to allocate disk space for a job when it is started on an EP.
+An estimate of the amount of execute-point-side disk space required per job for storing intermediate and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add to the uncompressed size of the bundle to yield an estimate of the overall storage requirement of the job. This sum is used to allocate disk space for a job when it is started on an EP.
   
 You can find a job's actual, requested (with added uncompressed bundle size), and allocated disk space at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
 
@@ -425,7 +425,7 @@ When `TRUE`, remove per-job GDX output files after having been merged.
 
 ## Templates
 
-The template parameters configure Condor `.job` files and job launch scripts (that run on the execute-host side). These files are generated from the templates on submitting a run. The template strings can use `{}` expansion to include other configuration parameters and run-time state in the generated files.
+The template parameters configure Condor `.job` files and job launch scripts (that run on the execute-point side). These files are generated from the templates on submitting a run. The template strings can use `{}` expansion to include other configuration parameters and run-time state in the generated files.
 
 **:point_right:Note:** Templates are cluster-specific. Your cluster administrator can provide templates adapted to your cluster. To do so, cluster administrators can follow the guidance on [configuring templates for a different cluster](condor.md#configuring-templates-for-a-different-cluster).
 
