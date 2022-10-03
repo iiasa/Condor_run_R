@@ -107,7 +107,7 @@ JOB_TEMPLATE <- c(
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
   'transfer_output_files = {str_sub(in_gams_curdir(GAMS_FILE_PATH), 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{in_gams_curdir(G00_OUTPUT_DIR)}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{in_gams_curdir(GDX_OUTPUT_DIR)}/{GDX_OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{str_sub(GAMS_FILE_PATH, 1, -5)}.lst={log_dir}/{PREFIX}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}_{LABEL}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}.$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_output_remaps = "{str_sub(GAMS_FILE_PATH, 1, -5)}.lst={log_dir}/{PREFIX}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}.$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}.$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -139,7 +139,7 @@ BAT_TEMPLATE <- c(
     '-logOption=3',
     '{ifelse(GAMS_CURDIR != "", str_glue("curDir=\\"{GAMS_CURDIR}\\" "), "")}',
     '{ifelse(RESTART_FILE_PATH != "", str_glue("restart=\\"{RESTART_FILE_PATH}\\" "), "")}',
-    '{ifelse(GET_G00_OUTPUT, str_glue("save=\\"", path(G00_OUTPUT_DIR, g00_prefix), "\\""), "")}',
+    '{ifelse(GET_G00_OUTPUT, str_glue("save=\\"", path(G00_OUTPUT_DIR, G00_OUTPUT_FILE), "\\""), "")}',
     '{str_glue(GAMS_ARGUMENTS)}',
     sep = ' '
   ),
@@ -424,7 +424,6 @@ if (GET_G00_OUTPUT) {
   if (str_sub(G00_OUTPUT_FILE, -4) != ".g00") stop(str_glue("Configured G00_OUTPUT_FILE has no .g00 extension!"))
   if (str_length(G00_OUTPUT_FILE) <= 4) stop(str_glue("Configured G00_OUTPUT_FILE needs more than an extension!"))
   if (str_detect(G00_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured G00_OUTPUT_FILE has forbidden character(s)!"))
-  g00_prefix <- str_sub(G00_OUTPUT_FILE, 1, -5) # used only when GET_G00_OUTPUT == TRUE
 }
 if (GET_GDX_OUTPUT) {
   if (is.null(GDX_OUTPUT_DIR_SUBMIT)) {
@@ -453,7 +452,6 @@ if (MERGE_GDX_OUTPUT) check_on_path("gdxmerge")
 # used in conditional string expansion via str_glue() such that the non-use is enacted only
 # only after the expansion already happened. Hence we need to assign some dummy values here when
 # when no assignment happened above.
-if (!exists("g00_prefix")) g00_prefix <- ""
 if (is.null(G00_OUTPUT_DIR_SUBMIT)) G00_OUTPUT_DIR_SUBMIT <- ""
 if (is.null(GDX_OUTPUT_DIR_SUBMIT)) GDX_OUTPUT_DIR_SUBMIT <- ""
 
@@ -1050,8 +1048,9 @@ writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
 
-# Generate GDX output file remapping prefixes for keeping output files of different runs separate.
+# Generate G00 and GDX output file remapping prefixes for keeping output files of different runs separate.
 # Separating the output files of different jobs within a run is handled in the job template.
+g00_prefix <- ifelse(GET_G00_OUTPUT, str_glue("{tools::file_path_sans_ext(G00_OUTPUT_FILE)}_{predicted_cluster}"), "")
 gdx_prefix <- ifelse(GET_GDX_OUTPUT, str_glue("{tools::file_path_sans_ext(GDX_OUTPUT_FILE)}_{predicted_cluster}"), "")
 
 # Apply settings to job template and write the .job file to use for submission
@@ -1131,7 +1130,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   all_exist_and_not_empty(log_dir, "_{PREFIX}_{cluster}.{job}.err", warn=FALSE)
   all_exist_and_not_empty(log_dir, "{PREFIX}_{cluster}.{job}.lst")
   if (GET_G00_OUTPUT) {
-    g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, "{g00_prefix}_{LABEL}_{cluster}.{job}.g00")
+    g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, "{g00_prefix}.{job}.g00")
   }
   if (GET_GDX_OUTPUT) {
     gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR_SUBMIT, '{gdx_prefix}.{sprintf("%06d", job)}.gdx')
@@ -1243,7 +1242,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
 } else {
   cat(str_glue("You can monitor progress of the run with: condor_q {cluster}."), sep="\n")
   if (GET_G00_OUTPUT) {
-    cat(str_glue("After the run completes, you can find the G00 results at: {G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}_{LABEL}_{cluster}.*.g00"), sep="\n")
+    cat(str_glue("After the run completes, you can find the G00 results at: {G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}.*.g00"), sep="\n")
   }
   if (GET_GDX_OUTPUT) {
     cat(str_glue("After the run completes, you can find the GDX results at: {GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}.*.gdx"), sep="\n")
