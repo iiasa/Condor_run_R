@@ -1031,16 +1031,6 @@ tryCatch(
 )
 file_delete(temp_config_file)
 
-# Copy the GAMS_FILE_PATH file to the log directory for reference
-tryCatch(
-  file_copy(in_gams_curdir(GAMS_FILE_PATH), path(log_dir, str_glue("_{str_sub(basename(GAMS_FILE_PATH), 1, -5)}_{predicted_cluster}.gms")), overwrite=TRUE),
-  error=function(cond) {
-    file_delete(bundle_path)
-    message(cond)
-    stop(str_glue("Cannot copy the configured GAMS_FILE_PATH file to {log_dir}"))
-  }
-)
-
 # Apply settings to BAT_TEMPLATE and write the batch file / shell script to launch jobs with
 bat_path <- path(log_dir, str_glue("_launch_{predicted_cluster}.bat"))
 bat_conn<-file(bat_path, open="wt")
