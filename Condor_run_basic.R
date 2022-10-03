@@ -743,6 +743,24 @@ rm(selected_by)
 
 # ---- Seed available execution points with the bundle ----
 
+# Lock submission or wait for submission lock to disappear.
+# Use a lock file in the parent temporary directory available to all R sessions.
+# This prevents parallel submissions from causing unpredicatable increments to
+# the cluster sequence number.
+lock_file <- path(dirname(tempdir()), "Condor_run_R_submission.lock")
+while(file_exists(lock_file)) {
+  message(str_glue("Submission lock file {lock_file} exists, another submission must be ongoing."))
+  message("Waiting for the submission lock file to disappear...")
+  Sys.sleep(30)
+}
+file_create(lock_file)
+
+# Use a finalizer to ensure deletion of the lock file on exit or gc()
+lock <- new.env()
+invisible(reg.finalizer(lock, function(lock) {
+  file_delete(lock_file)
+}, onexit=TRUE))
+
 # Define a unique bundle file name for the execute point side. This serves
 # to keep multiple cached bundles separate. Expanded via str_glue() in the
 # BAT templates.
@@ -946,6 +964,12 @@ if (cluster != predicted_cluster) {
   stop(str_glue("Submission cluster number {cluster} not equal to prediction {predicted_cluster}! You probably submitted something else via Condor while this submission was ongoing, causing the cluster number (sequence count of your submissions) to increment. As a result, log files have been named with a wrong cluster number.\n\nPlease do not submit additional Condor jobs until after a submission has completed. Note that this does not mean that you have to wait for the run to complete before submitting further runs, just wait for the submission to make it to the point where the execution points have been handed the jobs. Please try again.\n\nYou should first remove the run's jobs with: condor_rm {cluster}."))
 }
 
+# Submission successful, delete the submission lock file by triggering its deletion finalizer
+rm(lock)
+invisible(gc())
+rm(lock_file)
+message("It is now possible to submit additional runs.")
+
 # Log a listing of the bundle contents
 contents_list <- list_7z(bundle_path)
 list_conn <- file(path(log_dir, str_glue("_bundle_{cluster}_contents.txt")), open="wt")
@@ -966,8 +990,6 @@ if (RETAIN_BUNDLE) {
 file_delete(bundle_path)
 message(str_glue('Run "{LABEL}" with cluster number {cluster} has been submitted.'))
 message(str_glue("Run log directory: {path_abs(log_dir)}"))
-# TODO: delete lockfile here
-message("It is now possible to submit additional runs.")
 
 # Log the cluster number if requested. If you parse the above stdout, you can parse out the cluster number.
 # If you cannot capture the stdout, you can request the cluster number to be logged by specifying a log file
