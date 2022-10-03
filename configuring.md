@@ -311,7 +311,7 @@ Default value: `c("output.RData")`
 
 Synonym: OUTPUT_FILE
 
-Name(s) of the output file(s) as produced by a job on the execution point. Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred back to the submit machine.
+Name(s) of the output file(s) as produced by a job on the execution point. Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred back to the submit machine.
 
 ## `Condor_run.R`-specific optional configuration parameters
 
@@ -337,7 +337,7 @@ Directory on the submit machine into where `.g00` job work/save files are transf
 
 Default value: `""`
 
-Name of work/save file produced by a job on the execution point the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
+Name of work/save file produced by a job on the execution point the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred to the submit machine.
 
 ### GET_GDX_OUTPUT
 
@@ -361,7 +361,7 @@ Directory on the submit machine into where GDX job output files are transferred.
 
 Default value: `""`
 
-Name of the GDX output file produced by a job on the execution point the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with [`LABEL`](#label) and cluster/job numbers to avoid name collisions when transferred to the submit machine.
+Name of the GDX output file produced by a job on the execution point the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred to the submit machine.
 
 ### AVAILABLE_GAMS_VERSIONS
 
