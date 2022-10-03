@@ -912,6 +912,7 @@ tryCatch(
   }
 )
 file_delete(temp_config_file)
+rm(temp_config_file)
 
 # Apply settings to BAT_TEMPLATE and write the batch file / shell script to launch jobs with
 bat_path <- path(log_dir, str_glue("_launch_{predicted_cluster}.bat"))

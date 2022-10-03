@@ -398,11 +398,14 @@ if (str_detect(GAMS_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G
   if (str_detect(RESTART_FILE_PATH, fixed("../"))) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: you may not go up to parent directories using ../"))
   if (str_detect(RESTART_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured RESTART_FILE_PATH has forbidden character(s)! Use / as path separator."))
 }
+
 version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
 if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
 if (!(GAMS_VERSION %in% AVAILABLE_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The GAMS-capable execution points have only these GAMS versions installed: {str_c(AVAILABLE_GAMS_VERSIONS, collapse=" ")}'))
 dotless_gams_version <- str_glue(version_match[2], version_match[3])
 major_gams_version <- version_match[2]
+rm(version_match)
+
 if (length(JOBS) < 1 && !str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
 if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
 
@@ -473,6 +476,7 @@ if (RESTART_FILE_PATH != "") {
     }
   }
 }
+rm(dotless_gams_version)
 
 # Get username in a way that works on MacOS, Linux, and Windows
 username <- Sys.getenv("USERNAME")
@@ -529,7 +533,6 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
 }
 
 # Add any GAMS restart file to the bundle
-restart_size <- 0
 if (RESTART_FILE_PATH != "") {
   # Bundle separately so that base directory can be added to BUNDLE_EXCLUDE_DIRS
   cat("Bundling restart file...\n")
@@ -1030,6 +1033,7 @@ tryCatch(
   }
 )
 file_delete(temp_config_file)
+rm(temp_config_file)
 
 # Apply settings to BAT_TEMPLATE and write the batch file / shell script to launch jobs with
 bat_path <- path(log_dir, str_glue("_launch_{predicted_cluster}.bat"))
