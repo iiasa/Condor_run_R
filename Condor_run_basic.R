@@ -296,7 +296,6 @@ if (exists("config_file_arg")) {
   tryCatch(
     file_copy(config_file_arg, temp_config_file, overwrite=TRUE),
     error=function(cond) {
-      file_delete(bundle_path)
       message(cond)
       stop(str_glue("Cannot make a copy of the configuration file {config_file_arg}!"))
     }
@@ -447,13 +446,11 @@ if (BUNDLE_ONLY) {
       file_copy(bundle_path, bundle_copy_path, overwrite = TRUE)
     },
     error=function(cond) {
-      file_delete(bundle_path)
       message(cond)
       warning("Could not make a reference copy of the bundle!")
     }
   )
   rm(bundle_list_path, bundle_copy_path)
-  file_delete(bundle_path) # Delete the copied bundle in the temp directory
   q(save = "no")
 }
 
@@ -781,7 +778,6 @@ for (hostdom in hostdoms) {
   for (s in names(SEED_JOB_OVERRIDES)) {
     ov <- str_starts(seed_job_lines, s)
     if (!any(ov)) {
-      file_delete(bundle_path)
       stop(str_glue("Could not apply SEED_JOB_OVERRIDES! No line in job template starting with '{s}'."))
     }
     seed_job_lines[ov] <- str_glue(SEED_JOB_OVERRIDES[[s]])
@@ -817,7 +813,6 @@ for (hostdom in hostdoms) {
       tries_left <- 0
       cluster <- as.integer(str_match(tail(grep(cluster_regexp, outerr, value=TRUE), 1), cluster_regexp)[2])
       if (is.na(cluster)) {
-        file_delete(bundle_path)
         stop("Cannot extract cluster number from condor_submit output!")
       }
       clusters <- c(clusters, cluster)
@@ -829,7 +824,6 @@ for (hostdom in hostdoms) {
 
 # Stop when none of the condor_submit invocations returned a cluster number
 if (length(clusters) == 0) {
-  file_delete(bundle_path)
   stop("No seed jobs could be submitted!")
 }
 
@@ -844,7 +838,6 @@ rm(clusters)
 # Check if any seed jobs produced .log files
 if (!any(file_exists(path(log_dir, str_glue("_seed_{hostnames}.log"))))) {
   message("None of the seed jobs produced a .log file!")
-  file_delete(bundle_path)
   stop(str_glue("Aborting, see https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#seeding-fails-or-jobs-go-on-hold-without-producing-matching-log-files for possible solutions."))
 }
 
@@ -857,7 +850,6 @@ rm(return_values, err_file_sizes)
 
 # Check whether seed jobs failed
 if (all(failed_seeds)) {
-  file_delete(bundle_path)
   stop(str_glue("All seed jobs failed! For details, see the _seed_* files in {log_dir}. The likely cause is explained here: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
 }
 if (any(failed_seeds)) {
@@ -903,7 +895,6 @@ config_file <- path(log_dir, str_glue("_config_{predicted_cluster}.R"))
 tryCatch(
   file_copy(temp_config_file, config_file, overwrite=TRUE),
   error=function(cond) {
-    file_delete(bundle_path)
     message(cond)
     stop(str_glue("Cannot copy the configuration from {temp_config_file} to {log_dir}!"))
   }
@@ -930,7 +921,6 @@ job_lines <- unlist(lapply(JOB_TEMPLATE, str_glue))
 for (s in names(JOB_OVERRIDES)) {
   ov <- str_starts(job_lines, s)
   if (!any(ov)) {
-    file_delete(bundle_path)
     stop(str_glue("Could not apply JOB_OVERRIDES! No line in job template starting with '{s}'."))
   }
   job_lines[ov] <- str_glue(JOB_OVERRIDES[[s]])
@@ -945,17 +935,14 @@ rm(job_conn, job_lines, s)
 outerr <- system2("condor_submit", args=job_file, stdout=TRUE, stderr=TRUE)
 cat(outerr, sep="\n")
 if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-  file_delete(bundle_path)
   stop("Submission of Condor run failed!")
 }
 cluster <- as.integer(str_match(tail(grep(cluster_regexp, outerr, value=TRUE), 1), cluster_regexp)[2])
 if (is.na(cluster)) {
-  file_delete(bundle_path)
   stop("Cannot extract cluster number from condor_submit output!")
 }
 if (cluster != predicted_cluster) {
   # system2("condor_rm", args=str_glue("{cluster}")) # should do this, but it does not work due to some weird Condor/R/Windows bug.
-  file_delete(bundle_path)
   stop(str_glue("Submission cluster number {cluster} not equal to prediction {predicted_cluster}! You probably submitted something else via Condor while this submission was ongoing, causing the cluster number (sequence count of your submissions) to increment. As a result, log files have been named with a wrong cluster number.\n\nPlease do not submit additional Condor jobs until after a submission has completed. Note that this does not mean that you have to wait for the run to complete before submitting further runs, just wait for the submission to make it to the point where the execution points have been handed the jobs. Please try again.\n\nYou should first remove the run's jobs with: condor_rm {cluster}."))
 }
 
