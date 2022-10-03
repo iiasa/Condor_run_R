@@ -107,7 +107,7 @@ JOB_TEMPLATE <- c(
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
   'transfer_output_files = {str_sub(in_gams_curdir(GAMS_FILE_PATH), 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{in_gams_curdir(G00_OUTPUT_DIR)}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{in_gams_curdir(GDX_OUTPUT_DIR)}/{GDX_OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{str_sub(GAMS_FILE_PATH, 1, -5)}.lst={log_dir}/{PREFIX}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}_{LABEL}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}_{LABEL}_$(cluster).$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_output_remaps = "{str_sub(GAMS_FILE_PATH, 1, -5)}.lst={log_dir}/{PREFIX}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}_{LABEL}_$(cluster).$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}.$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -440,21 +440,20 @@ if (GET_GDX_OUTPUT) {
   if (str_detect(GDX_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
   if (str_detect(GDX_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
   if (str_sub(GDX_OUTPUT_FILE, -4) != ".gdx") stop(str_glue("Configured GDX_OUTPUT_FILE has no .gdx extension!"))
-  if (str_length(GDX_OUTPUT_FILE) <= 4) stop(str_glue("Configured GDX_OUTPUT_FILE needs more than an extension!"))
+  if (str_length(GDX_OUTPUT_FILE) <= 4) stop(str_glue("Configured GDX_OUTPUT_FILE must contain more than only an extension!"))
   if (str_detect(GDX_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GDX_OUTPUT_FILE has forbidden character(s)!"))
-  gdx_prefix <- str_sub(GDX_OUTPUT_FILE, 1, -5) # used only when GET_GDX_OUTPUT == TRUE
 }
+
 if (MERGE_GDX_OUTPUT && !GET_GDX_OUTPUT) stop("Cannot MERGE_GDX_OUTPUT without first doing GET_GDX_OUTPUT!")
 if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT without first doing WAIT_FOR_RUN_COMPLETION!")
 if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX_FILES without first doing MERGE_GDX_OUTPUT!")
 if (MERGE_GDX_OUTPUT) check_on_path("gdxmerge")
 
-# Though not utlized unless GET_G00_OUTPUT or GET_GDX_OUTPUT are TRUE, the below variables are
+# Though not utilized unless GET_G00_OUTPUT or GET_GDX_OUTPUT are TRUE, the below variables are
 # used in conditional string expansion via str_glue() such that the non-use is enacted only
 # only after the expansion already happened. Hence we need to assign some dummy values here when
 # when no assignment happened above.
 if (!exists("g00_prefix")) g00_prefix <- ""
-if (!exists("gdx_prefix")) gdx_prefix <- ""
 if (is.null(G00_OUTPUT_DIR_SUBMIT)) G00_OUTPUT_DIR_SUBMIT <- ""
 if (is.null(GDX_OUTPUT_DIR_SUBMIT)) GDX_OUTPUT_DIR_SUBMIT <- ""
 
@@ -1051,6 +1050,10 @@ writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
 
+# Generate GDX output file remapping prefixes for keeping output files of different runs separate.
+# Separating the output files of different jobs within a run is handled in the job template.
+gdx_prefix <- ifelse(GET_GDX_OUTPUT, str_glue("{tools::file_path_sans_ext(GDX_OUTPUT_FILE)}_{predicted_cluster}"), "")
+
 # Apply settings to job template and write the .job file to use for submission
 job_file <- path(log_dir, str_glue("_submit_{predicted_cluster}.job"))
 job_conn<-file(job_file, open="wt")
@@ -1131,7 +1134,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
     g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, "{g00_prefix}_{LABEL}_{cluster}.{job}.g00")
   }
   if (GET_GDX_OUTPUT) {
-    gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR_SUBMIT, '{gdx_prefix}_{LABEL}_{cluster}.{sprintf("%06d", job)}.gdx')
+    gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR_SUBMIT, '{gdx_prefix}.{sprintf("%06d", job)}.gdx')
   }
 
   return_values <- get_return_values(path(log_dir, str_glue("{PREFIX}_{cluster}.{JOBS}.log")))
@@ -1219,8 +1222,8 @@ if (WAIT_FOR_RUN_COMPLETION) {
       if (exists("MERGE_EXCLUDE") && !is.null(MERGE_EXCLUDE) && (MERGE_EXCLUDE != "")) {
         merge_args <- c(merge_args, str_glue("exclude={MERGE_EXCLUDE}"))
       }
-      merge_args <- c(merge_args, str_glue("{gdx_prefix}_{LABEL}_{cluster}.*.gdx"))
-      merge_args <- c(merge_args, str_glue("output={gdx_prefix}_{LABEL}_{cluster}_merged.gdx"))
+      merge_args <- c(merge_args, str_glue("{gdx_prefix}.*.gdx"))
+      merge_args <- c(merge_args, str_glue("output={gdx_prefix}_merged.gdx"))
       # Invoke GDX merge
       error_code <- system2("gdxmerge", args=merge_args)
       setwd(prior_wd)
@@ -1228,7 +1231,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
       # Delete merged GDX files if so requested
       if (REMOVE_MERGED_GDX_FILES) {
         for (job in JOBS) {
-          file_delete(path(GDX_OUTPUT_DIR_SUBMIT, str_glue('{gdx_prefix}_{LABEL}_{cluster}.{sprintf("%06d", job)}.gdx')))
+          file_delete(path(GDX_OUTPUT_DIR_SUBMIT, str_glue('{gdx_prefix}.{sprintf("%06d", job)}.gdx')))
         }
       }
     }
@@ -1243,6 +1246,6 @@ if (WAIT_FOR_RUN_COMPLETION) {
     cat(str_glue("After the run completes, you can find the G00 results at: {G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}_{LABEL}_{cluster}.*.g00"), sep="\n")
   }
   if (GET_GDX_OUTPUT) {
-    cat(str_glue("After the run completes, you can find the GDX results at: {GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}_{LABEL}_{cluster}.*.gdx"), sep="\n")
+    cat(str_glue("After the run completes, you can find the GDX results at: {GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}.*.gdx"), sep="\n")
   }
 }
