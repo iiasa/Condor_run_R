@@ -86,8 +86,6 @@ Synonyms: NAME, EXPERIMENT, PROJECT
 
 Label/name of your project/experiment that is conducted by performing the run. This label will be used to name the [log directory of the run](#condor_dir). This directory is created when it does not exist. The LABEL should therefore be short and contain only characters that are valid directory names. You can use `{}` expansions as part of the label.
 
-Note that a unique run sequence number (the Condor "cluster" number) will be used to (re)name the output files, log files, and other run artifacts so that name collisions are avoided. It is therefore handy to have an easy means to obtain the cluster number when in need of performing automated processing of output files after run completion. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
-
 ### PREFIX
 
 Default value: `"job"`
@@ -313,6 +311,8 @@ Synonym: OUTPUT_FILE
 
 Name(s) of the output file(s) as produced by a job on the execution point. Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred back to the submit machine.
 
+**:point_right:Note:** to automatically process output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
+
 ## `Condor_run.R`-specific optional configuration parameters
 
 ### GET_G00_OUTPUT
@@ -339,6 +339,8 @@ Default value: `""`
 
 Name of work/save file produced by a job on the execution point the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred to the submit machine.
 
+**:point_right:Note:** to automatically process G00 output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
+
 ### GET_GDX_OUTPUT
 
 Default value: `FALSE`
@@ -362,6 +364,8 @@ Directory on the submit machine into where GDX job output files are transferred.
 Default value: `""`
 
 Name of the GDX output file produced by a job on the execution point the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred to the submit machine.
+
+**:point_right:Note:** to automatically process GDX output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
 
 ### AVAILABLE_GAMS_VERSIONS
 
