@@ -6,7 +6,7 @@ To set up an initial configuration file, copy (do *not* cut) the code block with
 
 After completing the above, you have the mandatory configuration parameters in your configuration flie. Their values will need to be adapted. Please see the documentation of these parameters to learn what they do. You may also wish to add some of the optional configuration parameters. Their defaults are located below the last *snippy snappy* comment. These concern configuration settings with default values that will work for most people.
 
-Your configuration may need adaptation to the particulars of your Condor cluster. For example, [`REQUIREMENTS`](#requirements) filters execution points based on their capabilities as advertised via their the Condor configuration of each execute point. Also, you may need to [adapt templates](#templates). For general information on Condor cluster configuration in support of the `Condor_run_R` submit scripts, see [this page](condor.md). For details on the specific configuration of your Condor cluster, ask your cluster administrator.
+Your configuration may need adaptation to the particulars of your Condor cluster. For example, [`REQUIREMENTS`](#requirements) filters execution points based on their capabilities as advertised via their the Condor configuration of each execution point. Also, you may need to [adapt templates](#templates). For general information on Condor cluster configuration in support of the `Condor_run_R` submit scripts, see [this page](condor.md). For details on the specific configuration of your Condor cluster, ask your cluster administrator.
 
 IIASA GLOBIOM developers can start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R` which is adapted to the Limpopo cluster. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`. For more information, see the GLOBIOM wiki [here](https://github.com/iiasa/GLOBIOM/wiki/Running-scenarios-in-parallel-on-Limpopo#configuration).
 
@@ -30,7 +30,7 @@ Typically, the script that is run when your jobs are started accepts the job num
 
 ### REQUEST_MEMORY
 
-An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execution point (EP) when the sum of their memory requests exceeds the memory allocated to the execution slot of on the execute point. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the EP at risk of running out of memory, which can endanger other jobs as well. It is therefore important to configure a good estimate.
+An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execution point (EP) when the sum of their memory requests exceeds the memory allocated to the execution slot of on the execution point. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the EP at risk of running out of memory, which can endanger other jobs as well. It is therefore important to configure a good estimate.
 
 You can find a job's actual, requested, and allocated memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
 
@@ -170,7 +170,7 @@ Override lines in the `.job` files generated from [`SEED_JOB_TEMPLATE`](#seed_jo
 
 Default value: `0`
 
-Number of times to auto-release (retry) held bundle-seeding jobs before giving up. Not retrying—by using the 0 default value—is fine when you have plenty of execution points (EPs) in the cluster: execute points that could not receive the bundle are assumed to be unavailable and will be excluded from the subsequent job submission stage. The execute points that could receive the bundle will still process your jobs.
+Number of times to auto-release (retry) held bundle-seeding jobs before giving up. Not retrying—by using the 0 default value—is fine when you have plenty of execution points (EPs) in the cluster: execution points that could not receive the bundle are assumed to be unavailable and will be excluded from the subsequent job submission stage. The execution points that could receive the bundle will still process your jobs.
 
 When the cluster has only one or a couple of EPs, or there are intermittent failures on account of networking issues, it may be worthwhile to retry a few times. This can make the seeding process take longer.
 
@@ -213,7 +213,7 @@ the `requirements` command of the [submit description file](https://htcondor.rea
 
 Default value: `.*`
 
-A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select a subset of execute points from the cluster by hostname. Jobs will be scheduled only on the machines thus selected. The default value selects all available EPs.
+A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select a subset of execution points from the cluster by hostname. Jobs will be scheduled only on the machines thus selected. The default value selects all available EPs.
 
 ### REQUEST_CPUS
 
@@ -323,7 +323,7 @@ Default value: `FALSE`
 
 Default value: `""`
 
-When set (changed from its `""` default), this configures the directory for storing work/save output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execute point (EP) and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
+When set (changed from its `""` default), this configures the directory for storing work/save output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execution point (EP) and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
 
 When set and when `G00_OUTPUT_DIR` does not exist on the EP the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` will create it.
 
