@@ -73,12 +73,6 @@ By transferring the bundle once for each EP instead of once for each job in the 
 
 When a job is run on an EP, the cached bundle is decompressed in a scratch directory. This creates the file tree that the job needs to run. By passing the job number to the main script of the job, each job in the run can customize the calculation even though it is using the same bundle as input, e.g. by using the job number to select one scenario out of a collection of scenarios.
 
-**⚠️Beware:** only when the jobs of the run are queued can an additional run be submitted. This is after the submit script prints the message
-
-`It is now possible to submit additional runs.`
-
-The submit script enforces this by using the bundle as a lock file. If you abort the script or an error occurs before the above message appears, you will need to remove the bundle to free the lock. The script will throw an explanatory error until you do.
-
 ## Use
 
 Invoke the submit script via `Rscript`. Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. Both take a `.R` configuration file as only argument. Follow [these steps](configuring.md) to set up a configuration file. An example invocation is:
