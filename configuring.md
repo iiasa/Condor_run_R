@@ -150,7 +150,7 @@ Set to `TRUE` to test only the bundling without subsequent submission. The 7-Zip
 
 Default value: `FALSE`
 
-Retain the bundle in the [log directory of the run](#condor_dir) when set to `TRUE`. Can be useful for locally analyzing execute-point-side issues with jobs.
+Retain the bundle in the [log directory of the run](#condor_dir) when set to `TRUE`. Can be useful for locally analyzing execution-point-side issues with jobs.
 
 ### RETAIN_SEED_ARTIFACTS
 
@@ -229,7 +229,7 @@ The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CP
 
 Default value: `1000000`
 
-An estimate of the amount of execute-point-side disk space required per job for storing intermediate and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add to the uncompressed size of the bundle to yield an estimate of the overall storage requirement of the job. This sum is used to allocate disk space for a job when it is started on an EP.
+An estimate of the amount of execution-point-side disk space required per job for storing intermediate and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add to the uncompressed size of the bundle to yield an estimate of the overall storage requirement of the job. This sum is used to allocate disk space for a job when it is started on an EP.
   
 You can find a job's actual, requested (with added uncompressed bundle size), and allocated disk space at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
 
