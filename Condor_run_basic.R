@@ -173,9 +173,6 @@ config_types <- lapply(lapply(config_names, get), typeof)
 suppressWarnings(library(fs))
 suppressWarnings(library(stringr))
 
-# Get the platform file separator: .Platform$file.sep is set to / on Windows
-fsep <- ifelse(str_detect(tempdir(), fixed("\\") ), "\\", ".Platform$file.sep")
-
 # ---- Define helper functions ----
 
 # Check that the given binaries are on-path
@@ -384,9 +381,13 @@ if (!dir_exists(log_dir)) dir_create(log_dir)
 
 # ---- Bundle the files needed to run the jobs ----
 
+# Get the platform file separator: .Platform$file.sep is set to / on Windows
+fsep <- ifelse(str_detect(tempdir(), fixed("\\") ), "\\", ".Platform$file.sep")
+
 # Construct R and platform-specific paths for the bundle.
 bundle_path <- path(tempdir(), "_bundle.7z")
 bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
+rm(fsep)
 
 # Include/exclude files in/from bundle
 args_for_7z <- unlist(lapply(c(
@@ -421,36 +422,51 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   rm(af, args_for_7z, size)
   cat("\n")
 }
-rm(bundle_platform_path)
+rm(bundle_platform_path, bundle_with_7z)
 
 # Add uncompressed bundle size to the disk request in KiB
 REQUEST_DISK <- REQUEST_DISK + ceiling(added_size / 1024)
 rm(added_size)
 
-# Keep bundle and its contents list for reference and quit when configured to
-# only perform the bundling.
+# List the bundle contents to tempdir()
+bundle_list_path <- path(tempdir(), "_bundle_contents.txt")
+tryCatch({
+    list_conn <- file(bundle_list_path, open="wt")
+    writeLines(list_7z(bundle_path), con = list_conn)
+    close(list_conn)
+    rm(list_conn)
+  },
+  error=function(cond) {
+    message(cond)
+    warning("Could not list the bundle content!")
+  }
+)
+
+# Retain the bundle and its contents list in the log directory and quit when configured to only perform the bundling.
 if (BUNDLE_ONLY) {
-  bundle_list_path <- path(log_dir, str_glue("_bundle_contents.txt"))
-  bundle_copy_path <- path(log_dir, str_glue("_bundle.7z"))
-  message(str_glue("BUNDLE_ONLY = TRUE: listing the bundle content to {bundle_list_path} for reference, copying the bundle to {bundle_copy_path} for inspection, and quitting."))
   tryCatch({
-      # List the bundle
-      contents_list <- list_7z(bundle_path)
-      list_conn <- file(bundle_list_path, open="wt")
-      writeLines(contents_list, con = list_conn)
-      close(list_conn)
-      # Display the bundle content
-      cat(contents_list, sep="\n")
-      rm(contents_list, list_conn)
-      # Copy the bundle
-      file_copy(bundle_path, bundle_copy_path, overwrite = TRUE)
+      bundle_log_path <- path(log_dir, "_bundle.7z")
+      # Move the bundle to the log directory
+      file_move(bundle_path, bundle_log_path)
+      message(str_glue("Retaining the bundle at {bundle_log_path}"))
+      rm(bundle_log_path, bundle_path)
     },
     error=function(cond) {
       message(cond)
-      warning("Could not make a reference copy of the bundle!")
+      warning("Could not retain bundle!")
     }
   )
-  rm(bundle_list_path, bundle_copy_path)
+  tryCatch({
+      bundle_list_log_path <- path(log_dir, "_bundle_contents.txt")
+      file_move(bundle_list_path, bundle_list_log_path)
+      message(str_glue("Retaining the bundle contents list at {bundle_list_log_path}"))
+      rm(bundle_list_log_path, bundle_list_path)
+    },
+    error=function(cond) {
+      message(cond)
+      warning("Could not retain bundle contents list file!")
+    }
+  )
   q(save = "no")
 }
 
@@ -906,19 +922,49 @@ if (length(hostnames) == 1) {
 cat("\n")
 rm(hostnames)
 
-# ---- Prepare files for run ----
+# ---- Retain artifacts in log directory ----
 
-# Move the configuration from the temp to the log directory so as to have a persistent reference
-config_file <- path(log_dir, str_glue("_config_{predicted_cluster}.R"))
-tryCatch(
-  file_copy(temp_config_file, config_file, overwrite=TRUE),
+# Retain the bundle if so requested, otherwise delete it.
+if (RETAIN_BUNDLE) {
+  tryCatch({
+      bundle_log_path <- path(log_dir, str_glue("_bundle_{predicted_cluster}.7z"))
+      file_move(bundle_path, bundle_log_path)
+      message(str_glue("Retaining the bundle at {bundle_log_path}"))
+      rm(bundle_log_path)
+    },
+    error=function(cond) {
+      message(cond)
+      stop("Could not retain bundle!")
+    }
+  )
+} else {
+  file_delete(bundle_path)
+}
+rm(bundle_path)
+
+# Retain the bundle contents list file
+tryCatch({
+    file_move(bundle_list_path, path(log_dir, str_glue("_bundle_contents_{predicted_cluster}.txt")))
+  },
   error=function(cond) {
     message(cond)
-    stop(str_glue("Cannot copy the configuration from {temp_config_file} to {log_dir}!"))
+    warning("Could not retain bundle contents list file!")
   }
 )
-file_delete(temp_config_file)
+rm(bundle_list_path)
+
+# Retain the configuration file
+config_file <- path(log_dir, str_glue("_config_{predicted_cluster}.R"))
+tryCatch(
+  file_move(temp_config_file, config_file),
+  error=function(cond) {
+    message(cond)
+    stop(str_glue("Failed to move the configuration from {temp_config_file} to {log_dir}!"))
+  }
+)
 rm(temp_config_file)
+
+# ---- Prepare files for run ----
 
 # Apply settings to BAT_TEMPLATE and write the batch file / shell script to launch jobs with
 bat_path <- path(log_dir, str_glue("_launch_{predicted_cluster}.bat"))
@@ -968,26 +1014,8 @@ if (cluster != predicted_cluster) {
 rm(lock)
 invisible(gc())
 rm(lock_file)
-message("It is now possible to submit additional runs.")
 
-# Log a listing of the bundle contents
-contents_list <- list_7z(bundle_path)
-list_conn <- file(path(log_dir, str_glue("_bundle_{cluster}_contents.txt")), open="wt")
-writeLines(contents_list, con = list_conn)
-close(list_conn)
-rm(contents_list, list_conn)
-
-# Retain the bundle if so requested, then delete it from the temporary directory
-if (RETAIN_BUNDLE) {
-  tryCatch(
-    file_copy(bundle_path, path(log_dir, str_glue("_bundle_{cluster}.7z"))),
-    error=function(cond) {
-      message(cond)
-      warning("Could not make a reference copy of bundle as requested via RETAIN_BUNDLE!")
-    }
-  )
-}
-file_delete(bundle_path)
+# Report successful submission to the user
 message(str_glue('Run "{LABEL}" with cluster number {cluster} has been submitted.'))
 message(str_glue("Run log directory: {path_abs(log_dir)}"))
 
