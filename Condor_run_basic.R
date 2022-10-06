@@ -241,13 +241,9 @@ list_7z <- function(archive_path) {
 # Check whether the given directory path can be excluded without
 # conflicting with any of the BUNDLE_INCLUDE_* parameters.
 excludable <- function(dir_path) {
-  if (path_has_parent(BUNDLE_INCLUDE, dir_path)) return(FALSE)
-  for (f in BUNDLE_INCLUDE_FILES) {
-    if (path_has_parent(f, dir_path)) return(FALSE)
-  }
-  for (d in BUNDLE_INCLUDE_DIRS) {
-    if (path_has_parent(d, dir_path)) return(FALSE)
-  }
+  if (any(path_has_parent(BUNDLE_INCLUDE, dir_path))) return(FALSE)
+  if (any(path_has_parent(BUNDLE_INCLUDE_FILES, dir_path))) return(FALSE)
+  if (any(path_has_parent(BUNDLE_INCLUDE_DIRS, dir_path))) return(FALSE)
   return(TRUE)
 }
 
