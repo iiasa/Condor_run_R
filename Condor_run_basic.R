@@ -418,13 +418,7 @@ if (!dir_exists(log_dir)) dir_create(log_dir)
 
 # ---- Bundle the files needed to run the jobs ----
 
-# Get the platform file separator: .Platform$file.sep is set to / on Windows
-fsep <- ifelse(str_detect(tempdir(), fixed("\\") ), "\\", ".Platform$file.sep")
-
-# Construct R and platform-specific paths for the bundle.
 bundle_path <- path(tempdir(), "_bundle.7z")
-bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
-rm(fsep)
 
 # Include/exclude files in/from bundle
 args_for_7z <- unlist(lapply(c(
@@ -435,7 +429,7 @@ args_for_7z <- unlist(lapply(c(
   unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
   ifelse(excludable(CONDOR_DIR), "-xr!{CONDOR_DIR}", ""),
   ifelse(excludable(OUTPUT_DIR_SUBMIT), "-xr!{OUTPUT_DIR_SUBMIT}", ""),
-  bundle_platform_path,
+  bundle_path,
   "{BUNDLE_INCLUDE}"
 ), str_glue))
 cat("Compressing files into bundle...\n")
@@ -450,7 +444,7 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   for (af in BUNDLE_ADDITIONAL_FILES) {
     size <- bundle_with_7z(c(
       "a",
-      bundle_platform_path,
+      bundle_path,
       af
     ))
     added_size <- added_size + size$added
@@ -467,11 +461,11 @@ save(
 )
 size <- bundle_with_7z(c(
   "a",
-  bundle_platform_path,
+  bundle_path,
   path(tempdir(), CHECKPOINT_FILE)
 ))
 added_size <- added_size + size$added
-rm(size, bundle_platform_path, bundle_with_7z)
+rm(size, bundle_with_7z)
 
 # Add uncompressed bundle size to the disk request in KiB
 REQUEST_DISK <- REQUEST_DISK + ceiling(added_size / 1024)

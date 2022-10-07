@@ -520,13 +520,7 @@ if (!dir_exists(log_dir)) dir_create(log_dir)
 
 # ---- Bundle the files needed to run the jobs ----
 
-# Get the platform file separator: .Platform$file.sep is set to / on Windows
-fsep <- ifelse(str_detect(tempdir(), fixed("\\") ), "\\", ".Platform$file.sep")
-
-# Construct R and platform-specific paths for the bundle.
 bundle_path <- path(tempdir(), "_bundle.7z")
-bundle_platform_path <- str_replace_all(bundle_path, fixed(.Platform$file.sep), fsep)
-rm(fsep)
 
 # Include/exclude files in/from bundle
 args_for_7z <- unlist(lapply(c(
@@ -538,7 +532,7 @@ args_for_7z <- unlist(lapply(c(
   ifelse(excludable(CONDOR_DIR), "-xr!{CONDOR_DIR}", ""),
   ifelse(excludable(G00_OUTPUT_DIR_SUBMIT), "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
   ifelse(excludable(GDX_OUTPUT_DIR_SUBMIT), "-xr!{GDX_OUTPUT_DIR_SUBMIT}", ""),
-  bundle_platform_path,
+  bundle_path,
   "{BUNDLE_INCLUDE}"
 ), str_glue))
 cat("Compressing files into bundle...\n")
@@ -551,15 +545,14 @@ cat("\n")
 if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("Bundling additional files...\n")
   for (af in BUNDLE_ADDITIONAL_FILES) {
-    args_for_7z <- c(
+    size <- bundle_with_7z(c(
       "a",
-      bundle_platform_path,
+      bundle_path,
       af
-    )
-    size <- bundle_with_7z(args_for_7z)
+    ))
     added_size <- added_size + size$added
   }
-  rm(af, args_for_7z, size)
+  rm(af, size)
   cat("\n")
 }
 
@@ -567,12 +560,11 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
 if (RESTART_FILE_PATH != "") {
   # Bundle separately so that base directory can be added to BUNDLE_EXCLUDE_DIRS
   cat("Bundling restart file...\n")
-  args_for_7z <- c(
+  size <- bundle_with_7z(c(
     "a",
-    bundle_platform_path,
+    bundle_path,
     in_gams_curdir(RESTART_FILE_PATH)
-  )
-  size <- bundle_with_7z(args_for_7z)
+  ))
   added_size <- added_size + size$added
   rm(args_for_7z, size)
   cat("\n")
@@ -586,11 +578,11 @@ save(
 )
 size <- bundle_with_7z(c(
   "a",
-  bundle_platform_path,
+  bundle_path,
   path(tempdir(), CHECKPOINT_FILE)
 ))
 added_size <- added_size + size$added
-rm(size, bundle_platform_path, bundle_with_7z)
+rm(size, bundle_with_7z)
 
 # Add uncompressed bundle size to the disk request in KiB
 REQUEST_DISK <- REQUEST_DISK + ceiling(added_size / 1024)
