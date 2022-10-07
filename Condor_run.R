@@ -513,10 +513,6 @@ if (RESTART_FILE_PATH != "") {
 }
 rm(dotless_gams_version)
 
-# Get username in a way that works on MacOS, Linux, and Windows
-username <- Sys.getenv("USERNAME")
-if (username == "") username <- Sys.getenv("USER")
-if (username == "") stop("Cannot determine the username!")
 
 # Ensure that a log directory to hold the .log/.err/.out files and other artifacts exists for the run
 if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
@@ -950,6 +946,16 @@ now_seconds <- as.numeric(format(now_time, "%OS3"))
 now_millis <- round(1000 * (now_seconds - floor(now_seconds)))
 unique_bundle <- str_glue('bundle_{str_replace_all(now_time, "[- :]", "")}.{sprintf("%03d", now_millis)}.7z')
 rm(now_time, now_seconds, now_millis)
+
+# Get username in a way that works on MacOS, Linux, and Windows.
+#
+# The username does not affect how jobs run. It is only used to
+# divide the execution-point-side bundle cache directory into
+# per-user subdirectories where bundles are placed. This makes
+# troubleshooting on the EP side a bit easier.
+username <- Sys.getenv("USERNAME")
+if (username == "") username <- Sys.getenv("USER")
+if (username == "") stop("Cannot determine the username!")
 
 # Apply settings to  template and write batch file / shell script that launches jobs on the execution point 
 seed_bat <- path(tempdir(), str_glue("_seed.bat"))
