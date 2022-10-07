@@ -247,67 +247,77 @@ excludable <- function(dir_path) {
   return(TRUE)
 }
 
-# ---- Process environment and run config settings ----
+# ---- Check arguments and configuration settings ----
 
-# Read config file if specified via an argument, check presence and types.
+USAGE <- str_c("Usage:",
+               "[Rscript ]Condor_run_basic.R [--bundle-only] <config file>|<bundle file with .7z extension>",
+               "Full documentation: https://github.com/iiasa/Condor_run_R#use",
+               sep="\n")
+
+# Sanity check arguments
 args <- commandArgs(trailingOnly=TRUE)
+bundle_only <- FALSE
+file_arg <- args[[1]]
 if (length(args) == 0) {
-  stop("No configuration file argument supplied. For usage information, see: https://github.com/iiasa/Condor_run_R#use")
-} else if (length(args) == 1) {
-  # Check that the specified config file exists
-  config_file_arg <- args[1]
-  if (!(file_exists(config_file_arg))) stop(str_glue('Invalid command line argument: specified configuration file "{config_file}" does not exist!'))
-
-  # Remove mandatory config defaults from the global scope
-  rm(list=config_names[config_names %in% mandatory_config_names])
-  rm(mandatory_config_names)
-
-  # Source the config file, should add mandatory config settings to the global scope
-  source(config_file_arg, local=TRUE, echo=FALSE)
-
-  # Check that all config settings exist and have no weird value type
-  for (i in seq_along(config_names))  {
-    name <- config_names[i]
-    if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {config_file_arg}!"))
-    type <- typeof(get(name))
-    if (type != config_types[[i]] &&
-        config_types[[i]] != "integer" && # R has no stable numerical type
-        config_types[[i]] != "double" && # R has no stable numerical type
-        type != "NULL" && # allow for NULL
-        config_types[[i]] != "NULL" # allow for default vector being empty
-    ) stop(str_glue("{name} set to wrong type in {config_file_arg}, type should be {config_types[[i]]}"))
+  stop(str_c("No arguments!", USAGE, sep="\n"))
+} else if (length(args) > 2) {
+  stop(str_c("Too many arguments!", USAGE, sep="\n"))
+} else if (length(args) == 2) {
+  if (args[[1]] != "--bundle-only") {
+    stop(str_c("Invalid arguments!", USAGE, sep="\n"))
+  } else {
+    bundle_only <- TRUE
   }
-  rm(i, name, type)
-} else {
-  stop("Multiple arguments provided! Expecting at most a single configuration file argument.")
+  file_arg <- args[[2]]
 }
 rm(args)
-
-# Copy/write configuration to a file in the temp directory for reference early to minimize the risk of it being edited in the mean time
-temp_config_file <- path(tempdir(), str_glue("config.R"))
-if (exists("config_file_arg")) {
-  tryCatch(
-    file_copy(config_file_arg, temp_config_file, overwrite=TRUE),
-    error=function(cond) {
-      message(cond)
-      stop(str_glue("Cannot make a copy of the configuration file {config_file_arg}!"))
-    }
-  )
-  rm(config_file_arg)
-} else {
-  # No configuration file provided, write default configuration defined above (definition order is lost)
-  config_conn <- file(temp_config_file, open="wt")
-  for (i in seq_along(config_names)) {
-    if (config_types[i] == "character") {
-      writeLines(str_glue('{config_names[i]} = "{get(config_names[i])}"'), config_conn)
-    } else {
-      writeLines(str_glue('{config_names[i]} = {get(config_names[i])}'), config_conn)
-    }
-  }
-  close(config_conn)
-  rm(config_conn, i)
+if (bundle_only && tools::file_ext(file_arg) == "7z") {
+  stop(str_c("The --bundle-only argument does not apply when you already have a bundle!", USAGE, sep="\n"))
 }
-rm(config_names, config_types)
+if (tools::file_ext(file_arg) == "7z") {
+  stop("Submitting a bundle as yet unsupported!")
+}
+
+# Check that the specified file argument exists
+if (!(file_exists(file_arg))) stop(str_glue('Invalid command line argument: specified configuration file "{file_arg}" does not exist!'))
+
+# Remove mandatory config defaults from the global scope
+rm(list=config_names[config_names %in% mandatory_config_names])
+rm(mandatory_config_names)
+
+# Source the config file, should add mandatory config settings to the global scope
+source(file_arg, local=TRUE, echo=FALSE)
+
+# Check that all config settings exist and have no weird value type
+for (i in seq_along(config_names))  {
+  name <- config_names[i]
+  if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {file_arg}!"))
+  type <- typeof(get(name))
+  if (type != config_types[[i]] &&
+      config_types[[i]] != "integer" && # R has no stable numerical type
+      config_types[[i]] != "double" && # R has no stable numerical type
+      type != "NULL" && # allow for NULL
+      config_types[[i]] != "NULL" # allow for default vector being empty
+  ) stop(str_glue("{name} set to wrong type in {file_arg}, type should be {config_types[[i]]}"))
+}
+rm(type, name, i, config_types, config_names)
+
+# Override BUNDLE_ONLY when --bundle-only was provided as a command line argument
+if (bundle_only) {
+  BUNDLE_ONLY <- TRUE
+}
+rm(bundle_only)
+
+# Copy configuration file to temp directory to minimize the risk of it being edited in the mean time
+temp_config_file <- path(tempdir(), str_glue("config.R"))
+tryCatch(
+  file_copy(file_arg, temp_config_file, overwrite=TRUE),
+  error=function(cond) {
+    message(cond)
+    stop(str_glue("Cannot make a copy of the configuration file {file_arg}!"))
+  }
+)
+rm(file_arg)
 
 # Synonyms ensure backwards compatibility with old config namings and
 # allow a name choice that best fits the configuration value.
