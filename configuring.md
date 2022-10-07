@@ -144,7 +144,7 @@ Paths and wildcards specifying additional files to add to the bundle. When a pat
 
 Default value: `FALSE`
 
-Set to `TRUE` to test only the bundling without subsequent submission. The 7-Zip invocation command lines will be echoed to the console for reference. On completion of bundling, the submit script will quit with an explanatory message. The message states where a reference copy of the bundle is located so that you can inspect it. Also, the content of the bundle will be listed.
+Set to `TRUE` to perform only the bundling without subsequent submission. The 7-Zip invocation command lines will be echoed to the console for reference. On completion of bundling, the submit script will quit with explanatory messages stating where the bundle and a listing of its contents are located.
 
 ### RETAIN_BUNDLE
 
