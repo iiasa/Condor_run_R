@@ -340,9 +340,14 @@ if (bundle_only && tools::file_ext(file_arg) == "7z") {
   stop(str_c("The --bundle-only argument does not apply when you already have a bundle!", USAGE, sep="\n"))
 }
 
-# When passed a bundle, restart from checkpoint and skip to submission
+# When passed a bundle, extract and load checkpoint and skip to submission
 if (tools::file_ext(file_arg) == "7z") {
   extract_checkpoint(file_arg)
+  load(
+    file = path(tempdir(), CHECKPOINT_FILE),
+    envir = .GlobalEnv,
+    verbose = TRUE
+  )
   stop("Submitting a bundle as yet unsupported!")
 }
 
