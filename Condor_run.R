@@ -546,7 +546,20 @@ if (RESTART_FILE_PATH != "") {
   rm(args_for_7z, size)
   cat("\n")
 }
-rm(bundle_platform_path, bundle_with_7z)
+
+# Checkpoint environment minus functions into the bundle
+save(
+  list = ls()[lapply(lapply(ls(), get), typeof) != "closure"],
+  file = path(tempdir(), "checkpoint.RData"),
+  envir = .GlobalEnv
+)
+size <- bundle_with_7z(c(
+  "a",
+  bundle_platform_path,
+  path(tempdir(), "checkpoint.RData")
+))
+added_size <- added_size + size$added
+rm(size, bundle_platform_path, bundle_with_7z)
 
 # Add uncompressed bundle size to the disk request in KiB
 REQUEST_DISK <- REQUEST_DISK + ceiling(added_size / 1024)

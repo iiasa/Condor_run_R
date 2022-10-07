@@ -417,18 +417,30 @@ cat("\n")
 if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
   cat("Bundling additional files...\n")
   for (af in BUNDLE_ADDITIONAL_FILES) {
-    args_for_7z <- c(
+    size <- bundle_with_7z(c(
       "a",
       bundle_platform_path,
       af
-    )
-    size <- bundle_with_7z(args_for_7z)
+    ))
     added_size <- added_size + size$added
   }
-  rm(af, args_for_7z, size)
+  rm(af, size)
   cat("\n")
 }
-rm(bundle_platform_path, bundle_with_7z)
+
+# Checkpoint environment minus functions into the bundle
+save(
+  list = ls()[lapply(lapply(ls(), get), typeof) != "closure"],
+  file = path(tempdir(), "checkpoint.RData"),
+  envir = .GlobalEnv
+)
+size <- bundle_with_7z(c(
+  "a",
+  bundle_platform_path,
+  path(tempdir(), "checkpoint.RData")
+))
+added_size <- added_size + size$added
+rm(size, bundle_platform_path, bundle_with_7z)
 
 # Add uncompressed bundle size to the disk request in KiB
 REQUEST_DISK <- REQUEST_DISK + ceiling(added_size / 1024)
