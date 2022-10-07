@@ -286,8 +286,10 @@ in_gams_curdir <- function(path) {
 
 # ---- Check arguments and configuration settings ----
 
+CHECKPOINT_FILE = "submit_checkpoint.RData"
+API_VERSION <- "Condor_run.V1"
 USAGE <- str_c("Usage:",
-               "[Rscript ]Condor_run_basic.R [--bundle-only] <config file>|<bundle file with .7z extension>",
+               "[Rscript ]Condor_run.R [--bundle-only] <config file>|<bundle file with .7z extension>",
                "Full documentation: https://github.com/iiasa/Condor_run_R#use",
                sep="\n")
 
@@ -550,13 +552,13 @@ if (RESTART_FILE_PATH != "") {
 # Checkpoint environment minus functions into the bundle
 save(
   list = ls()[lapply(lapply(ls(), get), typeof) != "closure"],
-  file = path(tempdir(), "checkpoint.RData"),
+  file = path(tempdir(), CHECKPOINT_FILE),
   envir = .GlobalEnv
 )
 size <- bundle_with_7z(c(
   "a",
   bundle_platform_path,
-  path(tempdir(), "checkpoint.RData")
+  path(tempdir(), CHECKPOINT_FILE)
 ))
 added_size <- added_size + size$added
 rm(size, bundle_platform_path, bundle_with_7z)

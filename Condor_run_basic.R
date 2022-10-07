@@ -249,6 +249,8 @@ excludable <- function(dir_path) {
 
 # ---- Check arguments and configuration settings ----
 
+CHECKPOINT_FILE = "submit_checkpoint.RData"
+API_VERSION <- "Condor_run_basic.V1"
 USAGE <- str_c("Usage:",
                "[Rscript ]Condor_run_basic.R [--bundle-only] <config file>|<bundle file with .7z extension>",
                "Full documentation: https://github.com/iiasa/Condor_run_R#use",
@@ -431,13 +433,13 @@ if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
 # Checkpoint environment minus functions into the bundle
 save(
   list = ls()[lapply(lapply(ls(), get), typeof) != "closure"],
-  file = path(tempdir(), "checkpoint.RData"),
+  file = path(tempdir(), CHECKPOINT_FILE),
   envir = .GlobalEnv
 )
 size <- bundle_with_7z(c(
   "a",
   bundle_platform_path,
-  path(tempdir(), "checkpoint.RData")
+  path(tempdir(), CHECKPOINT_FILE)
 ))
 added_size <- added_size + size$added
 rm(size, bundle_platform_path, bundle_with_7z)
