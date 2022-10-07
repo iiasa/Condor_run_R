@@ -199,6 +199,14 @@ config_types <- lapply(lapply(config_names, get), typeof)
 suppressWarnings(library(fs))
 suppressWarnings(library(stringr))
 
+# Define constants
+CHECKPOINT_FILE = "submit_checkpoint.RData"
+API_VERSION <- "Condor_run_basic.V1"
+USAGE <- str_c("Usage:",
+               "[Rscript ]Condor_run_basic.R [--bundle-only] <config file>|<bundle file with .7z extension>",
+               "Full documentation: https://github.com/iiasa/Condor_run_R#use",
+               sep="\n")
+
 # ---- Define helper functions ----
 
 # Check that the given binaries are on-path
@@ -208,6 +216,31 @@ check_on_path <- function(binaries) {
     if (where[bin] == "") {
       stop(str_glue("Required binary/executable '{bin}' was not found! Please add its containing directory to the PATH environment variable."), call.=FALSE)
     }
+  }
+}
+
+# Extract checkpoint file with 7-Zip to tempdir()
+extract_checkpoint <- function(bundle_path) {
+  check_on_path("7z")
+  args_for_7z <- c(
+    "e",
+    str_glue("-o{tempdir()}"),
+    bundle_path,
+    CHECKPOINT_FILE
+  )
+  out <- system2("7z",
+                 stdout = TRUE,
+                 stderr = TRUE,
+                 args = args_for_7z
+  )
+  if (!is.null(attr(out, "status")) && attr(out, "status") != 0) {
+    message(
+      "7-Zip failed to extract checkpoint file from bundle.\nThe arguments for 7z were as follows:"
+    )
+    message(paste(args_for_7z, collapse = '\n'))
+    message("\nThe invocation of 7-Zip returned:")
+    message(paste(out, collapse = '\n'))
+    stop("Extraction failed!", call. = FALSE)
   }
 }
 
@@ -286,13 +319,6 @@ in_gams_curdir <- function(path) {
 
 # ---- Check arguments and configuration settings ----
 
-CHECKPOINT_FILE = "submit_checkpoint.RData"
-API_VERSION <- "Condor_run.V1"
-USAGE <- str_c("Usage:",
-               "[Rscript ]Condor_run.R [--bundle-only] <config file>|<bundle file with .7z extension>",
-               "Full documentation: https://github.com/iiasa/Condor_run_R#use",
-               sep="\n")
-
 # Sanity check arguments
 args <- commandArgs(trailingOnly=TRUE)
 bundle_only <- FALSE
@@ -313,7 +339,10 @@ rm(args)
 if (bundle_only && tools::file_ext(file_arg) == "7z") {
   stop(str_c("The --bundle-only argument does not apply when you already have a bundle!", USAGE, sep="\n"))
 }
+
+# When passed a bundle, restart from checkpoint and skip to submission
 if (tools::file_ext(file_arg) == "7z") {
+  extract_checkpoint(file_arg)
   stop("Submitting a bundle as yet unsupported!")
 }
 
