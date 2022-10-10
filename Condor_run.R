@@ -360,11 +360,10 @@ if (bundle_only && tools::file_ext(file_arg) == "7z") {
 
 # When passed a bundle, extract and load checkpoint and skip to submission
 if (tools::file_ext(file_arg) == "7z") {
-  bundle_path <- file_arg
   api <- API
   api_version <- API_VERSION
-  rm(file_arg, API, API_VERSION)
-  extract_checkpoint(bundle_path)
+  rm(API, API_VERSION)
+  extract_checkpoint(file_arg)
   tryCatch({
       load(
         file = path(tempdir(), CHECKPOINT_FILE),
@@ -377,6 +376,12 @@ if (tools::file_ext(file_arg) == "7z") {
       stop("Could not load checkpoint!")
     }
   )
+
+  # Override bundle_path loaded from checkpoint
+  bundle_path <- file_arg
+  rm(file_arg)
+
+  # Perform API checks
   if (!exists("API")) stop("No API in checkpoint!")
   if (!exists("API_VERSION")) stop("No API_VERSION in checkpoint!")
   if (API != api) {
