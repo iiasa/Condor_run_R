@@ -201,9 +201,10 @@ suppressWarnings(library(stringr))
 
 # Define constants
 CHECKPOINT_FILE = "submit_checkpoint.RData"
-API_VERSION <- "Condor_run_basic.V1"
+API <- "Condor_run"
+API_VERSION <- "v1"
 USAGE <- str_c("Usage:",
-               "[Rscript ]Condor_run_basic.R [--bundle-only] <config file>|<bundle file with .7z extension>",
+               "[Rscript ]Condor_run.R [--bundle-only] <config file>|<bundle file with .7z extension>",
                "Full documentation: https://github.com/iiasa/Condor_run_R#use",
                sep="\n")
 
@@ -311,13 +312,13 @@ in_gams_curdir <- function(path) {
   if (GAMS_CURDIR == "") {
     # Needed because path_norm() with an empty path builds an absolute path
     return(path)
-  } 
+  }
   else {
     return(path_norm(path(GAMS_CURDIR, path)))
   }
 }
 
-# ---- Check arguments and configuration settings ----
+# ---- Check arguments and bundle when passed ----
 
 # Sanity check arguments
 args <- commandArgs(trailingOnly=TRUE)
@@ -342,293 +343,319 @@ if (bundle_only && tools::file_ext(file_arg) == "7z") {
 
 # When passed a bundle, extract and load checkpoint and skip to submission
 if (tools::file_ext(file_arg) == "7z") {
-  extract_checkpoint(file_arg)
-  load(
-    file = path(tempdir(), CHECKPOINT_FILE),
-    envir = .GlobalEnv,
-    verbose = TRUE
+  bundle_path <- file_arg
+  api <- API
+  api_version <- API_VERSION
+  rm(file_arg, API, API_VERSION)
+  extract_checkpoint(bundle_path)
+  tryCatch({
+      load(
+        file = path(tempdir(), CHECKPOINT_FILE),
+        envir = .GlobalEnv,
+        verbose = TRUE
+      )
+    },
+    error=function(cond) {
+      message(cond)
+      stop("Could not load checkpoint!")
+    }
   )
-  stop("Submitting a bundle as yet unsupported!")
-}
-
-# Check that the specified file argument exists
-if (!(file_exists(file_arg))) stop(str_glue('Invalid command line argument: specified configuration file "{file_arg}" does not exist!'))
-
-# Remove mandatory config defaults from the global scope
-rm(list=config_names[config_names %in% mandatory_config_names])
-rm(mandatory_config_names)
-
-# Source the config file, should add mandatory config settings to the global scope
-source(file_arg, local=TRUE, echo=FALSE)
-
-# Check that all config settings exist and have no weird value type
-for (i in seq_along(config_names))  {
-  name <- config_names[i]
-  if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {file_arg}!"))
-  type <- typeof(get(name))
-  if (type != config_types[[i]] &&
-      config_types[[i]] != "integer" && # R has no stable numerical type
-      config_types[[i]] != "double" && # R has no stable numerical type
-      type != "NULL" && # allow for NULL
-      config_types[[i]] != "NULL" # allow for default vector being empty
-  ) stop(str_glue("{name} set to wrong type in {file_arg}, type should be {config_types[[i]]}"))
-}
-rm(type, name, i, config_types, config_names)
-
-# Override BUNDLE_ONLY when --bundle-only was provided as a command line argument
-if (bundle_only) {
-  BUNDLE_ONLY <- TRUE
-}
-rm(bundle_only)
-
-# Copy configuration file to temp directory to minimize the risk of it being edited in the mean time
-temp_config_file <- path(tempdir(), str_glue("config.R"))
-tryCatch(
-  file_copy(file_arg, temp_config_file, overwrite=TRUE),
-  error=function(cond) {
-    message(cond)
-    stop(str_glue("Cannot make a copy of the configuration file {file_arg}!"))
+  if (!exists("API")) stop("No API in checkpoint!")
+  if (!exists("API_VERSION")) stop("No API_VERSION in checkpoint!")
+  if (API != api) {
+    message("The bundle cannot be submitted with this script.")
+    message("Try using Condor_run_basic.R instead.")
+    stop(str_glue("Incompatible API '{API}': expecting '{api}',!"))
   }
-)
-rm(file_arg)
+  if (API != api) {
+    message("The bundle cannot be submitted with this script.")
+    message("The API version requestde by the bundle is too old or new.")
+    stop(str_glue("Incompatible API_VERSION '{API_VERSION}': this script supports API_VERSION '{api_version}'!"))
+  }
+  rm(api, api_version)
+} else {
+  # ---- Check configuration file and settings ----
 
-# Synonyms ensure backwards compatibility with old config namings and
-# allow a name choice that best fits the configuration value.
-# Copy any synonyms to their canonical configs. This overrides the
-# default value.
+  # Check that the specified file argument exists
+  if (!(file_exists(file_arg))) stop(str_glue('Invalid command line argument: specified configuration file "{file_arg}" does not exist!'))
 
-if (exists("NAME")) {
-  LABEL <- NAME
-  rm(NAME)
-}
-if (exists("EXPERIMENT")) {
-  LABEL <- EXPERIMENT
-  rm(EXPERIMENT)
-}
-if (exists("PROJECT")) {
-  LABEL <- PROJECT
-  rm(PROJECT)
-}
+  # Remove mandatory config defaults from the global scope
+  rm(list=config_names[config_names %in% mandatory_config_names])
+  rm(mandatory_config_names)
 
-# Check and massage specific config settings
-if (GAMS_CURDIR != "" && !dir_exists(GAMS_CURDIR)) stop(str_glue("No {GAMS_CURDIR} directory as configured in GAMS_CURDIR found relative to working directory {getwd()}!"))
-LABEL <- str_glue(LABEL)
-if (str_detect(LABEL, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured LABEL/NAME/PROJECT/EXPERIMENT for run has forbidden character(s)!"))
-if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
-if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
-if (length(JOBS) < 1) stop("There should be at least one job in JOBS!")
-if (!all(JOBS == floor(JOBS))) stop("Job numbers in JOBS must be whole numbers!")
-if (!all(JOBS < 1e6)) stop("Job numbers in JOBS must be less than 1000000 (one million)!")
-if (!all(JOBS >= 0)) stop("Job numbers in JOBS may not be negative!")
-if (length(JOBS) > 200 && !NICE_USER) warning(str_glue("You are submitting {length(JOBS)} jobs. That's a lot. Consider being nice by configuring NICE_USER = TRUE so as to give jobs of other users priority."))
-if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
-if (!(REQUEST_DISK > 0)) stop("REQUEST_DISK should be larger than zero!")
-if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
-if (str_sub(GAMS_FILE_PATH, -4) != ".gms") stop(str_glue("Configured GAMS_FILE_PATH has no .gms extension!"))
-if (!(file_exists(in_gams_curdir(GAMS_FILE_PATH)))) stop(str_glue('Configured GAMS_FILE_PATH "{GAMS_FILE_PATH}" does not exist relative to GAMS_CURDIR!'))
-if (str_detect(GAMS_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured GAMS_FILE_PATH has forbidden character(s)! Use / as path separator."))
+  # Source the config file, should add mandatory config settings to the global scope
+  source(file_arg, local=TRUE, echo=FALSE)
+
+  # Check that all config settings exist and have no weird value type
+  for (i in seq_along(config_names))  {
+    name <- config_names[i]
+    if (!exists(name)) stop(str_glue("Mandatory config setting {name} is not set in config file {file_arg}!"))
+    type <- typeof(get(name))
+    if (type != config_types[[i]] &&
+        config_types[[i]] != "integer" && # R has no stable numerical type
+        config_types[[i]] != "double" && # R has no stable numerical type
+        type != "NULL" && # allow for NULL
+        config_types[[i]] != "NULL" # allow for default vector being empty
+    ) stop(str_glue("{name} set to wrong type in {file_arg}, type should be {config_types[[i]]}"))
+  }
+  rm(type, name, i, config_types, config_names)
+
+  # Override BUNDLE_ONLY when --bundle-only was provided as a command line argument
+  if (bundle_only) {
+    BUNDLE_ONLY <- TRUE
+  }
+  rm(bundle_only)
+
+  # Copy configuration file to temp directory to minimize the risk of it being edited in the mean time
+  temp_config_file <- path(tempdir(), str_glue("config.R"))
+  tryCatch(
+    file_copy(file_arg, temp_config_file, overwrite=TRUE),
+    error=function(cond) {
+      message(cond)
+      stop(str_glue("Cannot make a copy of the configuration file {file_arg}!"))
+    }
+  )
+  rm(file_arg)
+
+  # Synonyms ensure backwards compatibility with old config namings and
+  # allow a name choice that best fits the configuration value.
+  # Copy any synonyms to their canonical configs. This overrides the
+  # default value.
+
+  if (exists("NAME")) {
+    LABEL <- NAME
+    rm(NAME)
+  }
+  if (exists("EXPERIMENT")) {
+    LABEL <- EXPERIMENT
+    rm(EXPERIMENT)
+  }
+  if (exists("PROJECT")) {
+    LABEL <- PROJECT
+    rm(PROJECT)
+  }
+
+  # Check and massage specific config settings
+  if (GAMS_CURDIR != "" && !dir_exists(GAMS_CURDIR)) stop(str_glue("No {GAMS_CURDIR} directory as configured in GAMS_CURDIR found relative to working directory {getwd()}!"))
+  LABEL <- str_glue(LABEL)
+  if (str_detect(LABEL, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured LABEL/NAME/PROJECT/EXPERIMENT for run has forbidden character(s)!"))
+  if (str_detect(PREFIX, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured PREFIX has forbidden character(s)!"))
+  if (!is.numeric(JOBS)) stop("JOBS does not list job numbers!")
+  if (length(JOBS) < 1) stop("There should be at least one job in JOBS!")
+  if (!all(JOBS == floor(JOBS))) stop("Job numbers in JOBS must be whole numbers!")
+  if (!all(JOBS < 1e6)) stop("Job numbers in JOBS must be less than 1000000 (one million)!")
+  if (!all(JOBS >= 0)) stop("Job numbers in JOBS may not be negative!")
+  if (length(JOBS) > 200 && !NICE_USER) warning(str_glue("You are submitting {length(JOBS)} jobs. That's a lot. Consider being nice by configuring NICE_USER = TRUE so as to give jobs of other users priority."))
+  if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
+  if (!(REQUEST_DISK > 0)) stop("REQUEST_DISK should be larger than zero!")
+  if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
+  if (str_sub(GAMS_FILE_PATH, -4) != ".gms") stop(str_glue("Configured GAMS_FILE_PATH has no .gms extension!"))
+  if (!(file_exists(in_gams_curdir(GAMS_FILE_PATH)))) stop(str_glue('Configured GAMS_FILE_PATH "{GAMS_FILE_PATH}" does not exist relative to GAMS_CURDIR!'))
+  if (str_detect(GAMS_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured GAMS_FILE_PATH has forbidden character(s)! Use / as path separator."))
+    if (RESTART_FILE_PATH != "") {
+    if (!(file_exists(in_gams_curdir(RESTART_FILE_PATH)))) stop(str_glue('Configured RESTART_FILE_PATH "{RESTART_FILE_PATH}" does not exist relative to GAMS_CURDIR!'))
+    if (str_detect(RESTART_FILE_PATH, "^/") || str_detect(RESTART_FILE_PATH, "^.:")) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: absolute paths not allowed!"))
+    if (str_detect(RESTART_FILE_PATH, fixed("../"))) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: you may not go up to parent directories using ../"))
+    if (str_detect(RESTART_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured RESTART_FILE_PATH has forbidden character(s)! Use / as path separator."))
+  }
+
+  version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
+  if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
+  if (!(GAMS_VERSION %in% AVAILABLE_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The GAMS-capable execution points have only these GAMS versions installed: {str_c(AVAILABLE_GAMS_VERSIONS, collapse=" ")}'))
+  dotless_gams_version <- str_glue(version_match[2], version_match[3])
+  major_gams_version <- version_match[2]
+  rm(version_match)
+
+  if (length(JOBS) < 1 && !str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
+  if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
+
+  # Check and massage GAMS output config settings
+  if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
+  if (GET_G00_OUTPUT) {
+    if (is.null(G00_OUTPUT_DIR_SUBMIT)) {
+      # Use G00_OUTPUT_DIR on the submit machine side as well.
+      if (!(file_exists(in_gams_curdir(G00_OUTPUT_DIR)))) stop(str_glue('Configured G00_OUTPUT_DIR "{G00_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
+      G00_OUTPUT_DIR_SUBMIT <- in_gams_curdir(G00_OUTPUT_DIR)
+    } else {
+      # Use a separate G00_OUTPUT_DIR_SUBMIT configuration on the submit machine side
+      if (str_detect(G00_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
+      if (!(file_exists(G00_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured G00_OUTPUT_DIR_SUBMIT "{G00_OUTPUT_DIR_SUBMIT}" does not exist!'))
+    }
+    if (str_detect(G00_OUTPUT_DIR, "^/") || str_detect(G00_OUTPUT_DIR, "^.:")) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
+    if (str_detect(G00_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
+    if (str_detect(G00_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
+    if (str_sub(G00_OUTPUT_FILE, -4) != ".g00") stop(str_glue("Configured G00_OUTPUT_FILE has no .g00 extension!"))
+    if (str_length(G00_OUTPUT_FILE) <= 4) stop(str_glue("Configured G00_OUTPUT_FILE needs more than an extension!"))
+    if (str_detect(G00_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured G00_OUTPUT_FILE has forbidden character(s)!"))
+  }
+  if (GET_GDX_OUTPUT) {
+    if (is.null(GDX_OUTPUT_DIR_SUBMIT)) {
+      # Use GDX_OUTPUT_DIR on the submit machine side as well.
+      if (!(file_exists(in_gams_curdir(GDX_OUTPUT_DIR)))) stop(str_glue('Configured GDX_OUTPUT_DIR "{GDX_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
+      GDX_OUTPUT_DIR_SUBMIT <- in_gams_curdir(GDX_OUTPUT_DIR)
+    } else {
+      # Use a separate GDX_OUTPUT_DIR_SUBMIT configuration on the submit machine side.
+      if (str_detect(GDX_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
+      if (!(file_exists(GDX_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured GDX_OUTPUT_DIR_SUBMIT "{GDX_OUTPUT_DIR_SUBMIT}" does not exist!'))
+    }
+    if (str_detect(GDX_OUTPUT_DIR, "^/") || str_detect(GDX_OUTPUT_DIR, "^.:")) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
+    if (str_detect(GDX_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
+    if (str_detect(GDX_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
+    if (str_sub(GDX_OUTPUT_FILE, -4) != ".gdx") stop(str_glue("Configured GDX_OUTPUT_FILE has no .gdx extension!"))
+    if (str_length(GDX_OUTPUT_FILE) <= 4) stop(str_glue("Configured GDX_OUTPUT_FILE must contain more than only an extension!"))
+    if (str_detect(GDX_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GDX_OUTPUT_FILE has forbidden character(s)!"))
+  }
+
+  if (MERGE_GDX_OUTPUT && !GET_GDX_OUTPUT) stop("Cannot MERGE_GDX_OUTPUT without first doing GET_GDX_OUTPUT!")
+  if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT without first doing WAIT_FOR_RUN_COMPLETION!")
+  if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX_FILES without first doing MERGE_GDX_OUTPUT!")
+  if (MERGE_GDX_OUTPUT) check_on_path("gdxmerge")
+
+  # Though not utilized unless GET_G00_OUTPUT or GET_GDX_OUTPUT are TRUE, the below variables are
+  # used in conditional string expansion via str_glue() such that the non-use is enacted only
+  # only after the expansion already happened. Hence we need to assign some dummy values here when
+  # when no assignment happened above.
+  if (is.null(G00_OUTPUT_DIR_SUBMIT)) G00_OUTPUT_DIR_SUBMIT <- ""
+  if (is.null(GDX_OUTPUT_DIR_SUBMIT)) GDX_OUTPUT_DIR_SUBMIT <- ""
+
+  # Determine GAMS version used to generate RESTART_FILE_PATH, verify that it is <= GAMS_VERSION
   if (RESTART_FILE_PATH != "") {
-  if (!(file_exists(in_gams_curdir(RESTART_FILE_PATH)))) stop(str_glue('Configured RESTART_FILE_PATH "{RESTART_FILE_PATH}" does not exist relative to GAMS_CURDIR!'))
-  if (str_detect(RESTART_FILE_PATH, "^/") || str_detect(RESTART_FILE_PATH, "^.:")) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: absolute paths not allowed!"))
-  if (str_detect(RESTART_FILE_PATH, fixed("../"))) stop(str_glue("Configured RESTART_FILE_PATH must be located under the working directory for proper bundling: you may not go up to parent directories using ../"))
-  if (str_detect(RESTART_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured RESTART_FILE_PATH has forbidden character(s)! Use / as path separator."))
-}
-
-version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
-if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
-if (!(GAMS_VERSION %in% AVAILABLE_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The GAMS-capable execution points have only these GAMS versions installed: {str_c(AVAILABLE_GAMS_VERSIONS, collapse=" ")}'))
-dotless_gams_version <- str_glue(version_match[2], version_match[3])
-major_gams_version <- version_match[2]
-rm(version_match)
-
-if (length(JOBS) < 1 && !str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
-if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
-
-# Check and massage GAMS output config settings
-if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
-if (GET_G00_OUTPUT) {
-  if (is.null(G00_OUTPUT_DIR_SUBMIT)) {
-    # Use G00_OUTPUT_DIR on the submit machine side as well.
-    if (!(file_exists(in_gams_curdir(G00_OUTPUT_DIR)))) stop(str_glue('Configured G00_OUTPUT_DIR "{G00_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
-    G00_OUTPUT_DIR_SUBMIT <- in_gams_curdir(G00_OUTPUT_DIR)
-  } else {
-    # Use a separate G00_OUTPUT_DIR_SUBMIT configuration on the submit machine side
-    if (str_detect(G00_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
-    if (!(file_exists(G00_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured G00_OUTPUT_DIR_SUBMIT "{G00_OUTPUT_DIR_SUBMIT}" does not exist!'))
-  }
-  if (str_detect(G00_OUTPUT_DIR, "^/") || str_detect(G00_OUTPUT_DIR, "^.:")) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
-  if (str_detect(G00_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
-  if (str_detect(G00_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
-  if (str_sub(G00_OUTPUT_FILE, -4) != ".g00") stop(str_glue("Configured G00_OUTPUT_FILE has no .g00 extension!"))
-  if (str_length(G00_OUTPUT_FILE) <= 4) stop(str_glue("Configured G00_OUTPUT_FILE needs more than an extension!"))
-  if (str_detect(G00_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured G00_OUTPUT_FILE has forbidden character(s)!"))
-}
-if (GET_GDX_OUTPUT) {
-  if (is.null(GDX_OUTPUT_DIR_SUBMIT)) {
-    # Use GDX_OUTPUT_DIR on the submit machine side as well.
-    if (!(file_exists(in_gams_curdir(GDX_OUTPUT_DIR)))) stop(str_glue('Configured GDX_OUTPUT_DIR "{GDX_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
-    GDX_OUTPUT_DIR_SUBMIT <- in_gams_curdir(GDX_OUTPUT_DIR)
-  } else {
-    # Use a separate GDX_OUTPUT_DIR_SUBMIT configuration on the submit machine side.
-    if (str_detect(GDX_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
-    if (!(file_exists(GDX_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured GDX_OUTPUT_DIR_SUBMIT "{GDX_OUTPUT_DIR_SUBMIT}" does not exist!'))
-  }
-  if (str_detect(GDX_OUTPUT_DIR, "^/") || str_detect(GDX_OUTPUT_DIR, "^.:")) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
-  if (str_detect(GDX_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured GDX_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
-  if (str_detect(GDX_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
-  if (str_sub(GDX_OUTPUT_FILE, -4) != ".gdx") stop(str_glue("Configured GDX_OUTPUT_FILE has no .gdx extension!"))
-  if (str_length(GDX_OUTPUT_FILE) <= 4) stop(str_glue("Configured GDX_OUTPUT_FILE must contain more than only an extension!"))
-  if (str_detect(GDX_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured GDX_OUTPUT_FILE has forbidden character(s)!"))
-}
-
-if (MERGE_GDX_OUTPUT && !GET_GDX_OUTPUT) stop("Cannot MERGE_GDX_OUTPUT without first doing GET_GDX_OUTPUT!")
-if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT without first doing WAIT_FOR_RUN_COMPLETION!")
-if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX_FILES without first doing MERGE_GDX_OUTPUT!")
-if (MERGE_GDX_OUTPUT) check_on_path("gdxmerge")
-
-# Though not utilized unless GET_G00_OUTPUT or GET_GDX_OUTPUT are TRUE, the below variables are
-# used in conditional string expansion via str_glue() such that the non-use is enacted only
-# only after the expansion already happened. Hence we need to assign some dummy values here when
-# when no assignment happened above.
-if (is.null(G00_OUTPUT_DIR_SUBMIT)) G00_OUTPUT_DIR_SUBMIT <- ""
-if (is.null(GDX_OUTPUT_DIR_SUBMIT)) GDX_OUTPUT_DIR_SUBMIT <- ""
-
-# Determine GAMS version used to generate RESTART_FILE_PATH, verify that it is <= GAMS_VERSION
-if (RESTART_FILE_PATH != "") {
-  conn <- file(in_gams_curdir(RESTART_FILE_PATH), "rb")
-  byte_count <- min(4000, file_size(in_gams_curdir(RESTART_FILE_PATH)))
-  invisible(seek(conn, where=-byte_count, origin="end"))
-  tail_bytes <- readBin(conn, what=integer(), size=1, n=byte_count)
-  close(conn)
-  tail_bytes[tail_bytes <= 0] <- 32
-  tail <-  rawToChar(as.raw(tail_bytes))
-  restart_version <- str_match(tail, "\x0AWEX(\\d\\d\\d)-\\d\\d\\d")[2]
-  if (is.na(restart_version)) {
-    warning(str_glue("Cannot determine GAMS version that saved {in_gams_curdir{(RESTART_FILE_PATH)}"))
-  } else {
-    if (dotless_gams_version < restart_version) {
-      stop("The configured host-side GAMS_VERSION is older than the GAMS version that saved the configured restart file (RESTART_FILE_PATH). GAMS will fail!")
+    conn <- file(in_gams_curdir(RESTART_FILE_PATH), "rb")
+    byte_count <- min(4000, file_size(in_gams_curdir(RESTART_FILE_PATH)))
+    invisible(seek(conn, where=-byte_count, origin="end"))
+    tail_bytes <- readBin(conn, what=integer(), size=1, n=byte_count)
+    close(conn)
+    tail_bytes[tail_bytes <= 0] <- 32
+    tail <-  rawToChar(as.raw(tail_bytes))
+    restart_version <- str_match(tail, "\x0AWEX(\\d\\d\\d)-\\d\\d\\d")[2]
+    if (is.na(restart_version)) {
+      warning(str_glue("Cannot determine GAMS version that saved {in_gams_curdir{(RESTART_FILE_PATH)}"))
+    } else {
+      if (dotless_gams_version < restart_version) {
+        stop("The configured host-side GAMS_VERSION is older than the GAMS version that saved the configured restart file (RESTART_FILE_PATH). GAMS will fail!")
+      }
     }
   }
-}
-rm(dotless_gams_version)
+  rm(dotless_gams_version)
 
 
-# Ensure that a log directory to hold the .log/.err/.out files and other artifacts exists for the run
-if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
-log_dir <- path(CONDOR_DIR, LABEL)
-if (!dir_exists(log_dir)) dir_create(log_dir)
+  # Ensure that a log directory to hold the .log/.err/.out files and other artifacts exists for the run
+  if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
+  log_dir <- path(CONDOR_DIR, LABEL)
+  if (!dir_exists(log_dir)) dir_create(log_dir)
 
-# ---- Bundle the files needed to run the jobs ----
+  # ---- Bundle the files needed to run the jobs ----
 
-bundle_path <- path(tempdir(), "_bundle.7z")
+  bundle_path <- path(tempdir(), "_bundle.7z")
 
-# Include/exclude files in/from bundle
-args_for_7z <- unlist(lapply(c(
-  "a",
-  unlist(lapply(BUNDLE_INCLUDE_DIRS,  function(p) return(str_glue("-ir!", p)))),
-  unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!",  p)))),
-  unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
-  unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
-  ifelse(excludable(CONDOR_DIR), "-xr!{CONDOR_DIR}", ""),
-  ifelse(excludable(G00_OUTPUT_DIR_SUBMIT), "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
-  ifelse(excludable(GDX_OUTPUT_DIR_SUBMIT), "-xr!{GDX_OUTPUT_DIR_SUBMIT}", ""),
-  bundle_path,
-  "{BUNDLE_INCLUDE}"
-), str_glue))
-cat("Compressing files into bundle...\n")
-size <- bundle_with_7z(args_for_7z)
-added_size <- size$added
-rm(args_for_7z, size)
-cat("\n")
+  # Include/exclude files in/from bundle
+  args_for_7z <- unlist(lapply(c(
+    "a",
+    unlist(lapply(BUNDLE_INCLUDE_DIRS,  function(p) return(str_glue("-ir!", p)))),
+    unlist(lapply(BUNDLE_INCLUDE_FILES, function(p) return(str_glue("-i!",  p)))),
+    unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
+    unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
+    ifelse(excludable(CONDOR_DIR), "-xr!{CONDOR_DIR}", ""),
+    ifelse(excludable(G00_OUTPUT_DIR_SUBMIT), "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
+    ifelse(excludable(GDX_OUTPUT_DIR_SUBMIT), "-xr!{GDX_OUTPUT_DIR_SUBMIT}", ""),
+    bundle_path,
+    "{BUNDLE_INCLUDE}"
+  ), str_glue))
+  cat("Compressing files into bundle...\n")
+  size <- bundle_with_7z(args_for_7z)
+  added_size <- size$added
+  rm(args_for_7z, size, BUNDLE_INCLUDE, BUNDLE_INCLUDE_DIRS, BUNDLE_INCLUDE_FILES, BUNDLE_EXCLUDE_DIRS, BUNDLE_EXCLUDE_FILES)
+  cat("\n")
 
-# Add additional files to bundle via separate invocations on 7-Zip
-if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
-  cat("Bundling additional files...\n")
-  for (af in BUNDLE_ADDITIONAL_FILES) {
+  # Add additional files to bundle via separate invocations on 7-Zip
+  if (length(BUNDLE_ADDITIONAL_FILES) != 0) {
+    cat("Bundling additional files...\n")
+    for (af in BUNDLE_ADDITIONAL_FILES) {
+      size <- bundle_with_7z(c(
+        "a",
+        bundle_path,
+        af
+      ))
+      added_size <- added_size + size$added
+    }
+    rm(af, size)
+    cat("\n")
+  }
+  rm(BUNDLE_ADDITIONAL_FILES)
+
+  # Add any GAMS restart file to the bundle
+  if (RESTART_FILE_PATH != "") {
+    # Bundle separately so that base directory can be added to BUNDLE_EXCLUDE_DIRS
+    cat("Bundling restart file...\n")
     size <- bundle_with_7z(c(
       "a",
       bundle_path,
-      af
+      in_gams_curdir(RESTART_FILE_PATH)
     ))
     added_size <- added_size + size$added
+    rm(args_for_7z, size)
+    cat("\n")
   }
-  rm(af, size)
-  cat("\n")
-}
 
-# Add any GAMS restart file to the bundle
-if (RESTART_FILE_PATH != "") {
-  # Bundle separately so that base directory can be added to BUNDLE_EXCLUDE_DIRS
-  cat("Bundling restart file...\n")
+  # Checkpoint environment minus functions into the bundle
+  save(
+    list = ls()[lapply(lapply(ls(), get), typeof) != "closure"],
+    file = path(tempdir(), CHECKPOINT_FILE),
+    envir = .GlobalEnv
+  )
   size <- bundle_with_7z(c(
     "a",
     bundle_path,
-    in_gams_curdir(RESTART_FILE_PATH)
+    path(tempdir(), CHECKPOINT_FILE)
   ))
   added_size <- added_size + size$added
-  rm(args_for_7z, size)
-  cat("\n")
-}
+  rm(size, bundle_with_7z)
 
-# Checkpoint environment minus functions into the bundle
-save(
-  list = ls()[lapply(lapply(ls(), get), typeof) != "closure"],
-  file = path(tempdir(), CHECKPOINT_FILE),
-  envir = .GlobalEnv
-)
-size <- bundle_with_7z(c(
-  "a",
-  bundle_path,
-  path(tempdir(), CHECKPOINT_FILE)
-))
-added_size <- added_size + size$added
-rm(size, bundle_with_7z)
+  # Add uncompressed bundle size to the disk request in KiB
+  REQUEST_DISK <- REQUEST_DISK + ceiling(added_size / 1024)
+  rm(added_size)
 
-# Add uncompressed bundle size to the disk request in KiB
-REQUEST_DISK <- REQUEST_DISK + ceiling(added_size / 1024)
-rm(added_size)
+  # List the bundle contents to tempdir()
+  bundle_list_path <- path(tempdir(), "_bundle_contents.txt")
+  tryCatch({
+      list_conn <- file(bundle_list_path, open="wt")
+      writeLines(list_7z(bundle_path), con = list_conn)
+      close(list_conn)
+      rm(list_conn)
+    },
+    error=function(cond) {
+      message(cond)
+      warning("Could not list the bundle content!")
+    }
+  )
 
-# List the bundle contents to tempdir()
-bundle_list_path <- path(tempdir(), "_bundle_contents.txt")
-tryCatch({
-    list_conn <- file(bundle_list_path, open="wt")
-    writeLines(list_7z(bundle_path), con = list_conn)
-    close(list_conn)
-    rm(list_conn)
-  },
-  error=function(cond) {
-    message(cond)
-    warning("Could not list the bundle content!")
+  # Retain the bundle and its contents list in the log directory and quit when configured to only perform the bundling.
+  if (BUNDLE_ONLY) {
+    tryCatch({
+        bundle_log_path <- path(log_dir, "_bundle.7z")
+        # Move the bundle to the log directory
+        file_move(bundle_path, bundle_log_path)
+        message(str_glue("Retaining the bundle at {bundle_log_path}"))
+        rm(bundle_log_path, bundle_path)
+      },
+      error=function(cond) {
+        message(cond)
+        warning("Could not retain bundle!")
+      }
+    )
+    tryCatch({
+        bundle_list_log_path <- path(log_dir, "_bundle_contents.txt")
+        file_move(bundle_list_path, bundle_list_log_path)
+        message(str_glue("Retaining the bundle contents list at {bundle_list_log_path}"))
+        rm(bundle_list_log_path, bundle_list_path)
+      },
+      error=function(cond) {
+        message(cond)
+        warning("Could not retain bundle contents list file!")
+      }
+    )
+    q(save = "no")
   }
-)
-
-# Retain the bundle and its contents list in the log directory and quit when configured to only perform the bundling.
-if (BUNDLE_ONLY) {
-  tryCatch({
-      bundle_log_path <- path(log_dir, "_bundle.7z")
-      # Move the bundle to the log directory
-      file_move(bundle_path, bundle_log_path)
-      message(str_glue("Retaining the bundle at {bundle_log_path}"))
-      rm(bundle_log_path, bundle_path)
-    },
-    error=function(cond) {
-      message(cond)
-      warning("Could not retain bundle!")
-    }
-  )
-  tryCatch({
-      bundle_list_log_path <- path(log_dir, "_bundle_contents.txt")
-      file_move(bundle_list_path, bundle_list_log_path)
-      message(str_glue("Retaining the bundle contents list at {bundle_list_log_path}"))
-      rm(bundle_list_log_path, bundle_list_path)
-    },
-    error=function(cond) {
-      message(cond)
-      warning("Could not retain bundle contents list file!")
-    }
-  )
-  q(save = "no")
 }
 
 # ---- Define submission helper functions ----
@@ -733,7 +760,7 @@ monitor <- function(clusters) {
   q <- "" # to hold formatted condor_q query result
   repeat {
     Sys.sleep(1)
-    
+
     # Collect Condor queue information via condor_q
     outerr <- system2("condor_q", args=c("-totals", "-wide", clusters), stdout=TRUE, stderr=TRUE)
     if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
@@ -748,7 +775,7 @@ monitor <- function(clusters) {
       }
     }
     q_errors <- 0
-    
+
     # Extract the totals line and parse it out
     match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
     if (is.na(match[1])) {
@@ -762,17 +789,17 @@ monitor <- function(clusters) {
     running    <- as.integer(match[6])
     held       <- as.integer(match[7])
     suspended  <- as.integer(match[8])
-    
+
     # Format condor_q result
     new_q <- str_sub(str_glue('{jobs} jobs:{ifelse(completed==0, "", str_glue(" {completed} completed,"))}{ifelse(removed==0, "", str_glue(" {removed} removed;"))}{ifelse(idle==0, "", str_glue(" {idle} idle (queued),"))}{ifelse(running==0, "", str_glue(" {running} running,"))}{ifelse(held==0, "", str_glue(" {held} held,"))}{ifelse(suspended==0, "", str_glue(" {suspended} suspended,"))}'), 1, -2)
-    
+
     # Display condor_q result when changed, overwriting old one
     if (new_q != q) {
       clear_line()
       q <- new_q
       cat(q)
       flush.console()
-      
+
       changes_since_reschedule <- TRUE
     }
     # Warn when there are held jobs for the first time
@@ -957,7 +984,7 @@ username <- Sys.getenv("USERNAME")
 if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
 
-# Apply settings to  template and write batch file / shell script that launches jobs on the execution point 
+# Apply settings to  template and write batch file / shell script that launches jobs on the execution point
 seed_bat <- path(tempdir(), str_glue("_seed.bat"))
 bat_conn<-file(seed_bat, open="wt")
 writeLines(unlist(lapply(SEED_BAT_TEMPLATE, str_glue)), bat_conn)
