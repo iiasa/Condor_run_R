@@ -281,6 +281,22 @@ excludable <- function(dir_path) {
   return(TRUE)
 }
 
+# Create log directory to hold the .log/.err/.out files and other artifacts
+# when not extant already.
+# Returns the path to the log directory.
+create_log_dir <- function() {
+  tryCatch({
+      if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
+      log_dir <- path(CONDOR_DIR, LABEL)
+      if (!dir_exists(log_dir)) dir_create(log_dir)
+      return(log_dir)
+    },
+    error=function(cond) {
+      message(cond)
+      warning("Could not create log directory!")
+    }
+  )
+}
 # ---- Check arguments and bundle when passed ----
 
 # Sanity check arguments
@@ -336,6 +352,8 @@ if (tools::file_ext(file_arg) == "7z") {
     stop(str_glue("Incompatible API_VERSION '{API_VERSION}': this script supports API_VERSION '{api_version}'!"))
   }
   rm(api, api_version)
+
+  log_dir <- create_log_dir()
 } else {
   # ---- Check configuration file and settings ----
 
@@ -443,6 +461,7 @@ if (tools::file_ext(file_arg) == "7z") {
 
   # ---- Bundle the files needed to run the jobs ----
 
+  log_dir <- create_log_dir()
   bundle_path <- path(tempdir(), "_bundle.7z")
 
   # Include/exclude files in/from bundle
