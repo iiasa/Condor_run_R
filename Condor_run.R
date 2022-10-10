@@ -273,13 +273,13 @@ bundle_with_7z <- function(args_for_7z) {
     cat(scan_line, sep = "\n")
     added_size <- as.double(str_match(scan_line, ", (\\d+) bytes \\(")[2])
     if (is.na(added_size))
-      stop("7-Zip added size extraction failed!", call. = FALSE) # 7-zip output format has changed?
+      stop("7-Zip added size extraction failed!", call. = FALSE) # 7-Zip output format has changed?
     # Extract the size of the bundle on completion
     size_line <- grep("^Archive size:", out, value = TRUE)
     cat(size_line, sep = "\n")
     bundle_size <- as.double(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
     if (is.na(bundle_size))
-      stop("7-Zip archive size extraction failed!", call. = FALSE) # 7-zip output format has changed?
+      stop("7-Zip archive size extraction failed!", call. = FALSE) # 7-Zip output format has changed?
     # Return a list with the added size and bundle size
     return(list("added" = added_size, "bundle" = bundle_size))
   }
@@ -386,7 +386,7 @@ if (tools::file_ext(file_arg) == "7z") {
   }
   if (API != api) {
     message("The bundle cannot be submitted with this script.")
-    message("The API version requestde by the bundle is too old or new.")
+    message("The API version requested by the bundle is too old or new.")
     stop(str_glue("Incompatible API_VERSION '{API_VERSION}': this script supports API_VERSION '{api_version}'!"))
   }
   rm(api, api_version)
@@ -869,13 +869,13 @@ get_return_values <- function(log_file_paths) {
   return_value_regexp <- "\\(1\\) Normal termination \\(return value (\\d+)\\)"
   for (i in seq_along(log_file_paths)) {
     tryCatch({
-      loglines <- suppressWarnings(readLines(log_file_paths[[i]]))
-      return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
-      return_values[[i]] <- return_value
-    },
-    error=function(cond) {
-      # NA already set for entry
-    }
+        loglines <- suppressWarnings(readLines(log_file_paths[[i]]))
+        return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
+        return_values[[i]] <- return_value
+      },
+      error=function(cond) {
+        # NA already set for entry
+      }
     )
   }
   return(return_values)
@@ -1018,7 +1018,7 @@ for (hostdom in hostdoms) {
   cat(str_glue("Starting transfer of bundle to {hostname}."), sep="\n")
 
   # Apply settings to seed job template and write the .job file to use for submission
-  seed_job_file <- path(tempdir(), str_glue("_seed_{hostname}.job"))
+  seed_job_file <- path(log_dir, str_glue("_seed_{hostname}.job"))
   seed_job_conn<-file(seed_job_file, open="wt")
   seed_job_lines <- unlist(lapply(SEED_JOB_TEMPLATE, str_glue))
   for (s in names(SEED_JOB_OVERRIDES)) {
@@ -1116,7 +1116,7 @@ if (RETAIN_SEED_ARTIFACTS) {
 } else {
   file_delete(seed_bat)
   for (hostname in hostnames) {
-    delete_if_exists(tempdir(), str_glue("_seed_{hostname}.job"))
+    delete_if_exists(log_dir, str_glue("_seed_{hostname}.job"))
     delete_if_exists(log_dir, str_glue("_seed_{hostname}.log"))
     delete_if_exists(log_dir, str_glue("_seed_{hostname}.out"))
     delete_if_exists(log_dir, str_glue("_seed_{hostname}.err"))
