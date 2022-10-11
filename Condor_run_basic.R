@@ -573,7 +573,6 @@ if (tools::file_ext(file_arg) == "7z") {
     tryCatch({
         bundle_list_store_path <- path(log_dir, timestamped_bundle_list_name)
         file_move(tmp_bundle_list_path, bundle_list_store_path)
-        message(str_glue("Storing the bundle contents list at {bundle_list_store_path}"))
         rm(bundle_list_store_path, tmp_bundle_list_path)
       },
       error=function(cond) {
@@ -586,7 +585,6 @@ if (tools::file_ext(file_arg) == "7z") {
     tryCatch({
         config_store_path <- path(log_dir, timestamped_config_name)
         file_move(tmp_config_path, config_store_path)
-        message(str_glue("Storing the configurationt at {config_store_path}"))
         rm(config_store_path, tmp_config_path)
       },
       error=function(cond) {
