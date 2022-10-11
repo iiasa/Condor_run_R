@@ -1051,7 +1051,7 @@ rm(bundle_path)
 
 # Retain the bundle contents list file
 tryCatch({
-    file_move(bundle_list_path, path(log_dir, str_glue("_bundle_contents_{predicted_cluster}.txt")))
+    file_move(path(tempdir(), timestamped_bundle_list_name), path(log_dir, str_glue("_bundle_contents_{predicted_cluster}.txt")))
   },
   error=function(cond) {
     message(cond)
