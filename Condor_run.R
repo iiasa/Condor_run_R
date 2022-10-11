@@ -130,8 +130,8 @@ BAT_TEMPLATE <- c(
   "set gams_dir=c:\\GAMS\\win64\\{GAMS_VERSION}",
   "if not exist %gams_dir% set gams_dir=c:\\GAMS\\{major_gams_version}",
   "@echo on",
-  "touch %bundle_root%\\{username}\\{unique_bundle} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
-  '7z x %bundle_root%\\{username}\\{unique_bundle} -y >NUL || exit /b %errorlevel%',
+  "touch %bundle_root%\\{username}\\{timestamped_bundle_name} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
+  '7z x %bundle_root%\\{username}\\{timestamped_bundle_name} -y >NUL || exit /b %errorlevel%',
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
   paste(
     '%gams_dir%\\gams',
@@ -184,7 +184,7 @@ SEED_BAT_TEMPLATE <- c(
   "set bundle_dir=%bundle_root%\\{username}",
   "if not exist %bundle_dir%\\ mkdir %bundle_dir% || exit /b %errorlevel%",
   "@echo on",
-  "move /Y {basename(bundle_path)} %bundle_dir%\\{unique_bundle}"
+  "move /Y {basename(bundle_path)} %bundle_dir%\\{timestamped_bundle_name}"
 )
 
 # ---- Get set ----
@@ -377,8 +377,8 @@ if (tools::file_ext(file_arg) == "7z") {
       message(cond)
       stop("Could not load checkpoint!")
     }
-    rm(checkpoint_path)
   )
+  rm(checkpoint_path)
 
   # Override bundle_path loaded from checkpoint
   bundle_path <- file_arg
@@ -567,8 +567,16 @@ if (tools::file_ext(file_arg) == "7z") {
 
   # ---- Bundle the files needed to run the jobs ----
 
+  # Timestamp a bundle file name at millisecond resolution. This serves keep
+  # multiple bundles stored in the same directory separate.
+  now_time <- Sys.time()
+  now_seconds <- as.numeric(format(now_time, "%OS3"))
+  now_millis <- round(1000 * (now_seconds - floor(now_seconds)))
+  timestamped_bundle_name <- str_glue('_bundle_{str_replace_all(now_time, "[- :]", "")}.{sprintf("%03d", now_millis)}.7z')
+  rm(now_time, now_seconds, now_millis)
+
   log_dir <- create_log_dir()
-  bundle_path <- path(tempdir(), "_bundle.7z")
+  bundle_path <- path(tempdir(), timestamped_bundle_name)
 
   # Include/exclude files in/from bundle
   args_for_7z <- unlist(lapply(c(
@@ -654,7 +662,7 @@ if (tools::file_ext(file_arg) == "7z") {
   # Retain the bundle and its contents list in the log directory and quit when configured to only perform the bundling.
   if (BUNDLE_ONLY) {
     tryCatch({
-        bundle_log_path <- path(log_dir, "_bundle.7z")
+        bundle_log_path <- path(log_dir, timestamped_bundle_name)
         # Move the bundle to the log directory
         file_move(bundle_path, bundle_log_path)
         message(str_glue("Retaining the bundle at {bundle_log_path}"))
@@ -666,7 +674,7 @@ if (tools::file_ext(file_arg) == "7z") {
       }
     )
     tryCatch({
-        bundle_list_log_path <- path(log_dir, "_bundle_contents.txt")
+        bundle_list_log_path <- path(log_dir, str_glue("{tools::file_path_sans_ext(timestamped_bundle_name)}_contents.txt"))
         file_move(bundle_list_path, bundle_list_log_path)
         message(str_glue("Retaining the bundle contents list at {bundle_list_log_path}"))
         rm(bundle_list_log_path, bundle_list_path)
@@ -986,15 +994,6 @@ lock <- new.env()
 invisible(reg.finalizer(lock, function(lock) {
   file_delete(lock_file)
 }, onexit=TRUE))
-
-# Define a unique bundle file name for the execute point side. This serves
-# to keep multiple cached bundles separate. Expanded via str_glue() in the
-# BAT templates.
-now_time <- Sys.time()
-now_seconds <- as.numeric(format(now_time, "%OS3"))
-now_millis <- round(1000 * (now_seconds - floor(now_seconds)))
-unique_bundle <- str_glue('bundle_{str_replace_all(now_time, "[- :]", "")}.{sprintf("%03d", now_millis)}.7z')
-rm(now_time, now_seconds, now_millis)
 
 # Get username in a way that works on MacOS, Linux, and Windows.
 #
