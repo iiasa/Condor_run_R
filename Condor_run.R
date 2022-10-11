@@ -636,10 +636,21 @@ if (tools::file_ext(file_arg) == "7z") {
   }
 
   # Checkpoint environment minus functions into the bundle
-  save(
-    list = ls()[lapply(lapply(ls(), get), typeof) != "closure"],
-    file = path(tempdir(), CHECKPOINT_FILE),
-    envir = .GlobalEnv
+  tryCatch({
+    checkpoint_conn <- file(path(tempdir(), CHECKPOINT_FILE), open="wb")
+    save(
+      list = ls()[lapply(lapply(ls(), get), typeof) != "closure"],
+      file = checkpoint_conn,
+      envir = .GlobalEnv
+    )
+    close(checkpoint_conn)
+    rm(checkpoint_conn)
+    },
+    error=function(cond) {
+      message("Could not checkpoint environment!")
+      message(cond)
+      stop()
+    }
   )
   size <- bundle_with_7z(c(
     "a",
