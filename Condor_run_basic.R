@@ -477,7 +477,7 @@ if (tools::file_ext(file_arg) == "7z") {
   rm(timestamp)
 
   log_dir <- create_log_dir()
-  bundle_path <- path(tempdir(), timestamped_bundle_name)
+  tmp_bundle_path <- path(tempdir(), timestamped_bundle_name)
 
   # Include/exclude files in/from bundle
   args_for_7z <- unlist(lapply(c(
@@ -488,7 +488,7 @@ if (tools::file_ext(file_arg) == "7z") {
     unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
     ifelse(excludable(CONDOR_DIR), "-xr!{CONDOR_DIR}", ""),
     ifelse(excludable(OUTPUT_DIR_SUBMIT), "-xr!{OUTPUT_DIR_SUBMIT}", ""),
-    bundle_path,
+    tmp_bundle_path,
     "{BUNDLE_INCLUDE}"
   ), str_glue))
   cat("Compressing files into bundle...\n")
@@ -503,7 +503,7 @@ if (tools::file_ext(file_arg) == "7z") {
     for (af in BUNDLE_ADDITIONAL_FILES) {
       size <- bundle_with_7z(c(
         "a",
-        bundle_path,
+        tmp_bundle_path,
         af
       ))
       added_size <- added_size + size$added
@@ -521,7 +521,7 @@ if (tools::file_ext(file_arg) == "7z") {
   )
   size <- bundle_with_7z(c(
     "a",
-    bundle_path,
+    tmp_bundle_path,
     path(tempdir(), CHECKPOINT_FILE)
   ))
   added_size <- added_size + size$added
@@ -532,10 +532,10 @@ if (tools::file_ext(file_arg) == "7z") {
   rm(added_size)
 
   # List the bundle contents to tempdir()
-  bundle_list_path <- path(tempdir(), timestamped_bundle_list_name)
+  tmp_bundle_list_path <- path(tempdir(), timestamped_bundle_list_name)
   tryCatch({
-      list_conn <- file(bundle_list_path, open="wt")
-      writeLines(list_7z(bundle_path), con = list_conn)
+      list_conn <- file(tmp_bundle_list_path, open="wt")
+      writeLines(list_7z(tmp_bundle_path), con = list_conn)
       close(list_conn)
       rm(list_conn)
     },
@@ -545,14 +545,14 @@ if (tools::file_ext(file_arg) == "7z") {
     }
   )
 
-  # Retain the bundle and its contents list in the log directory and quit when configured to only perform the bundling.
   if (BUNDLE_ONLY) {
+    # Retain the bundle and its contents list in the log directory and quit.
     tryCatch({
         bundle_log_path <- path(log_dir, timestamped_bundle_name)
         # Move the bundle to the log directory
-        file_move(bundle_path, bundle_log_path)
+        file_move(tmp_bundle_path, bundle_log_path)
         message(str_glue("Retaining the bundle at {bundle_log_path}"))
-        rm(bundle_log_path, bundle_path)
+        rm(bundle_log_path, tmp_bundle_path)
       },
       error=function(cond) {
         message(cond)
@@ -561,9 +561,9 @@ if (tools::file_ext(file_arg) == "7z") {
     )
     tryCatch({
         bundle_list_log_path <- path(log_dir, timestamped_bundle_list_name)
-        file_move(bundle_list_path, bundle_list_log_path)
+        file_move(tmp_bundle_list_path, bundle_list_log_path)
         message(str_glue("Retaining the bundle contents list at {bundle_list_log_path}"))
-        rm(bundle_list_log_path, bundle_list_path)
+        rm(bundle_list_log_path, tmp_bundle_list_path)
       },
       error=function(cond) {
         message(cond)
@@ -571,6 +571,9 @@ if (tools::file_ext(file_arg) == "7z") {
       }
     )
     q(save = "no")
+  } else {
+    # Point the to-be-submitted bundle
+    bundle_path <- tmp_bundle_path
   }
 }
 
@@ -1029,34 +1032,42 @@ rm(hostnames)
 
 # ---- Retain artifacts in log directory ----
 
-# Retain the bundle if so requested, otherwise delete it.
-if (RETAIN_BUNDLE) {
-  tryCatch({
-      bundle_log_path <- path(log_dir, str_glue("_bundle_{predicted_cluster}.7z"))
-      file_move(bundle_path, bundle_log_path)
-      message(str_glue("Retaining the bundle at {bundle_log_path}"))
-      rm(bundle_log_path)
+# When the bundle is located in tempdir(), retain it if so requested,
+# renaming it with the submission sequence cluster numbers.
+# Otherwise delete it early: though tempdir() will be deleted when the session
+# ends, but freeing potentially significant resources early can help.
+if (exists(tmp_bundle_path) && file_exists(tmp_bundle_path)) {
+  if (RETAIN_BUNDLE) {
+    tryCatch({
+        bundle_log_path <- path(log_dir, str_glue("_bundle_{predicted_cluster}.7z"))
+        file_move(tmp_bundle_path, bundle_log_path)
+        message(str_glue("Retaining the bundle at {bundle_log_path}"))
+        rm(bundle_log_path)
+      },
+      error=function(cond) {
+        message(cond)
+        stop("Could not retain bundle!")
+      }
+    )
+  } else {
+    file_delete(tmp_bundle_path)
+  }
+  rm(tmp_bundle_path)
+}
+
+# When the bundle contents list is located in tempdir(), retain it in the log directory,
+# renaming it with the submission sequence cluster number.
+if (exists(tmp_bundle_list_path) && file_exists(tmp_bundle_list_path)) {
+    tryCatch({
+      file_move(tmp_bundle_list_path, path(log_dir, str_glue("_bundle_contents_{predicted_cluster}.txt")))
     },
     error=function(cond) {
       message(cond)
-      stop("Could not retain bundle!")
+      warning("Could not retain bundle contents list file!")
     }
   )
-} else {
-  file_delete(bundle_path)
+  rm(tmp_bundle_list_path)
 }
-rm(bundle_path)
-
-# Retain the bundle contents list file
-tryCatch({
-    file_move(path(tempdir(), timestamped_bundle_list_name), path(log_dir, str_glue("_bundle_contents_{predicted_cluster}.txt")))
-  },
-  error=function(cond) {
-    message(cond)
-    warning("Could not retain bundle contents list file!")
-  }
-)
-rm(bundle_list_path)
 
 # Retain the configuration file
 config_file <- path(log_dir, str_glue("_config_{predicted_cluster}.R"))
