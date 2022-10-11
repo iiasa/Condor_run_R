@@ -1154,7 +1154,7 @@ rm(hostnames)
 # renaming it with the submission sequence cluster numbers.
 # Otherwise delete it early: though tempdir() will be deleted when the session
 # ends, but freeing potentially significant resources early can help.
-if (exists(tmp_bundle_path) && file_exists(tmp_bundle_path)) {
+if (exists("tmp_bundle_path") && file_exists(tmp_bundle_path)) {
   if (RETAIN_BUNDLE) {
     tryCatch({
         bundle_log_path <- path(log_dir, str_glue("_bundle_{predicted_cluster}.7z"))
@@ -1175,7 +1175,7 @@ if (exists(tmp_bundle_path) && file_exists(tmp_bundle_path)) {
 
 # When the bundle contents list is located in tempdir(), retain it in the log directory,
 # renaming it with the submission sequence cluster number.
-if (exists(tmp_bundle_list_path) && file_exists(tmp_bundle_list_path)) {
+if (exists("tmp_bundle_list_path") && file_exists(tmp_bundle_list_path)) {
   tryCatch({
       file_move(tmp_bundle_list_path, path(log_dir, str_glue("_bundle_{predicted_cluster}_contents.txt")))
     },
