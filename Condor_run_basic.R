@@ -295,8 +295,9 @@ create_log_dir <- function() {
       return(log_dir)
     },
     error=function(cond) {
+      message("Could not create log directory!")
       message(cond)
-      warning("Could not create log directory!")
+      stop()
     }
   )
 }
@@ -337,8 +338,9 @@ if (tools::file_ext(file_arg) == "7z") {
       )
     },
     error=function(cond) {
+      message("Could not load checkpoint!")
       message(cond)
-      stop("Could not load checkpoint!")
+      stop()
     }
   )
   rm(checkpoint_path)
@@ -401,8 +403,9 @@ if (tools::file_ext(file_arg) == "7z") {
   tryCatch(
     file_copy(file_arg, temp_config_file, overwrite=TRUE),
     error=function(cond) {
+      message(str_glue("Cannot make a copy of the configuration file {file_arg}!"))
       message(cond)
-      stop(str_glue("Cannot make a copy of the configuration file {file_arg}!"))
+      stop()
     }
   )
   rm(file_arg)
@@ -545,8 +548,9 @@ if (tools::file_ext(file_arg) == "7z") {
       rm(list_conn)
     },
     error=function(cond) {
+      message("Could not list the bundle content!")
       message(cond)
-      warning("Could not list the bundle content!")
+      stop()
     }
   )
 
@@ -559,8 +563,9 @@ if (tools::file_ext(file_arg) == "7z") {
         rm(bundle_store_path, tmp_bundle_path)
       },
       error=function(cond) {
+        message("Could not store bundle!")
         message(cond)
-        stop("Could not store bundle!")
+        stop()
       }
     )
     # Store the bundle contents list in the log directory.
@@ -571,8 +576,9 @@ if (tools::file_ext(file_arg) == "7z") {
         rm(bundle_list_store_path, tmp_bundle_list_path)
       },
       error=function(cond) {
+        message("Could not store bundle contents list file!")
         message(cond)
-        stop("Could not store bundle contents list file!")
+        stop()
       }
     )
     q(save = "no")
@@ -1050,8 +1056,9 @@ if (exists("tmp_bundle_path") && file_exists(tmp_bundle_path)) {
         rm(bundle_log_path)
       },
       error=function(cond) {
+        message("Could not retain bundle!")
         message(cond)
-        stop("Could not retain bundle!")
+        stop()
       }
     )
   } else {
@@ -1063,12 +1070,13 @@ if (exists("tmp_bundle_path") && file_exists(tmp_bundle_path)) {
 # When the bundle contents list is located in tempdir(), retain it in the log directory,
 # renaming it with the submission sequence cluster number.
 if (exists("tmp_bundle_list_path") && file_exists(tmp_bundle_list_path)) {
-    tryCatch({
+  tryCatch({
       file_move(tmp_bundle_list_path, path(log_dir, str_glue("_bundle_{predicted_cluster}_contents.txt")))
     },
     error=function(cond) {
+      message("Could not retain bundle contents list file!")
       message(cond)
-      warning("Could not retain bundle contents list file!")
+      stop()
     }
   )
   rm(tmp_bundle_list_path)
@@ -1079,8 +1087,9 @@ config_file <- path(log_dir, str_glue("_config_{predicted_cluster}.R"))
 tryCatch(
   file_move(temp_config_file, config_file),
   error=function(cond) {
+    message(str_glue("Failed to move the configuration from {temp_config_file} to {log_dir}!"))
     message(cond)
-    stop(str_glue("Failed to move the configuration from {temp_config_file} to {log_dir}!"))
+    stop()
   }
 )
 rm(temp_config_file)
