@@ -146,6 +146,12 @@ Default value: `FALSE`
 
 Set to `TRUE` to perform only the bundling without subsequent submission. The 7-Zip invocation command lines will be echoed to the console for reference. On completion of bundling, the submit script will quit with explanatory messages stating where the bundle and a listing of its contents are located. These have a timestamp included in their name so as to prevent them from overwriting existing bundle and listing files.
 
+### BUNDLE_DIR
+
+Default value: `NULL`
+
+The directory where to store the bundle when setting `BUNDLE_ONLY = TRUE` or passing the `--bundle-only` command line parameter. Can be an absolute or relative path to an existing directory. When left set to its `NULL` default value, the bundle is stored in the [log directory of the run](#condor_dir).
+
 ### RETAIN_BUNDLE
 
 Default value: `FALSE`
