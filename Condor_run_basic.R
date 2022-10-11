@@ -40,6 +40,7 @@ BUNDLE_INCLUDE_FILES = c()
 BUNDLE_EXCLUDE_FILES = c("**/*.log")
 BUNDLE_ADDITIONAL_FILES = c()
 BUNDLE_ONLY = FALSE
+BUNDLE_DIR = NULL
 RETAIN_BUNDLE = FALSE
 RETAIN_SEED_ARTIFACTS = FALSE
 SEED_JOB_OVERRIDES = list()
@@ -445,6 +446,10 @@ if (tools::file_ext(file_arg) == "7z") {
   if (str_detect(SCRIPT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCRIPT has forbidden character(s)!"))
   if (length(JOBS) > 1 && !str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
   if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
+  if (!is.null(BUNDLE_DIR)) {
+    if (BUNDLE_DIR == "") stop("Configured BUNDLE_DIR may not be an empty path!")
+    if (!(file_exists(BUNDLE_DIR))) stop(str_glue('Configure BUNDLE_DIR "{BUNDLE_DIR}" does not exist!'))
+  }
   if (GET_OUTPUT) {
     if (is.null(OUTPUT_DIR_SUBMIT)) {
       # Use OUTPUT_DIR on the submit machine side as well.
@@ -455,7 +460,7 @@ if (tools::file_ext(file_arg) == "7z") {
       if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
       if (!(file_exists(OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured OUTPUT_DIR_SUBMIT "{OUTPUT_DIR_SUBMIT}" does not exist!'))
     }
-    if (OUTPUT_DIR == "") stop(str_glue('Configured OUTPUT_DIR may not be empty! Must be a valid relative path. Configure "." for the working directory.'))
+    if (OUTPUT_DIR == "") stop(str_glue('Configured OUTPUT_DIR may not be an empty path! Must be a valid relative path. Configure "." for the working directory.'))
     if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
     if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
     if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
