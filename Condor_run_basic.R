@@ -399,9 +399,9 @@ if (tools::file_ext(file_arg) == "7z") {
   rm(bundle_only)
 
   # Copy configuration file to temp directory to minimize the risk of it being edited in the mean time
-  temp_config_file <- path(tempdir(), str_glue("config.R"))
+  tmp_config_file <- path(tempdir(), str_glue("config.R"))
   tryCatch(
-    file_copy(file_arg, temp_config_file, overwrite=TRUE),
+    file_copy(file_arg, tmp_config_file, overwrite=TRUE),
     error=function(cond) {
       message(str_glue("Cannot make a copy of the configuration file {file_arg}!"))
       message(cond)
@@ -1082,17 +1082,21 @@ if (exists("tmp_bundle_list_path") && file_exists(tmp_bundle_list_path)) {
   rm(tmp_bundle_list_path)
 }
 
-# Retain the configuration file
-config_file <- path(log_dir, str_glue("_config_{predicted_cluster}.R"))
-tryCatch(
-  file_move(temp_config_file, config_file),
-  error=function(cond) {
-    message(str_glue("Failed to move the configuration from {temp_config_file} to {log_dir}!"))
-    message(cond)
-    stop()
-  }
-)
-rm(temp_config_file)
+# When the configuration file is located in tempdir(), retain it in the log directory,
+# renaming it with the submission sequence cluster number.
+if (exists("tmp_config_file") && file_exists(tmp_config_file)) {
+  tryCatch({
+      config_log_path <- path(log_dir, str_glue("_config_{predicted_cluster}.R"))
+      file_move(tmp_config_file, config_log_path)
+    },
+    error=function(cond) {
+      message(str_glue("Could not retain the configuration file!"))
+      message(cond)
+      stop()
+    }
+  )
+  rm(tmp_config_file)
+}
 
 # ---- Prepare files for run ----
 
