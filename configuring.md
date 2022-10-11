@@ -150,7 +150,11 @@ Set to `TRUE` to perform only the bundling without subsequent submission. The 7-
 
 Default value: `FALSE`
 
-Retain the bundle in the [log directory of the run](#condor_dir) when set to `TRUE`. Can be useful for locally analyzing execution-point-side issues with jobs.
+Set to `TRUE` retain the bundle the bundle in the [log directory of the run](#condor_dir) after seeding completes. The bundle will be uniquely named by including the cluster sequence number of the run so that you can easily associate it with the other run artifacts preserved in the log directory. A message displaying the path of the retained bundle will shown.
+
+Retaining the bundle enables you to later re-submit the very same run by passing the bundle on the command line. It also allows you to locally analyze execution-point-side issues with jobs by extracting the bundle and trying to run a job locally.
+
+**:point_right:Note:** when submitting an existing bundle, using `--bundle-only` on the command line, or setting `BUNDLE_ONLY = TRUE`, `RETAIN_BUNDLE = TRUE` does nothing since the bundle is already being stored somewhere.
 
 ### RETAIN_SEED_ARTIFACTS
 
