@@ -471,12 +471,10 @@ if (tools::file_ext(file_arg) == "7z") {
 
   # Timestamp a bundle file name at millisecond resolution. This serves keep
   # multiple bundles stored in the same directory separate.
-  now_time <- Sys.time()
-  now_seconds <- as.numeric(format(now_time, "%OS3"))
-  now_millis <- round(1000 * (now_seconds - floor(now_seconds)))
-  timestamped_bundle_name <- str_glue('_bundle_{str_replace_all(now_time, "[- :]", "")}.{sprintf("%03d", now_millis)}.7z')
-  timestamped_bundle_list_name <- str_glue("{tools::file_path_sans_ext(timestamped_bundle_name)}_contents.txt")
-  rm(now_time, now_seconds, now_millis)
+  timestamp <- str_replace_all(format(Sys.time(),"%y%m%d%H%M%OS3"), "[.]", "")
+  timestamped_bundle_name <- str_glue('_bundle_{timestamp}.7z')
+  timestamped_bundle_list_name <- str_glue("_bundle_{timestamp}_contents.txt")
+  rm(timestamp)
 
   log_dir <- create_log_dir()
   bundle_path <- path(tempdir(), timestamped_bundle_name)
