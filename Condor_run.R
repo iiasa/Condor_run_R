@@ -567,8 +567,8 @@ if (tools::file_ext(file_arg) == "7z") {
 
   # ---- Bundle the files needed to run the jobs ----
 
-  # Timestamp a bundle file name at millisecond resolution. This serves keep
-  # multiple bundles stored in the same directory separate.
+  # Timestamp bundle file names at millisecond resolution. This serves keep
+  # multiple bundle files stored in the same directory separate.
   timestamp <- str_replace_all(format(Sys.time(),"%y%m%d%H%M%OS3"), "[.]", "")
   timestamped_bundle_name <- str_glue('_bundle_{timestamp}.7z')
   timestamped_bundle_list_name <- str_glue("_bundle_{timestamp}_contents.txt")
