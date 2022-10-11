@@ -573,6 +573,7 @@ if (tools::file_ext(file_arg) == "7z") {
   now_seconds <- as.numeric(format(now_time, "%OS3"))
   now_millis <- round(1000 * (now_seconds - floor(now_seconds)))
   timestamped_bundle_name <- str_glue('_bundle_{str_replace_all(now_time, "[- :]", "")}.{sprintf("%03d", now_millis)}.7z')
+  timestamped_bundle_list_name <- str_glue("{tools::file_path_sans_ext(timestamped_bundle_name)}_contents.txt")
   rm(now_time, now_seconds, now_millis)
 
   log_dir <- create_log_dir()
@@ -646,7 +647,7 @@ if (tools::file_ext(file_arg) == "7z") {
   rm(added_size)
 
   # List the bundle contents to tempdir()
-  bundle_list_path <- path(tempdir(), "_bundle_contents.txt")
+  bundle_list_path <- path(tempdir(), timestamped_bundle_list_name)
   tryCatch({
       list_conn <- file(bundle_list_path, open="wt")
       writeLines(list_7z(bundle_path), con = list_conn)
@@ -674,7 +675,7 @@ if (tools::file_ext(file_arg) == "7z") {
       }
     )
     tryCatch({
-        bundle_list_log_path <- path(log_dir, str_glue("{tools::file_path_sans_ext(timestamped_bundle_name)}_contents.txt"))
+        bundle_list_log_path <- path(log_dir, timestamped_bundle_list_name)
         file_move(bundle_list_path, bundle_list_log_path)
         message(str_glue("Retaining the bundle contents list at {bundle_list_log_path}"))
         rm(bundle_list_log_path, bundle_list_path)
