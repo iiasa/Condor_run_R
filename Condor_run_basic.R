@@ -399,11 +399,11 @@ if (tools::file_ext(file_arg) == "7z") {
   rm(bundle_only)
 
   # Copy configuration file to temp directory to minimize the risk of it being edited in the mean time
-  tmp_config_file <- path(tempdir(), str_glue("config.R"))
+  tmp_config_path <- path(tempdir(), str_glue("config.R"))
   tryCatch(
-    file_copy(file_arg, tmp_config_file, overwrite=TRUE),
+    file_copy(file_arg, tmp_config_path, overwrite=TRUE),
     error=function(cond) {
-      message(str_glue("Cannot make a copy of the configuration file {file_arg}!"))
+      message(str_glue("Cannot make a copy of configuration file {file_arg}!"))
       message(cond)
       stop()
     }
@@ -477,11 +477,12 @@ if (tools::file_ext(file_arg) == "7z") {
 
   # ---- Bundle the files needed to run the jobs ----
 
-  # Timestamp bundle file names at millisecond resolution. This serves keep
-  # multiple bundle files stored in the same directory separate.
+  # Timestamp file names at millisecond resolution. This serves keep
+  # multiple artifact files stored in the same directory separate.
   timestamp <- str_replace_all(format(Sys.time(),"%y%m%d%H%M%OS3"), "[.]", "")
   timestamped_bundle_name <- str_glue('_bundle_{timestamp}.7z')
   timestamped_bundle_list_name <- str_glue("_bundle_{timestamp}_contents.txt")
+  timestamped_config_name <- str_glue("_config_{timestamp}.R")
   rm(timestamp)
 
   log_dir <- create_log_dir()
@@ -577,6 +578,19 @@ if (tools::file_ext(file_arg) == "7z") {
       },
       error=function(cond) {
         message("Could not store bundle contents list file!")
+        message(cond)
+        stop()
+      }
+    )
+    # Store the configuration file in the log directory.
+    tryCatch({
+        config_store_path <- path(log_dir, timestamped_config_name)
+        file_move(tmp_config_path, config_store_path)
+        message(str_glue("Storing the configurationt at {config_store_path}"))
+        rm(config_store_path, tmp_config_path)
+      },
+      error=function(cond) {
+        message("Could not store configuration file!")
         message(cond)
         stop()
       }
@@ -1067,14 +1081,14 @@ if (exists("tmp_bundle_path") && file_exists(tmp_bundle_path)) {
   rm(tmp_bundle_path)
 }
 
-# When the bundle contents list is located in tempdir(), retain it in the log directory,
+# When the bundle contents list is located in tempdir(), store it in the log directory,
 # renaming it with the submission sequence cluster number.
 if (exists("tmp_bundle_list_path") && file_exists(tmp_bundle_list_path)) {
   tryCatch({
       file_move(tmp_bundle_list_path, path(log_dir, str_glue("_bundle_{predicted_cluster}_contents.txt")))
     },
     error=function(cond) {
-      message("Could not retain bundle contents list file!")
+      message("Could not store bundle contents list file!")
       message(cond)
       stop()
     }
@@ -1082,20 +1096,20 @@ if (exists("tmp_bundle_list_path") && file_exists(tmp_bundle_list_path)) {
   rm(tmp_bundle_list_path)
 }
 
-# When the configuration file is located in tempdir(), retain it in the log directory,
+# When the configuration file is located in tempdir(), store it in the log directory,
 # renaming it with the submission sequence cluster number.
-if (exists("tmp_config_file") && file_exists(tmp_config_file)) {
+if (exists("tmp_config_path") && file_exists(tmp_config_path)) {
   tryCatch({
       config_log_path <- path(log_dir, str_glue("_config_{predicted_cluster}.R"))
-      file_move(tmp_config_file, config_log_path)
+      file_move(tmp_config_path, config_log_path)
     },
     error=function(cond) {
-      message(str_glue("Could not retain the configuration file!"))
+      message(str_glue("Could not store the configuration file!"))
       message(cond)
       stop()
     }
   )
-  rm(tmp_config_file)
+  rm(tmp_config_path)
 }
 
 # ---- Prepare files for run ----
