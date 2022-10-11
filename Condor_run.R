@@ -221,6 +221,7 @@ check_on_path <- function(binaries) {
 }
 
 # Extract checkpoint file with 7-Zip to tempdir()
+# Returns the path to the extracted checkpoint file
 extract_checkpoint <- function(bundle_path) {
   check_on_path("7z")
   args_for_7z <- c(
@@ -243,6 +244,7 @@ extract_checkpoint <- function(bundle_path) {
     message(paste(out, collapse = '\n'))
     stop("Extraction failed!", call. = FALSE)
   }
+  return(path(tempdir(), CHECKPOINT_FILE))
 }
 
 # Bundle files with 7-Zip via the given command line arguments.
@@ -363,10 +365,10 @@ if (tools::file_ext(file_arg) == "7z") {
   api <- API
   api_version <- API_VERSION
   rm(API, API_VERSION)
-  extract_checkpoint(file_arg)
+  checkpoint_path <- extract_checkpoint(file_arg)
   tryCatch({
       load(
-        file = path(tempdir(), CHECKPOINT_FILE),
+        file = checkpoint_path,
         envir = .GlobalEnv,
         verbose = TRUE
       )
@@ -375,6 +377,7 @@ if (tools::file_ext(file_arg) == "7z") {
       message(cond)
       stop("Could not load checkpoint!")
     }
+    rm(checkpoint_path)
   )
 
   # Override bundle_path loaded from checkpoint
