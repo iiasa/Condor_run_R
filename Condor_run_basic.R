@@ -242,18 +242,18 @@ bundle_with_7z <- function(args_for_7z) {
     stop("Bundling failed!", call. = FALSE)
   }
   else {
-    # Extract the added number of bytes
+    # Parse out the added number of bytes
     scan_line <- out[[grep("^Scanning the drive:", out) + 1]]
     cat(scan_line, sep = "\n")
     added_size <- as.double(str_match(scan_line, ", (\\d+) bytes \\(")[2])
     if (is.na(added_size))
-      stop("7-Zip added size extraction failed!", call. = FALSE) # 7-Zip output format has changed?
-    # Extract the size of the bundle on completion
+      stop("7-Zip added size parsing failed!", call. = FALSE) # 7-Zip output format has changed?
+    # Parse out the size of the bundle on completion
     size_line <- grep("^Archive size:", out, value = TRUE)
     cat(size_line, sep = "\n")
     bundle_size <- as.double(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
     if (is.na(bundle_size))
-      stop("7-Zip archive size extraction failed!", call. = FALSE) # 7-Zip output format has changed?
+      stop("7-Zip archive size parsing failed!", call. = FALSE) # 7-Zip output format has changed?
     # Return a list with the added size and bundle size
     return(list("added" = added_size, "bundle" = bundle_size))
   }
