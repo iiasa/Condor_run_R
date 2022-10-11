@@ -372,7 +372,7 @@ if (tools::file_ext(file_arg) == "7z") {
       load(
         file = checkpoint_path,
         envir = .GlobalEnv,
-        verbose = TRUE
+        verbose = FALSE
       )
     },
     error=function(cond) {
