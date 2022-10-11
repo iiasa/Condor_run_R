@@ -227,7 +227,7 @@ extract_checkpoint <- function(bundle_path) {
   check_on_path("7z")
   args_for_7z <- c(
     "e",
-    str_glue("-o{tempdir()}"),
+    str_glue('-o"{path(tempdir())}"'),
     bundle_path,
     CHECKPOINT_FILE
   )
