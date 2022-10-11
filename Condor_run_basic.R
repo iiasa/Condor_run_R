@@ -551,28 +551,28 @@ if (tools::file_ext(file_arg) == "7z") {
   )
 
   if (BUNDLE_ONLY) {
-    # Retain the bundle and its contents list in the log directory and quit.
+    # Store the bundle in the log directory by default or BUNDLE_DIR when set.
     tryCatch({
-        bundle_log_path <- path(log_dir, timestamped_bundle_name)
-        # Move the bundle to the log directory
-        file_move(tmp_bundle_path, bundle_log_path)
-        message(str_glue("Retaining the bundle at {bundle_log_path}"))
-        rm(bundle_log_path, tmp_bundle_path)
+        bundle_store_path <- path(ifelse(is.null(BUNDLE_DIR), log_dir, BUNDLE_DIR), timestamped_bundle_name)
+        file_move(tmp_bundle_path, bundle_store_path)
+        message(str_glue("Storing the bundle at {bundle_store_path}"))
+        rm(bundle_store_path, tmp_bundle_path)
       },
       error=function(cond) {
         message(cond)
-        warning("Could not retain bundle!")
+        stop("Could not store bundle!")
       }
     )
+    # Store the bundle contents list in the log directory.
     tryCatch({
-        bundle_list_log_path <- path(log_dir, timestamped_bundle_list_name)
-        file_move(tmp_bundle_list_path, bundle_list_log_path)
-        message(str_glue("Retaining the bundle contents list at {bundle_list_log_path}"))
-        rm(bundle_list_log_path, tmp_bundle_list_path)
+        bundle_list_store_path <- path(log_dir, timestamped_bundle_list_name)
+        file_move(tmp_bundle_list_path, bundle_list_store_path)
+        message(str_glue("Storing the bundle contents list at {bundle_list_store_path}"))
+        rm(bundle_list_store_path, tmp_bundle_list_path)
       },
       error=function(cond) {
         message(cond)
-        warning("Could not retain bundle contents list file!")
+        stop("Could not store bundle contents list file!")
       }
     )
     q(save = "no")
