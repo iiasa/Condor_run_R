@@ -1059,7 +1059,7 @@ if (exists(tmp_bundle_path) && file_exists(tmp_bundle_path)) {
 # renaming it with the submission sequence cluster number.
 if (exists(tmp_bundle_list_path) && file_exists(tmp_bundle_list_path)) {
     tryCatch({
-      file_move(tmp_bundle_list_path, path(log_dir, str_glue("_bundle_contents_{predicted_cluster}.txt")))
+      file_move(tmp_bundle_list_path, path(log_dir, str_glue("_bundle_{predicted_cluster}_contents.txt")))
     },
     error=function(cond) {
       message(cond)
