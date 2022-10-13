@@ -75,7 +75,7 @@ When a job is run on an EP, the cached bundle is decompressed in a scratch direc
 
 ## Use
 
-Use the `Condor_run_basic.R` submit script for generic runs and the `Condor_run.R` submit script for GAMS runs. On Windows, invoke either via `Rscript`. On MacOS/Linux that is not necessary ([shebang invokaction](https://en.wikipedia.org/wiki/Shebang_(Unix))).
+Use the `Condor_run_basic.R` submit script for generic runs and the `Condor_run.R` submit script for GAMS runs. On Windows, invoke via `Rscript`. On MacOS/Linux that is not necessary ([shebang invokaction](https://en.wikipedia.org/wiki/Shebang_(Unix))).
 
 To bundle and submit a run, use:
 
@@ -89,7 +89,7 @@ This can also be achieved by setting [`BUNDLE_ONLY = TRUE`](configuring.md#bundl
 
 To (re)submit a run from a pre-existing bundle, use:
 
-`[Rscript ][path to]Condor_run[_basic].R <bundle name>.7z`
+`[Rscript ][path to]Condor_run[_basic].R <bundle file>.7z`
 
 **:point_right:Note:**  when you have made customizations to your R installation via site, profile or user environment files, it may be necessary to have `Rscript` ignore these customizations by using the `Rscript --vanilla` option on invocation.
 
