@@ -75,15 +75,23 @@ When a job is run on an EP, the cached bundle is decompressed in a scratch direc
 
 ## Use
 
-Invoke the submit script via `Rscript`. Use the `Condor_run_basic.R` submit script for generic runs and `Condor_run.R` for GAMS runs. Both take a `.R` configuration file as only argument. Follow [these steps](configuring.md) to set up a configuration file. An example invocation is:
+Use the `Condor_run_basic.R` submit script for generic runs and the `Condor_run.R` submit script for GAMS runs. On Windows, invoke either via `Rscript`. On MacOS/Linux that is not necessary ([shebang invokaction](https://en.wikipedia.org/wiki/Shebang_(Unix))).
 
-`Rscript Condor_run_basic.R config.R`
+To bundle and submit a run, use:
 
-If you have made customizations to your R installation via site, profile or user environment files, it may be necessary to have `Rscript` ignore these customizations by using the `--vanilla` option, e.g.:
+`[Rscript ][path to]Condor_run[_basic].R <configuration file>.R`
 
-`Rscript --vanilla Condor_run.R config.R`
+To only bundle the files and preserve the bundle, use:
 
-To learn how to set up a configuration file, see the [documentation on configuring](configuring.md).
+`[Rscript ][path to]Condor_run[_basic].R --bundle-only <configuration file>.R`
+
+This can also be achieved by setting [`BUNDLE_ONLY = TRUE`](configuring.md#bundle_only) in the configuration file. To learn how to set up a configuration file, see the [documentation on configuring](configuring.md).
+
+To (re)submit a run from a pre-existing bundle, use:
+
+`[Rscript ][path to]Condor_run[_basic].R <bundle name>.7z`
+
+**:point_right:Note:**  when you have made customizations to your R installation via site, profile or user environment files, it may be necessary to have `Rscript` ignore these customizations by using the `Rscript --vanilla` option on invocation.
 
 After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. The command line arguments specify which runs to analyse and can either be a submit configuration `.R` file or a paths to a [directory containing run log files and other artifacts](configuring.md#condor_dir).
 
@@ -94,8 +102,6 @@ An example command line invocation is:
 `Rscript Condor_run_stats.R Condor/2021-11-25 config.R`
 
 This produces a PDF with plots in the current working directory. When invoking `Condor_run_stats.R` from RStudio by sourcing the script, set the first instance of LOG_DIRECTORIES to the path or paths of one or more directories containing Condor run log files to be analysed.
-
-On Linux/MacOS, all three scripts can also be invoked directly without a leading `Rscript` on the command line ([shebang invocation](https://en.wikipedia.org/wiki/Shebang_(Unix))).
 
 ## Job output
 
