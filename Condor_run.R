@@ -132,7 +132,7 @@ BAT_TEMPLATE <- c(
   "if not exist %gams_dir% set gams_dir=c:\\GAMS\\{major_gams_version}",
   "@echo on",
   "touch %bundle_root%\\{username}\\{timestamped_bundle_name} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
-  '7z x %bundle_root%\\{username}\\{timestamped_bundle_name} -y >NUL || exit /b %errorlevel%',
+  '7z x %bundle_root%\\{username}\\{timestamped_bundle_name} -y -x!{CHECKPOINT_FILE} >NUL || exit /b %errorlevel%',
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
   paste(
     '%gams_dir%\\gams',
