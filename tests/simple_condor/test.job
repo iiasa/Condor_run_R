@@ -1,0 +1,11 @@
+executable    = job.bat
+universe      = vanilla
+requirements  = OpSys == "WINDOWS"
+output        = job$(Cluster).out
+stream_output = True
+error         = job$(Cluster).err
+stream_error  = True
+log           = job$(Cluster).log
+should_transfer_files = YES
+transfer_input_files  = job.bat
+queue
