@@ -32,7 +32,7 @@ Typically, the script that is run when your jobs are started accepts the job num
 
 An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execution point (EP) when the sum of their memory requests exceeds the memory allocated to the execution slot of on the execution point. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the EP at risk of running out of memory, which can endanger other jobs as well. It is therefore important to configure a good estimate.
 
-You can find a job's actual, requested, and allocated memory use at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
+You can find a job's actual, requested, and allocated memory use in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir) after tge job completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
 
 **:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient memory to satisfy your request. To see what memory resources your cluster has available issue [`condor_status -avail`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
@@ -231,7 +231,7 @@ A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select 
 
 Default value: `1`
 
-Number of hardware threads to reserve for each job. The default value is good for jobs that are single-threaded, or mostly so. When your job involves significant multiprocessing, set this value to an estimate of the average number of in-use threads. The `.log` file of a job will record the average hardware thread usage when it completes.
+Number of hardware threads to reserve for each job. The default value is good for jobs that are single-threaded, or mostly so. When your job involves significant multiprocessing, set this value to an estimate of the average number of in-use threads. A small table at the end of the `.log` file of a job located in the [log directory of the run](#condor_dir) will record the average hardware thread usage when the job completes.
   
 The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CPU can contain multiple processing cores, with each core potentially able to run multiple hardware threads, typically two per core. It is those hardware threads—each able to support and independent parallel execution context—that this setting and the statistic in the `.log` file refers to.
 
@@ -241,9 +241,9 @@ The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CP
 
 Default value: `1000000`
 
-An estimate of the amount of execution-point-side disk space required per job for storing intermediate and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add to this value the uncompressed size of the bundle to yield  request reflecting the overall storage requirement of the job. This sum is used to allocate disk space for a job when it is started on an EP.
+An estimate of the amount of execution-point-side disk space required per job for storing intermediate and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add to this value the uncompressed size of the bundle to yield a disk request reflecting the overall storage requirement of the job. This sum is used to allocate disk space for a job when it is started on an EP.
   
-You can find a job's actual, requested (with added uncompressed bundle size), and allocated disk space in a small table at the end of its `.log` file after it completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
+You can find a job's actual, requested (with added uncompressed bundle size), and allocated disk space in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir) after the job completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
 
 **:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
   
