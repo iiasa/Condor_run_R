@@ -56,7 +56,9 @@ This repository includes [tests](tests/tests.md). To check your setup, run the [
 
 ## Updating
 
-It is recommended to always update to the [latest release of the scripts](https://github.com/iiasa/Condor_run_R/releases) so that you have the latest fixes and features. Releases are typically backwards compatible and should work with your existing run configurations. Before updating, read the release notes. Automatic notification of new releases can be enabled by going to the [main repository page](https://github.com/iiasa/Condor_run_R), clicking on the Watch/Unwatch drop down menu button at the top right of the page, and check marking **Custom → Releases**. You need to be signed in to GitHub for this to work.
+It is recommended to always update to the latest release of the scripts so that you have the latest fixes and features. Do so by downloading the `.zip` or `.tar.gz` linked on [the releases page](https://github.com/iiasa/Condor_run_R/releases). Releases are typically backwards compatible and should work with your existing run configurations. Before updating, read the release notes shown on the releases page.
+
+Automatic notification of new releases can be enabled by going to the [main repository page](https://github.com/iiasa/Condor_run_R), clicking on the Watch/Unwatch drop down menu button at the top right of the page, and check marking **Custom → Releases**. You need to be signed in to GitHub for this to work.
 
 ## Function of submit scripts
 
