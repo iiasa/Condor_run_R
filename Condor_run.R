@@ -672,9 +672,16 @@ if (tools::file_ext(file_arg) == "7z") {
   tmp_bundle_list_path <- path(tempdir(), timestamped_bundle_list_name)
   tryCatch({
       list_conn <- file(tmp_bundle_list_path, open="wt")
-      writeLines(list_7z(tmp_bundle_path), con = list_conn)
+      lines <- list_7z(tmp_bundle_path)
+      if (length(str_which(lines, "[.][gG]0[0123]$")) > 1)
+        warning(
+          "Multiple restart files were bundled! Probably you need only one restart file. You can exclude directories and files from the bundle with BUNDLE_EXCLUDE_DIRS and BUNDLE_EXCLUDE_FILES.",
+          call. = FALSE,
+          immediate. = TRUE
+        )
+      writeLines(lines, con = list_conn)
       close(list_conn)
-      rm(list_conn)
+      rm(lines, list_conn)
     },
     error=function(cond) {
       message("Could not list the bundle content!")
