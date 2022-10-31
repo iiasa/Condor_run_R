@@ -1,0 +1,12 @@
+# See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
+LABEL = "submit_bundle_{Sys.Date()}"
+JOBS = c(0:49)
+REQUIREMENTS = c("R")
+REQUEST_MEMORY = 500
+REQUEST_DISK = 100
+LAUNCHER = "Rscript"
+SCRIPT = "test.R"
+ARGUMENTS = "%1"
+BUNDLE_INCLUDE = SCRIPT
+BUNDLE_DIR = "."
+WAIT_FOR_RUN_COMPLETION = TRUE

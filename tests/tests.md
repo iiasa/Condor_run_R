@@ -17,6 +17,7 @@ Tests listing:
 - [seed overrides](seed_overrides/purpose.md)
 - [seeding](seeding/purpose.md)
 - [simple condor](simple_condor/purpose.md)
+- [submit_bundle](submit_bundle/purpose.md)
 - [transport](transport/purpose.md)
 - [year guessing](year_guessing/purpose.md)
 
