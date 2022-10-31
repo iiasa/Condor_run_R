@@ -170,8 +170,7 @@ roots <- as.list(out_paths)
 # Remove aborted jobs
 indices_of_aborted_jobs <- c()
 for (i in seq_along(roots)) {
-  lines <- grep("\\) .* Job was aborted", readLines(str_glue("{roots[[i]]}.log")))
-  if (length(lines) > 0) {
+  if (length(str_which(readLines(str_glue("{roots[[i]]}.log")), "\\) .* Job was aborted")) > 0) {
     indices_of_aborted_jobs <- c(i, indices_of_aborted_jobs) # need inverse order for removal
     warning(str_glue("Ignoring aborted job {roots[[i]]}"))
   }
@@ -181,7 +180,7 @@ for (i in indices_of_aborted_jobs) {
   labels[[i]] = NULL
 }
 if (length(roots) == 0) stop("No jobs left to analyze!")
-rm (lines, indices_of_aborted_jobs)
+rm (indices_of_aborted_jobs)
 
 # Pre-load the .log and .out files to speed up extraction
 log_files <- list()
@@ -218,7 +217,7 @@ submit_times <- list()
 submit_time_warning <- FALSE
 submit_pattern <- "\\) (.*) Job submitted from host:"
 for (i in seq_along(roots)) {
-  lines <- grep(submit_pattern, log_files[[i]], value=TRUE)
+  lines <- str_subset(log_files[[i]], submit_pattern)
   if (length(lines) == 0) {
     if (!submit_time_warning) {
       warning(str_glue("Cannot find submit time in Condor event log (e.g. {roots[[i]]}.log). Unable to determine latency between job submission and start time. Latency results and plots will be partially or fully unavailable."))
@@ -239,7 +238,7 @@ start_times <- list()
 start_pattern <- "\\) (.*) Job executing on host: <(.*).\\d+?"
 hosts <- c()
 for (i in seq_along(roots)) {
-  lines <- grep(start_pattern, log_files[[i]], value=TRUE)
+  lines <- str_subset(log_files[[i]], start_pattern)
   if (length(lines) < 1) stop(str_glue("Cannot extract execution start time from {roots[[i]]}.log!"))
   # Use the last execution start time since that's on the
   # host that can be assumed to have completed the job.
@@ -259,7 +258,7 @@ rm(start_pattern, lines, mat, dtstr, ipstr, host)
 termination_times <- list()
 termination_pattern <- "\\) (.*) Job terminated.$"
 for (i in seq_along(roots)) {
-  lines <- grep(termination_pattern, log_files[[i]], value=TRUE)
+  lines <- str_subset(log_files[[i]], termination_pattern)
   if (length(lines) == 0) stop(str_glue("Cannot extract termination time from {roots[[i]]}.log!"))
   dtstr <- str_match(lines[length(lines)], termination_pattern)[2]
   if (is.na(dtstr)) stop(str_glue("Cannot decode termination time from {roots[[i]]}.log"))
@@ -271,7 +270,7 @@ rm(termination_pattern, lines, dtstr)
 cpus_usages <- list()
 cpus_usage_regexp <- "^\\s+Cpus\\s+:\\s+([[:digit:].]+)\\s+"
 for (i in seq_along(roots)) {
-  lines <- grep(cpus_usage_regexp, log_files[[i]], value=TRUE)
+  lines <- str_subset(log_files[[i]], cpus_usage_regexp)
   if (length(lines) == 0) stop(str_glue("Cannot extract CPUs usage from {roots[[i]]}.log!"))
   # Use the last match which should correspond to the job start that ran to completion.
   cpus_usage <- as.double(str_match(lines[length(lines)], cpus_usage_regexp)[2])
@@ -285,7 +284,7 @@ disk_usages <- list()
 disk_requests <- list()
 disk_regexp <- "^\\s+Disk \\(KB\\)\\s+:\\s+(\\d+)\\s+(\\d+)"
 for (i in seq_along(roots)) {
-  lines <- grep(disk_regexp, log_files[[i]], value=TRUE)
+  lines <- str_subset(log_files[[i]], disk_regexp)
   if (length(lines) == 0) stop(str_glue("Cannot extract disk usage from {roots[[i]]}.log!"))
   # Use the last match which should correspond to the job start that ran to completion.
   disk_match <-str_match(lines[length(lines)], disk_regexp)
@@ -302,7 +301,7 @@ rm(disk_regexp, lines, disk_match, disk_usage, disk_request)
 memory_usages <- list()
 memory_usage_regexp <- "^\\s+Memory \\(MB\\)\\s+:\\s+(\\d+)\\s+"
 for (i in seq_along(roots)) {
-  lines <- grep(memory_usage_regexp, log_files[[i]], value=TRUE)
+  lines <- str_subset(log_files[[i]], memory_usage_regexp)
   if (length(lines) == 0) stop(str_glue("Cannot extract memory usage from {roots[[i]]}.log!"))
   # Use the last match which should correspond to the job start that ran to completion.
   memory_usage <- as.double(str_match(lines[length(lines)], memory_usage_regexp)[2])
@@ -341,7 +340,7 @@ for (i in seq_along(roots)) {
 # grep "^Machine = " .machine.ad
 machine_pattern = '^Machine = "([^.]+)[.].*"'
 for (i in seq_along(roots)) {
-  lines <- grep(machine_pattern, out_files[[i]], value=TRUE)
+  lines <- str_subset(out_files[[i]], machine_pattern)
   if (lines > 0) {
     # Should be only one match at the very start of the .out
     host <- str_match(lines[[1]], machine_pattern)[2]
@@ -361,7 +360,7 @@ rm(lines, host)
 slots <- list()
 for (i in seq_along(roots)) {
   slot <- NA
-  lines <- grep("^_CONDOR_SLOT ?= ?.*$", out_files[[i]], value=TRUE)
+  lines <- str_subset(out_files[[i]], "^_CONDOR_SLOT ?= ?.*$")
   if (length(lines) > 0) {
     # try to match dynamic slot format and clip off dynamic slot number
     slot <- str_match(lines[[1]], "^_CONDOR_SLOT ?= ?(.*)_\\d+$")[2]
@@ -378,7 +377,7 @@ rm(lines, slot)
 total_CPLEX_times <- c()
 for (i in seq_along(roots)) {
   s <- NaN
-  for (line in grep("^Cplex Time: [0-9]+[.][0-9]+sec", out_files[[i]], value=TRUE)) {
+  for (line in str_subset(out_files[[i]], "^Cplex Time: [0-9]+[.][0-9]+sec")) {
     if (is.nan(s)) s<- 0
     s <- s + as.double(str_match(line, "^Cplex Time: ([0-9]+[.][0-9]+)sec")[2])
   }
