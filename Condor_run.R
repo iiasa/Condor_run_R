@@ -635,7 +635,7 @@ if (tools::file_ext(file_arg) == "7z") {
       in_gams_curdir(RESTART_FILE_PATH)
     ))
     added_size <- added_size + size$added
-    rm(args_for_7z, size)
+    rm(size)
     cat("\n")
   }
 
