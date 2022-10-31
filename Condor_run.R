@@ -130,6 +130,10 @@ BAT_TEMPLATE <- c(
   "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
   "set gams_dir=c:\\GAMS\\win64\\{GAMS_VERSION}",
   "if not exist %gams_dir% set gams_dir=c:\\GAMS\\{major_gams_version}",
+  "if not exist %gams_dir% (",
+  "  echo ERROR: GAMS version {GAMS_VERSION} is not installed on this machine!",
+  "  exit /b 1",
+  ")",
   "@echo on",
   "touch %bundle_root%\\{username}\\{timestamped_bundle_name} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7z x %bundle_root%\\{username}\\{timestamped_bundle_name} -y -x!{CHECKPOINT_FILE} >NUL || exit /b %errorlevel%',
