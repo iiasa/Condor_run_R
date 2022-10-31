@@ -276,13 +276,13 @@ bundle_with_7z <- function(args_for_7z) {
   }
   else {
     # Parse out the added number of bytes
-    scan_line <- out[[grep("^Scanning the drive:", out) + 1]]
+    scan_line <- out[[str_which(out, "^Scanning the drive:") + 1]]
     cat(scan_line, sep = "\n")
     added_size <- as.double(str_match(scan_line, ", (\\d+) bytes \\(")[2])
     if (is.na(added_size))
       stop("7-Zip added size parsing failed!", call. = FALSE) # 7-Zip output format has changed?
     # Parse out the size of the bundle on completion
-    size_line <- grep("^Archive size:", out, value = TRUE)
+    size_line <- str_subset(out, "^Archive size:")
     cat(size_line, sep = "\n")
     bundle_size <- as.double(str_match(size_line, "^Archive size: (\\d+) bytes")[2])
     if (is.na(bundle_size))
@@ -847,7 +847,7 @@ monitor <- function(clusters) {
     q_errors <- 0
 
     # Extract the totals line and parse it out
-    match <- str_match(grep(regexp, outerr, value=TRUE), regexp)
+    match <- str_match(str_subset(outerr, regexp), regexp)
     if (is.na(match[1])) {
       cat(outerr, sep="\n")
       stop("Monitoring Condor queue status with condor_q failed: unexpected output! Are you running a too old (< V8.7.2) Condor version?", call.=FALSE)
@@ -926,7 +926,7 @@ get_return_values <- function(log_file_paths) {
   for (i in seq_along(log_file_paths)) {
     tryCatch({
         loglines <- suppressWarnings(readLines(log_file_paths[[i]]))
-        return_value <- as.integer(str_match(tail(grep(return_value_regexp, loglines, value=TRUE), 1), return_value_regexp)[2])
+        return_value <- as.integer(str_match(tail(str_subset(loglines, return_value_regexp), 1), return_value_regexp)[2])
         return_values[[i]] <- return_value
       },
       error=function(cond) {
@@ -1104,7 +1104,7 @@ for (hostdom in hostdoms) {
     } else {
       # Seed job submitted, extract the cluster number
       tries_left <- 0
-      cluster <- as.integer(str_match(tail(grep(cluster_regexp, outerr, value=TRUE), 1), cluster_regexp)[2])
+      cluster <- as.integer(str_match(tail(str_subset(outerr, cluster_regexp), 1), cluster_regexp)[2])
       if (is.na(cluster)) {
         stop("Cannot extract cluster number from condor_submit output!")
       }
@@ -1275,7 +1275,7 @@ cat(outerr, sep="\n")
 if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
   stop("Submission of Condor run failed!")
 }
-cluster <- as.integer(str_match(tail(grep(cluster_regexp, outerr, value=TRUE), 1), cluster_regexp)[2])
+cluster <- as.integer(str_match(tail(str_subset(outerr, cluster_regexp), 1), cluster_regexp)[2])
 if (is.na(cluster)) {
   stop("Cannot extract cluster number from condor_submit output!")
 }
@@ -1343,7 +1343,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
     job_lines <- readLines(path(log_dir, str_glue("{PREFIX}_{cluster}.{job}.log")))
     memory_use <-
       as.double(str_match(tail(
-        grep(memory_use_regexp, job_lines, value = TRUE), 1
+        str_subset(job_lines, memory_use_regexp), 1
       ), memory_use_regexp)[2])
     if (!is.na(memory_use) && memory_use > max_memory_use) {
       max_memory_use <- memory_use
@@ -1351,7 +1351,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
     }
     disk_use <-
       as.double(str_match(tail(
-        grep(disk_use_regexp, job_lines, value = TRUE), 1
+        str_subset(job_lines, disk_use_regexp), 1
       ), disk_use_regexp)[2:3])
     if (!any(is.na(disk_use)) && disk_use[1] > max_disk_use) {
       max_disk_use <- disk_use[1]
@@ -1360,7 +1360,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
     }
     cpu_use <-
       as.double(str_match(tail(
-        grep(cpus_use_regexp, job_lines, value = TRUE), 1
+        str_subset(job_lines, cpus_use_regexp), 1
       ), cpus_use_regexp)[2])
     if (!is.na(cpu_use) && cpu_use > max_cpu_use) {
       max_cpu_use <- cpu_use
