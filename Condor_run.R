@@ -546,7 +546,7 @@ if (tools::file_ext(file_arg) == "7z") {
   }
 
   if (MERGE_GDX_OUTPUT && !GET_GDX_OUTPUT) stop("Cannot MERGE_GDX_OUTPUT without first doing GET_GDX_OUTPUT!")
-  if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT without first doing WAIT_FOR_RUN_COMPLETION!")
+  if (MERGE_GDX_OUTPUT && !WAIT_FOR_RUN_COMPLETION) stop("Cannot MERGE_GDX_OUTPUT without waiting for run completion! When MERGE_GDX_OUTPUT is TRUE, WAIT_FOR_RUN_COMPLETION may not be FALSE.")
   if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX_FILES without first doing MERGE_GDX_OUTPUT!")
   if (MERGE_GDX_OUTPUT) check_on_path("gdxmerge")
 
