@@ -34,6 +34,9 @@ The advantages of using these scripts over using [`condor_submit`](https://htcon
 - Manages submission of a set of related jobs in one go.
 - Conveniently collect many files into a submit bundle.
   * For jobs using many source and/or data files.
+- Allows (re-)submission of an existing bundle for:
+  * Submission from a separate submit node.
+  * Reproducible re-runs with the same set of files.
 - Replicate the project file tree on your submit machine to the remote scratch directory on the machine where a job is executed: an Execution Point (EP) in HTCondor terminology.
 - The submit bundle is compressed and takes less time to send to an EP.
 - EPs cache the bundle so that it needs to be sent over only once per EP instead of once per job, avoiding network contention or the hassle of instead setting up a shared network-accessible filesystem.
@@ -89,11 +92,11 @@ To only bundle the files and preserve the bundle, use:
 
 This can also be achieved by setting [`BUNDLE_ONLY = TRUE`](configuring.md#bundle_only) in the configuration file. To learn how to set up a configuration file, see the [documentation on configuring](configuring.md).
 
-To (re)submit a run from a pre-existing bundle, use:
+To (re)seed a bundle and (re)submit a run from a pre-existing bundle, use:
 
 `[Rscript ][path to]Condor_run[_basic].R <bundle file>.7z`
 
-**:point_right:Note:**  when you have made customizations to your R installation via site, profile or user environment files, it may be necessary to have `Rscript` ignore these customizations by using the `Rscript --vanilla` option on invocation.
+**:point_right:Note:** the configuration settings provided on creation of the bundle are used. These are stored in the bundle as a checkpoint file during bundling.
 
 After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. The command line arguments specify which runs to analyse and can either be a submit configuration `.R` file or a paths to a [directory containing run log files and other artifacts](configuring.md#condor_dir).
 
@@ -104,6 +107,8 @@ An example command line invocation is:
 `Rscript Condor_run_stats.R Condor/2021-11-25 config.R`
 
 This produces a PDF with plots in the current working directory. When invoking `Condor_run_stats.R` from RStudio by sourcing the script, set the first instance of LOG_DIRECTORIES to the path or paths of one or more directories containing Condor run log files to be analysed.
+
+**:warning:Beware:** when you have made customizations to your R installation via site, profile or user environment files, this may cause anomalies that make it necessary to have `Rscript` ignore these customizations by using the `Rscript --vanilla` option on invocation.
 
 ## Job output
 
