@@ -66,7 +66,7 @@ Path to GAMS file to run for each job, relative to [`GAMS_CURDIR`](#gams_curdir)
 
 ### GAMS_ARGUMENTS
 
-Additional GAMS arguments. You can use `{}` expansion to include other config settings, or expressions based on them, as arguments. Should include `%1` which expands to the job number.
+Additional GAMS arguments. You can use `{}` expansion to include other config settings, or expressions based on them. Should include `%1` which expands to the job number.
 
 ## Optional configuration parameters
 
