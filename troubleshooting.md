@@ -99,6 +99,14 @@ When seeding or regular jobs produce no `.log` files in a subdirectory of [`COND
 
 - The permissions on [`CONDOR_DIR`](configuring.md#condor_dir) prevent access by the locally running Condor daemon/service. Either change the permissions on [`CONDOR_DIR`](configuring.md#condor_dir) to give Condor access or reconfigure the Condor daemon/service to run from a different account or with additional rights as needed to access the [`CONDOR_DIR`](configuring.md#condor_dir) directory.
 
+## Seeding fails when removing a `.log` file
+
+When you get an error such as
+```
+Error: [EPERM] Failed to remove 'Condor/basic_2022-12-20/_seed_limpopo1.log': operation not permitted
+```
+the Condor daemon does not have sufficient permissions to access the [log directory of the run](configuring.md#condor_dir). The underlying problem is that the Condor daemon that does the logging does not run under your user account and as such does not have the same permissions as you do. Give other user accounts more rights on the log directory, or recursively from one of its parent directories.
+
 ## Jobs run but at the end fail to send and write output files
 
 There are two likely causes:
