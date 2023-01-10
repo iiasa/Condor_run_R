@@ -12,8 +12,9 @@ When you have an issue with getting your jobs to run or with retrieving output, 
 - [Seeding fails or jobs go on hold without producing matching `.log` files](#seeding-fails-or-jobs-go-on-hold-without-producing-matching-log-files)
 - [Jobs run but at the end fail to send and write output files](#jobs-run-but-at-the-end-fail-to-send-and-write-output-files)
 - [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
-- [`Condor_run_stats.R` produces empty plots](#condor_run_statsr-produces-empty-plots)
 - [Condor commands like `condor_q` fail](#condor-commands-like-condor_q-fail)
+- [You get `ERROR: Failed to connect to local queue manager`](#you-get-error-failed-to-connect-to-local-queue-manager)
+- [`Condor_run_stats.R` produces empty plots](#condor_run_statsr-produces-empty-plots)
 - [None of the above solves my problem](#none-of-the-above-solves-my-problem)
 - [Further information](#further-information)
 
@@ -133,6 +134,10 @@ CEDAR:6001:Failed to connect to <123.234.145.156:9618?addrs=123.234.145.156-9618
 ```
 
 In that case, restarting Condor daemons via [`condor_restart`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_restart.html) or rebooting might help.
+
+## You get `ERROR: Failed to connect to local queue manager`
+
+Try to reboot the machine you submit from, or restart the condor service there.
 
 ## `Condor_run_stats.R` produces empty plots
 
