@@ -14,6 +14,7 @@ When you have an issue with getting your jobs to run or with retrieving output, 
 - [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
 - [Condor commands like `condor_q` fail](#condor-commands-like-condor_q-fail)
 - [You get `ERROR: Failed to connect to local queue manager`](#you-get-error-failed-to-connect-to-local-queue-manager)
+- [You continue to get a `Submission lock file` message](#you-continue-to-get-a-submission-lock-file-message)
 - [`Condor_run_stats.R` produces empty plots](#condor_run_statsr-produces-empty-plots)
 - [None of the above solves my problem](#none-of-the-above-solves-my-problem)
 - [Further information](#further-information)
@@ -47,6 +48,17 @@ The output may be blocked. On Linux, this can happen on account of entering CTRL
 Try to submit again. It might be a transient error.
 
 If not, you may have recently changed your password and need to store your user credentials again with [`condor_store_cred add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) (see above).
+
+## You continue to get a `Submission lock file` message
+
+For technical reasons, you cannot submit two things at the same time, though two sets of jobs can run at the same time: it is just the submission stage that cannot be parallel. For that reason a lock file is used that notifies that a submission is ongoing. When you run the submit script while the lock file exists, the script will wait until it disappears.
+
+Normally, the lock file is always cleaned up, and then the additional submission will proceed. However, if the submit machine shuts down or loses power while a submission is ongoing, the lock file is not cleaned up. When running the submit script after that, you will keep on seeing a message like this:
+```
+Submission lock file <some file path> exists, another submission must be ongoing.
+Waiting for the submission lock file to disappear...
+```
+When you are sure that no other submission is ongoing, delete the lock file located at `<some file path>` and the submission will proceed.
 
 ## Seeding jobs remain idle and then abort through the PeriodicRemove expression
 
