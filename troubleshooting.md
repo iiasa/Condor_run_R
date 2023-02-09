@@ -102,7 +102,7 @@ When you are done analyzing the held jobs, use [`condor_rm`](https://htcondor.re
 
 ## Jobs go on hold but then run again
 
-Some error occurred and the affected jobs got released for retrying. This can happendwhen [`JOB_RELEASES`](configuring.md#job_releases) is set to a value larger than zero. The default value is three, so if you do not configure this value otherwise, the job will be retried up to the configured number of releases before going on hold permanently.
+Some error occurred and the affected jobs got released for retrying. This can happen when [`JOB_RELEASES`](configuring.md#job_releases) is set to a value larger than zero. The default value is three, so if you do not configure this value otherwise, the job will be retried up to the configured number of releases before going on hold permanently.
 
 This is useful when the error is on account of a transient condition such as an execute node being shut down or a network outage. Then jobs encountering the error will be rescheduled and likely succeed, removing the need for laboriously restarting just the failed jobs or the whole run.
 
