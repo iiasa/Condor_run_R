@@ -9,6 +9,7 @@ When you have an issue with getting your jobs to run or with retrieving output, 
 - [Seeding jobs remain idle and then abort through the PeriodicRemove expression](#seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
 - [Seeding jobs stay in the running state indefinitely](#seeding-jobs-stay-in-the-running-state-indefinitely)
 - [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
+- [Jobs go on hold but then run again](#jobs-go-on-hold-but-then-run-again)
 - [Seeding fails or jobs go on hold without producing matching `.log` files](#seeding-fails-or-jobs-go-on-hold-without-producing-matching-log-files)
 - [Jobs run but at the end fail to send and write output files](#jobs-run-but-at-the-end-fail-to-send-and-write-output-files)
 - [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
@@ -98,6 +99,14 @@ If the above does not clarify the problem, execute [`condor_q –analyze`](https
 When your analysis indicates that the error might still be transient, you can release the on-hold jobs for a retry by issuing [`condor_release <cluster number of the run>`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_release.html) or, if you have only one set of jobs going, [`condor_release <your user name>`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_release.html).
 
 When you are done analyzing the held jobs, use [`condor_rm`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_rm.html) (with a cluster number or your user name as argument) to remove them from the queue. This will clean up their working directories on the execution point.
+
+## Jobs go on hold but then run again
+
+Some error occurred and the affected jobs got released for retrying. This can happendwhen [`JOB_RELEASES`](configuring.md#job_releases) is set to a value larger than zero. The default value is three, so if you do not configure this value otherwise, the job will be retried up to the configured number of releases before going on hold permanently.
+
+This is useful when the error is on account of a transient condition such as an execute node being shut down or a network outage. Then jobs encountering the error will be rescheduled and likely succeed, removing the need for laboriously restarting just the failed jobs or the whole run.
+
+However, when the error is intrinsic to the job itself, for example a coding error, retrying is not useful since the job will go on hold every time. It is therefore makes sense to configure `JOB_RELEASES = 0` until you are sure that your jobs are working without problems.
 
 ## Seeding fails or jobs go on hold without producing matching `.log` files
 
