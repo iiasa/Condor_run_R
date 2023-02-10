@@ -8,7 +8,7 @@ When you have an issue with getting your jobs to run or with retrieving output, 
 - [You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials](#you-get-error-no-credential-stored-for-userdomain-but-did-store-your-credentials)
 - [Seeding jobs remain idle and then abort through the PeriodicRemove expression](#seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
 - [Seeding jobs stay in the running state indefinitely](#seeding-jobs-stay-in-the-running-state-indefinitely)
-- [Jobs do not run but instead go on hold](#jobs-do-not-run-but-instead-go-on-hold)
+- [Jobs go on hold](#jobs-go-on-hold)
 - [Jobs go on hold but then run again](#jobs-go-on-hold-but-then-run-again)
 - [Seeding fails or jobs go on hold without producing matching `.log` files](#seeding-fails-or-jobs-go-on-hold-without-producing-matching-log-files)
 - [Jobs run but at the end fail to send and write output files](#jobs-run-but-at-the-end-fail-to-send-and-write-output-files)
@@ -77,7 +77,7 @@ This can occur on account of outdated state such as a stale IP address being cac
 
 If the resubmission also stays stuck in the running state when transferring the bundle, stop the script, reboot, and then try to submit again.
 
-## Jobs do not run but instead go on hold
+## Jobs go on hold
 
 Some error occurred. Errors can be transient. With the [`JOB_RELEASES`](configuring.md#job_releases) retry count set, on-hold jobs will be auto-released for a retry after [`JOB_RELEASE_DELAY`](configuring.md#job_release_delay) seconds have passed in an attempt to recover from transient errors. This process can be monitored by examining the `.log` file of a job. When jobs keep on failing and the retry count runs out, they go on hold permanently.
 
@@ -102,7 +102,7 @@ When you are done analyzing the held jobs, use [`condor_rm`](https://htcondor.re
 
 ## Jobs go on hold but then run again
 
-Some error occurred and the affected jobs got released for retrying. This can happen when [`JOB_RELEASES`](configuring.md#job_releases) is set to a value larger than zero. The default value is three, so if you do not configure this value otherwise, the job will be retried up to the configured number of releases before going on hold permanently.
+Some error occurred and the affected jobs got released for retrying. This can happen when [`JOB_RELEASES`](configuring.md#job_releases) is set to a value larger than zero. The default value is three, so if you do not configure this value otherwise, the job will be retried up to three times before going on hold permanently.
 
 This is useful when the error is on account of a transient condition such as an execute node being shut down or a network outage. Then jobs encountering the error will be rescheduled and likely succeed, removing the need for laboriously restarting just the failed jobs or the whole run.
 
