@@ -454,21 +454,23 @@ if (tools::file_ext(file_arg) == "7z") {
     if (BUNDLE_DIR == "") stop("Configured BUNDLE_DIR may not be an empty path!")
     if (!(file_exists(BUNDLE_DIR))) stop(str_glue('Configure BUNDLE_DIR "{BUNDLE_DIR}" does not exist!'))
   }
+  # Check and massage configuration for output
+  OUTPUT_DIR <- str_glue(OUTPUT_DIR)
   if (GET_OUTPUT) {
     if (is.null(OUTPUT_DIR_SUBMIT)) {
       # Use OUTPUT_DIR on the submit machine side as well.
-      if (!(file_exists(OUTPUT_DIR))) stop(str_glue('Configured OUTPUT_DIR "{OUTPUT_DIR}" does not exist!'))
       OUTPUT_DIR_SUBMIT <- OUTPUT_DIR
     } else {
       # Use a separate OUTPUT_DIR_SUBMIT configuration on the submit machine side.
-      if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
-      if (!(file_exists(OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured OUTPUT_DIR_SUBMIT "{OUTPUT_DIR_SUBMIT}" does not exist!'))
+      OUTPUT_DIR_SUBMIT <- str_glue(OUTPUT_DIR_SUBMIT)
+      if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s) after {} expansion! Use / as path separator."))
     }
     if (OUTPUT_DIR == "") stop(str_glue('Configured OUTPUT_DIR may not be an empty path! Must be a valid relative path. Configure "." for the working directory.'))
     if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
     if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
-    if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
+    if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s) after {} expansion! Use / as path separator."))
     if (any(str_detect(OUTPUT_FILES, ',[<>|:?*" \\t/\\\\]'))) stop(str_glue("Configured OUTPUT_FILE or OUTPUT_FILES has forbidden character(s)!"))
+    if (!(file_exists(OUTPUT_DIR_SUBMIT))) dir_create(OUTPUT_DIR_SUBMIT)
   }
 
   # Ensure that a log directory to hold the .log/.err/.out files and other artifacts exists for the run
