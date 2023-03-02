@@ -2,4 +2,7 @@
 .Rhistory
 *.pdf
 Condor/
+output/
+gdx/
+work/
 /logs
