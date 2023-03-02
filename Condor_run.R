@@ -509,8 +509,8 @@ if (tools::file_ext(file_arg) == "7z") {
     if (!(file_exists(BUNDLE_DIR))) stop(str_glue('Configure BUNDLE_DIR "{BUNDLE_DIR}" does not exist!'))
   }
 
-  # Check and massage GAMS output config settings
-  if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) stop("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless.")
+  # Check and massage configuration for output
+  if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) warning("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless. Are you returning the output via a network filesystem?")
   if (GET_G00_OUTPUT) {
     if (is.null(G00_OUTPUT_DIR_SUBMIT)) {
       # Use G00_OUTPUT_DIR on the submit machine side as well.
