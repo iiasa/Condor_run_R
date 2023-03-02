@@ -512,18 +512,19 @@ if (tools::file_ext(file_arg) == "7z") {
   # Check and massage configuration for output
   if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) warning("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless. Are you returning the output via a network filesystem?")
   if (GET_G00_OUTPUT) {
+    G00_OUTPUT_DIR <- str_glue(G00_OUTPUT_DIR)
+    if (str_detect(G00_OUTPUT_DIR, "^/") || str_detect(G00_OUTPUT_DIR, "^.:")) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
+    if (str_detect(G00_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
+    if (str_detect(G00_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR has forbidden character(s) after {} expansion! Use / as path separator."))
     if (is.null(G00_OUTPUT_DIR_SUBMIT)) {
       # Use G00_OUTPUT_DIR on the submit machine side as well.
-      if (!(file_exists(in_gams_curdir(G00_OUTPUT_DIR)))) stop(str_glue('Configured G00_OUTPUT_DIR "{G00_OUTPUT_DIR}" does not exist relative to GAMS_CURDIR!'))
       G00_OUTPUT_DIR_SUBMIT <- in_gams_curdir(G00_OUTPUT_DIR)
     } else {
       # Use a separate G00_OUTPUT_DIR_SUBMIT configuration on the submit machine side
-      if (str_detect(G00_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR_SUBMIT has forbidden character(s)! Use / as path separator."))
-      if (!(file_exists(G00_OUTPUT_DIR_SUBMIT))) stop(str_glue('Configured G00_OUTPUT_DIR_SUBMIT "{G00_OUTPUT_DIR_SUBMIT}" does not exist!'))
+      G00_OUTPUT_DIR_SUBMIT <- str_glue(G00_OUTPUT_DIR_SUBMIT)
+      if (str_detect(G00_OUTPUT_DIR_SUBMIT, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR_SUBMIT has forbidden character(s) after {} expansion! Use / as path separator."))
     }
-    if (str_detect(G00_OUTPUT_DIR, "^/") || str_detect(G00_OUTPUT_DIR, "^.:")) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
-    if (str_detect(G00_OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured G00_OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
-    if (str_detect(G00_OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
+    if (!(file_exists(G00_OUTPUT_DIR_SUBMIT))) dir_create(G00_OUTPUT_DIR_SUBMIT)
     if (str_sub(G00_OUTPUT_FILE, -4) != ".g00") stop(str_glue("Configured G00_OUTPUT_FILE has no .g00 extension!"))
     if (str_length(G00_OUTPUT_FILE) <= 4) stop(str_glue("Configured G00_OUTPUT_FILE needs more than an extension!"))
     if (str_detect(G00_OUTPUT_FILE, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured G00_OUTPUT_FILE has forbidden character(s)!"))
