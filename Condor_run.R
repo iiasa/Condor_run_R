@@ -320,9 +320,9 @@ excludable <- function(dir_path) {
 # Returns the path to the log directory.
 create_log_dir <- function() {
   tryCatch({
-      if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
+      dir_create(CONDOR_DIR)
       log_dir <- path(CONDOR_DIR, LABEL)
-      if (!dir_exists(log_dir)) dir_create(log_dir)
+      dir_create(log_dir)
       return(log_dir)
     },
     error=function(cond) {
@@ -528,7 +528,7 @@ if (tools::file_ext(file_arg) == "7z") {
       G00_OUTPUT_DIR_SUBMIT <- str_glue(G00_OUTPUT_DIR_SUBMIT)
       if (str_detect(G00_OUTPUT_DIR_SUBMIT, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR_SUBMIT has forbidden character(s) after {} expansion! Use / as path separator."))
     }
-    if (!(file_exists(G00_OUTPUT_DIR_SUBMIT))) dir_create(G00_OUTPUT_DIR_SUBMIT)
+    dir_create(G00_OUTPUT_DIR_SUBMIT)
   }
   if (GET_GDX_OUTPUT) {
     # Check and massage configuration for GDX output
@@ -547,7 +547,7 @@ if (tools::file_ext(file_arg) == "7z") {
       GDX_OUTPUT_DIR_SUBMIT <- str_glue(GDX_OUTPUT_DIR_SUBMIT)
       if (str_detect(GDX_OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured GDX_OUTPUT_DIR_SUBMIT has forbidden character(s) after {} expansion! Use / as path separator."))
     }
-    if (!(file_exists(GDX_OUTPUT_DIR_SUBMIT))) dir_create(GDX_OUTPUT_DIR_SUBMIT)
+    dir_create(GDX_OUTPUT_DIR_SUBMIT)
   }
 
   if (MERGE_GDX_OUTPUT && !GET_GDX_OUTPUT) stop("Cannot MERGE_GDX_OUTPUT without first doing GET_GDX_OUTPUT!")

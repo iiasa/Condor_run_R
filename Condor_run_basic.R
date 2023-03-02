@@ -471,13 +471,13 @@ if (tools::file_ext(file_arg) == "7z") {
       OUTPUT_DIR_SUBMIT <- str_glue(OUTPUT_DIR_SUBMIT)
       if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s) after {} expansion! Use / as path separator."))
     }
-    if (!(file_exists(OUTPUT_DIR_SUBMIT))) dir_create(OUTPUT_DIR_SUBMIT)
+    dir_create(OUTPUT_DIR_SUBMIT)
   }
 
   # Ensure that a log directory to hold the .log/.err/.out files and other artifacts exists for the run
-  if (!dir_exists(CONDOR_DIR)) dir_create(CONDOR_DIR)
+  dir_create(CONDOR_DIR)
   log_dir <- path(CONDOR_DIR, LABEL)
-  if (!dir_exists(log_dir)) dir_create(log_dir)
+  dir_create(log_dir)
 
   # ---- Bundle the files needed to run the jobs ----
 
