@@ -457,6 +457,7 @@ if (tools::file_ext(file_arg) == "7z") {
 
   # Check and massage configuration for output
   if (GET_OUTPUT) {
+    if (any(str_detect(OUTPUT_FILES, ',[<>|:?*" \\t/\\\\]'))) stop(str_glue("Configured OUTPUT_FILE or OUTPUT_FILES has forbidden character(s)!"))
     OUTPUT_DIR <- str_glue(OUTPUT_DIR)
     if (OUTPUT_DIR == "") stop(str_glue('Configured OUTPUT_DIR may not be an empty path! Must be a valid relative path. Configure "." for the working directory.'))
     if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
@@ -471,7 +472,6 @@ if (tools::file_ext(file_arg) == "7z") {
       if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s) after {} expansion! Use / as path separator."))
     }
     if (!(file_exists(OUTPUT_DIR_SUBMIT))) dir_create(OUTPUT_DIR_SUBMIT)
-    if (any(str_detect(OUTPUT_FILES, ',[<>|:?*" \\t/\\\\]'))) stop(str_glue("Configured OUTPUT_FILE or OUTPUT_FILES has forbidden character(s)!"))
   }
 
   # Ensure that a log directory to hold the .log/.err/.out files and other artifacts exists for the run
