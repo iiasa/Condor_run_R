@@ -178,7 +178,7 @@ suppressWarnings(library(stringr))
 # Define constants
 CHECKPOINT_FILE = "submit_checkpoint.RData"
 API <- "Condor_run_basic"
-API_VERSION <- "v1"
+API_VERSION <- "v2"
 USAGE <- str_c("Usage:",
                "[Rscript ]Condor_run_basic.R [--bundle-only] <config file>|<bundle file with .7z extension>",
                "Full documentation: https://github.com/iiasa/Condor_run_R#use",
