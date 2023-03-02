@@ -317,6 +317,8 @@ Directory on the submit machine into where job output files are transferred. Can
 
 When `OUTPUT_DIR_SUBMIT` is set and does not exist, it will be created if `GET_OUTPUT` is `TRUE`.
 
+Supports `{}` expansion, you can for example use `output/{LABEL}` to receive output files in subdirectories named by the label of the run. This helps to keep the output of different runs separate.
+
 ### OUTPUT_FILES
 
 Default value: `c("output.RData")`
@@ -340,6 +342,8 @@ Default value: `""`
 When set (changed from its `""` default), this configures the directory for storing [work/save output files](https://www.gams.com/latest/docs/UG_SaveRestart.html). Relative to [`GAMS_CURDIR`](#gams_curdir) on the execution point (EP) and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
 
 When `G00_OUTPUT_DIR` is set and does not exist it will be created if `GET_G00_OUTPUT` is `TRUE`.
+
+Supports `{}` expansion, you can for example use `work/{LABEL}` to receive the work/save output files in subdirectories named by the label of the run. This helps to keep the output of different runs separate.
 
 ### G00_OUTPUT_DIR_SUBMIT
 
@@ -368,6 +372,8 @@ Default value: `""`
 When set (changed from its `""` default), this sets the directory for storing GDX output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execution point also on the submit machine when [`GDX_OUTPUT_DIR_SUBMIT`](#gdx_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
 
 When `GDX_OUTPUT_DIR` is set and does not exist it will be created unless `GET_GDX_OUTPUT` is `FALSE`.
+
+Supports `{}` expansion, you can for example use `gdx/{LABEL}` to receive the GDX output files in subdirectories named by the label of the run. This helps to keep the output of different runs separate.
 
 ### GDX_OUTPUT_DIR_SUBMIT
 
