@@ -335,7 +335,7 @@ Default value: `FALSE`
 
 Default value: `""`
 
-When set (changed from its `""` default), this configures the directory for storing work/save output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execution point (EP) and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
+When set (changed from its `""` default), this configures the directory for storing [work/save output files](https://www.gams.com/latest/docs/UG_SaveRestart.html). Relative to [`GAMS_CURDIR`](#gams_curdir) on the execution point (EP) and also on the submit machine side when [`G00_OUTPUT_DIR_SUBMIT`](#g00_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
 
 When set and when `G00_OUTPUT_DIR` does not exist on the EP the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` will create it.
 
@@ -343,13 +343,13 @@ When set and when `G00_OUTPUT_DIR` does not exist on the EP the default [`BAT_TE
 
 Default value: `NULL`
 
-Directory on the submit machine into where `.g00` job work/save files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`G00_OUTPUT_DIR`](#g00_output_dir) will be used instead.
+Directory on the submit machine into where `.g00` job [work/save output files](https://www.gams.com/latest/docs/UG_SaveRestart.html) are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`G00_OUTPUT_DIR`](#g00_output_dir) will be used instead.
 
 ### G00_OUTPUT_FILE
 
 Default value: `""`
 
-Name of work/save file produced by a job on the execution point the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred to the submit machine.
+Name of work/save file produced by a job on the execution point via the [`save=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred to the submit machine.
 
 **:point_right:Note:** to automatically process G00 output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
 
