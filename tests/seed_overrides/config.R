@@ -6,9 +6,9 @@ REQUEST_MEMORY = 40
 REQUEST_DISK = 40
 LAUNCHER = "Rscript"
 ARGUMENTS = "--help"
-WAIT_FOR_RUN_COMPLETION = FALSE
-GET_OUTPUT = FALSE
 RETAIN_SEED_ARTIFACTS = TRUE
 SEED_JOB_OVERRIDES = list(
   "periodic_remove" = "periodic_remove = (JobStatus == 1) && (time() - EnteredCurrentStatus > 333 )"
 )
+GET_OUTPUT = FALSE
+WAIT_FOR_RUN_COMPLETION = FALSE

@@ -6,8 +6,8 @@ REQUEST_MEMORY = 40
 REQUEST_DISK = 40
 LAUNCHER = "Rscript"
 ARGUMENTS = "--help"
-WAIT_FOR_RUN_COMPLETION = TRUE
-GET_OUTPUT = FALSE
 JOB_OVERRIDES = list(
   "periodic_release" = "periodic_remove = (JobStatus == {2+3})"
 )
+GET_OUTPUT = FALSE
+WAIT_FOR_RUN_COMPLETION = TRUE
