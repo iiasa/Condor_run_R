@@ -233,7 +233,7 @@ Default value: `1`
 
 Number of hardware threads to reserve for each job. The default value is good for jobs that are single-threaded, or mostly so. When your job involves significant multiprocessing, set this value to an estimate of the average number of in-use threads. A small table at the end of the `.log` file of a job located in the [log directory of the run](#condor_dir) will record the average hardware thread usage when the job completes.
   
-The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CPU can contain multiple processing cores, with each core potentially able to run multiple hardware threads, typically two per core. It is those hardware threads—each able to support and independent parallel execution context—that this setting and the statistic in the `.log` file refers to.
+The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CPU can contain multiple processing cores, with each core potentially able to run multiple hardware threads, typically two per core. It is those hardware threads—each able to support an independent parallel execution context—that this setting and the statistic in the `.log` file refers to.
 
 **:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
