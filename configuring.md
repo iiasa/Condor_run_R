@@ -315,7 +315,7 @@ Default value: `NULL`
 
 Directory on the submit machine into where job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`OUTPUT_DIR`](#output_dir) will be used instead.
 
-When `OUTPUT_DIR_SUBMIT` is set and does not exist, it will be created if `GET_OUTPUT` is `TRUE`.
+When set and when the directory does not exist, the directory will be created if `GET_OUTPUT` is `TRUE`. If the directory is comprised of multiple path elements, the subdirectories will be created recursively.
 
 Supports `{}` expansion, you can for example use `output/{LABEL}` to receive output files in subdirectories named by the label of the run. This helps to keep the output of different runs separate.
 
@@ -343,15 +343,15 @@ When set (changed from its `""` default), this configures the directory for stor
 
 When `G00_OUTPUT_DIR` is set and does not exist it will be created if `GET_G00_OUTPUT` is `TRUE`.
 
-Supports `{}` expansion, you can for example use `work/{LABEL}` to receive the work/save output files in subdirectories named by the label of the run. This helps to keep the output of different runs separate.
-
 ### G00_OUTPUT_DIR_SUBMIT
 
 Default value: `NULL`
 
 Directory on the submit machine into where `.g00` job [work/save output files](https://www.gams.com/latest/docs/UG_SaveRestart.html) are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`G00_OUTPUT_DIR`](#g00_output_dir) will be used instead.
 
-When set and when `G00_OUTPUT_DIR_SUBMIT` does not exist it will be created if `GET_G00_OUTPUT` is `TRUE`.
+When set and when the directory does not exist, the directory will be created if `GET_G00_OUTPUT` is `TRUE`. If the directory is comprised of multiple path elements, the subdirectories will be created recursively.
+
+Supports `{}` expansion, you can for example use `work/{LABEL}` to receive the work/save output files in subdirectories named by the label of the run. This helps to keep the output of different runs separate.
 
 ### G00_OUTPUT_FILE
 
@@ -373,13 +373,15 @@ When set (changed from its `""` default), this sets the directory for storing GD
 
 When `GDX_OUTPUT_DIR` is set and does not exist it will be created unless `GET_GDX_OUTPUT` is `FALSE`.
 
-Supports `{}` expansion, you can for example use `gdx/{LABEL}` to receive the GDX output files in subdirectories named by the label of the run. This helps to keep the output of different runs separate.
-
 ### GDX_OUTPUT_DIR_SUBMIT
 
 Default value: `NULL`
 
 Directory on the submit machine into where GDX job output files are transferred. Can also be an absolute path. Excluded from bundle. When set to `NULL`, [`GDX_OUTPUT_DIR`](#gdx_output_dir) will be used instead.
+
+When set and when the directory does not exist, the directory will be created if `GET_GDX_OUTPUT` is `TRUE`. If the directory is comprised of multiple path elements, the subdirectories will be created recursively.
+
+Supports `{}` expansion, you can for example use `gdx/{LABEL}` to receive the GDX output files in subdirectories named by the label of the run. This helps to keep the output of different runs separate.
 
 ### GDX_OUTPUT_FILE
 
