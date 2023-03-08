@@ -96,7 +96,7 @@ JOB_TEMPLATE <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_output_files = {ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_DIR}/{OUTPUT_FILES}"), collapse=","), "")}',
+  'transfer_output_files = {ifelse(GET_OUTPUT, str_c(path(OUTPUT_DIR, OUTPUT_FILES), collapse=","), "")}',
   'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_FILES}={OUTPUT_DIR_SUBMIT}/{output_prefixes}.$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extensions}"), collapse=";"), "")}"',
   "",
   "notification = {NOTIFICATION}",
@@ -468,6 +468,7 @@ if (tools::file_ext(file_arg) == "7z") {
     } else {
       # Use a separate OUTPUT_DIR_SUBMIT configuration on the submit machine side.
       OUTPUT_DIR_SUBMIT <- str_glue(OUTPUT_DIR_SUBMIT)
+      if (OUTPUT_DIR_SUBMIT == "") stop(str_glue('Configured OUTPUT_DIR_SUBMIT may not be an empty path! Must be a valid relative path. Configure "." for the working directory.'))
       if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s) after {} expansion! Use / as path separator."))
     }
     dir_create(OUTPUT_DIR_SUBMIT)
