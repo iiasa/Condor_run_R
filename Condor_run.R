@@ -108,8 +108,8 @@ JOB_TEMPLATE <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_output_files = {str_sub(in_gams_curdir(GAMS_FILE_PATH), 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_glue(",{in_gams_curdir(G00_OUTPUT_DIR)}/{G00_OUTPUT_FILE}"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(",{in_gams_curdir(GDX_OUTPUT_DIR)}/{GDX_OUTPUT_FILE}"), "")}',
-  'transfer_output_remaps = "{str_sub(GAMS_FILE_PATH, 1, -5)}.lst={log_dir}/{PREFIX}_$(cluster).$(job).lst{ifelse(GET_G00_OUTPUT, str_glue(";{G00_OUTPUT_FILE}={G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}.$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_glue(";{GDX_OUTPUT_FILE}={GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}.$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_output_files = {str_sub(in_gams_curdir(GAMS_FILE_PATH), 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_c(",", in_gams_curdir(G00_OUTPUT_DIR, G00_OUTPUT_FILE)), "")}{ifelse(GET_GDX_OUTPUT, str_c(",", in_gams_curdir(GDX_OUTPUT_DIR, GDX_OUTPUT_FILE)), "")}',
+  'transfer_output_remaps = "{str_c(str_sub(GAMS_FILE_PATH, 1, -5), ".lst=", path_norm(path(log_dir, PREFIX)), "_$(cluster).$(job).lst")}{ifelse(GET_G00_OUTPUT, str_c(";", G00_OUTPUT_FILE, "=", path_norm(path(G00_OUTPUT_DIR_SUBMIT, g00_prefix)), ".$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_c(";", GDX_OUTPUT_FILE, "=", path_norm(path(GDX_OUTPUT_DIR_SUBMIT, gdx_prefix)), ".$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -333,14 +333,19 @@ create_log_dir <- function() {
   )
 }
 
-# Define a function to turn a path relative to GAMS_CURDIR into a path relative to the working directory when GAMS_CURDIR is set.
-in_gams_curdir <- function(path) {
+# Define a function to turn a path relative to GAMS_CURDIR into a path
+# relative to the working directory when GAMS_CURDIR is set. You can
+# specify an optional second path element.
+in_gams_curdir <- function(path1, path2 = NULL) {
+  gcd <- GAMS_CURDIR
   if (GAMS_CURDIR == "") {
-    # Needed because path_norm() with an empty path builds an absolute path
-    return(path)
+    # Needed because path() with an empty first element builds an absolute path
+    gcd <- "."
   }
-  else {
-    return(path_norm(path(GAMS_CURDIR, path)))
+  if (is.null(path2)) {
+    return(path_norm(path(gcd, path1)))
+  } else {
+    return(path_norm(path(gcd, path1, path2)))
   }
 }
 
