@@ -33,7 +33,7 @@ jobs and thus should not be used when you have
 other jobs running.
 
 To view the available resources on limpopo6, run the
-`avail.sh` (Linux/MacOS)` or `avail.bat` (Windows)
+`avail.sh` (Linux/MacOS) or `avail.bat` (Windows)
 script. Doing so before and after submitting the
 reserve job should show a reduction of available
 resources matching what you configured in
