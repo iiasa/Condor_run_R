@@ -14,6 +14,7 @@ Tests listing:
 - [overrides](overrides/purpose.md)
 - [parallel](parallel/purpose.md)
 - [periodic_release](periodic_release/purpose.md)
+- [reserve_limpopo6_resources](reserve_limpopo6_resources/purpose.md)
 - [seed overrides](seed_overrides/purpose.md)
 - [seeding](seeding/purpose.md)
 - [simple condor](simple_condor/purpose.md)
