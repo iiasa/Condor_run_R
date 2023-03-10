@@ -290,20 +290,19 @@ Default value: `TRUE`
 
 Clear status monitoring lines so as to show only the last status, set to FALSE when this does not work. This might be the case when the output goes into the chunk output of an RMarkdown notebook in RStudio while [this RStudio issue](https://github.com/rstudio/rstudio/issues/8040) is not yet resolved in the RStudio version that you are using.
 
-## `Condor_run_basic.R`-specific optional configuration parameters
-
-### SCRIPT
-Default value: `""`  
-
-The script to launch with [`LAUNCHER`](#launcher). When empty (the default) the job is not defined by a script but rather by the executable/binary specified in the [`LAUNCHER`](#launcher) setting.
-
 ### GET_OUTPUT
 
-Default value: `TRUE`
+Default value: `TRUE` for `Condor_run_basic.R`.
+
+Default value: `FALSE` for `Condor_run.R`.
+
+When `TRUE` the `OUTPUT_DIR`/`OUTPUT_DIR_SUBMIT`/`OUTPUT_FILES` settings below are used to retrieve output files. Note the `Condor_run.R` has similar `GDX_OUTPUT` and `G00_OUTPUT` settings to specifically retrieve GDX and work/restart files.
 
 ### OUTPUT_DIR
 
-Default value: `"output"`
+Default value: `"output"` for `Condor_run_basic.R`.
+
+Default value: `""` for `Condor_run.R`.
 
 Directory for output files. Relative to the current working directory on the execution point and also on the submit machine when [`OUTPUT_DIR_SUBMIT`](#output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
 
@@ -321,13 +320,22 @@ Supports `{}` expansion, you can for example use `output/{LABEL}` to receive out
 
 ### OUTPUT_FILES
 
-Default value: `c("output.RData")`
+Default value: `c("output.RData")` for `Condor_run_basic.R`.
+
+Default value: `""` for `Condor_run.R`.
 
 Synonym: OUTPUT_FILE
 
 Name(s) of the output file(s) as produced by a job on the execution point. Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred back to the submit machine.
 
 **:point_right:Note:** to automatically process output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
+
+## `Condor_run_basic.R`-specific optional configuration parameters
+
+### SCRIPT
+Default value: `""`
+
+The script to launch with [`LAUNCHER`](#launcher). When empty (the default) the job is not defined by a script but rather by the executable/binary specified in the [`LAUNCHER`](#launcher) setting.
 
 ## `Condor_run.R`-specific optional configuration parameters
 
