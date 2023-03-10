@@ -1476,9 +1476,13 @@ if (WAIT_FOR_RUN_COMPLETION) {
         sep="\n")
   }
   if (GET_G00_OUTPUT) {
-    cat(str_glue("After the run completes, you can find the G00 results at: {G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}.*.g00"), sep="\n")
+    cat("After the run completes, you can find the G00 results at:",
+        str_glue("    {G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}.*.g00"),
+        sep="\n")
   }
   if (GET_GDX_OUTPUT) {
-    cat(str_glue("After the run completes, you can find the GDX results at: {GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}.*.gdx"), sep="\n")
+    cat("After the run completes, you can find the GDX results at:",
+        str_glue("    {GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}.*.gdx"),
+        sep="\n")
   }
 }
