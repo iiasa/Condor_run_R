@@ -296,7 +296,7 @@ Default value: `TRUE` for `Condor_run_basic.R`.
 
 Default value: `FALSE` for `Condor_run.R`.
 
-When `TRUE` the `OUTPUT_DIR`/`OUTPUT_DIR_SUBMIT`/`OUTPUT_FILES` settings below are used to retrieve output files. Note the `Condor_run.R` has similar `GDX_OUTPUT` and `G00_OUTPUT` settings to specifically retrieve GDX and work/restart files.
+When `TRUE` the `OUTPUT_DIR`/`OUTPUT_DIR_SUBMIT`/`OUTPUT_FILES` settings below are used to retrieve output files. Note that `Condor_run.R` has similar `*GDX_OUTPUT*` and `*G00_OUTPUT*` settings to specifically retrieve a GDX or a work/save file.
 
 ### OUTPUT_DIR
 
@@ -304,7 +304,7 @@ Default value: `"output"` for `Condor_run_basic.R`.
 
 Default value: `""` for `Condor_run.R`.
 
-Directory for output files. Relative to the current working directory on the execution point and also on the submit machine when [`OUTPUT_DIR_SUBMIT`](#output_dir_submit) is not set. In that case, the directory is excluded form the bundle.
+Directory for output files. Relative to the current working directory on the execution point and also on the submit machine when [`OUTPUT_DIR_SUBMIT`](#output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
 
 When `OUTPUT_DIR` does not exist, it will be created.
 
@@ -343,6 +343,8 @@ The script to launch with [`LAUNCHER`](#launcher). When empty (the default) the 
 
 Default value: `FALSE`
 
+When `TRUE` the `G00_OUTPUT_DIR`/`G00_OUTPUT_DIR_SUBMIT`/`G00_OUTPUT_FILE` settings below are used to retrieve a work/save file.
+
 ### G00_OUTPUT_DIR
 
 Default value: `""`
@@ -372,6 +374,8 @@ Name of work/save file produced by a job on the execution point via the [`save=`
 ### GET_GDX_OUTPUT
 
 Default value: `FALSE`
+
+When `TRUE` the `GDX_OUTPUT_DIR`/`GDX_OUTPUT_DIR_SUBMIT`/`GDX_OUTPUT_FILE` settings below are used to retrieve a GDX file.
 
 ### GDX_OUTPUT_DIR
 
