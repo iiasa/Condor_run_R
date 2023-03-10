@@ -55,6 +55,10 @@ REQUIREMENTS = c("GAMS")
 REQUEST_CPUS = 1
 REQUEST_DISK = 1000000 # KiB
 CONDOR_DIR = "Condor"
+GET_OUTPUT = FALSE
+OUTPUT_DIR = ""
+OUTPUT_DIR_SUBMIT = NULL
+OUTPUT_FILES = ""
 GAMS_CURDIR = "."
 RESTART_FILE_PATH = ""
 MERGE_GDX_OUTPUT = FALSE
@@ -108,8 +112,8 @@ JOB_TEMPLATE <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_output_files = {str_sub(in_gams_curdir(GAMS_FILE_PATH), 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_c(",", in_gams_curdir(G00_OUTPUT_DIR, G00_OUTPUT_FILE)), "")}{ifelse(GET_GDX_OUTPUT, str_c(",", in_gams_curdir(GDX_OUTPUT_DIR, GDX_OUTPUT_FILE)), "")}',
-  'transfer_output_remaps = "{str_c(str_sub(GAMS_FILE_PATH, 1, -5), ".lst=", path_norm(path(log_dir, PREFIX)), "_$(cluster).$(job).lst")}{ifelse(GET_G00_OUTPUT, str_c(";", G00_OUTPUT_FILE, "=", path_norm(path(G00_OUTPUT_DIR_SUBMIT, g00_prefix)), ".$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_c(";", GDX_OUTPUT_FILE, "=", path_norm(path(GDX_OUTPUT_DIR_SUBMIT, gdx_prefix)), ".$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_output_files = {ifelse(GET_OUTPUT, str_c(path(OUTPUT_DIR, OUTPUT_FILES), collapse=","), "")}{str_sub(in_gams_curdir(GAMS_FILE_PATH), 1, -5)}.lst{ifelse(GET_G00_OUTPUT, str_c(",", in_gams_curdir(G00_OUTPUT_DIR, G00_OUTPUT_FILE)), "")}{ifelse(GET_GDX_OUTPUT, str_c(",", in_gams_curdir(GDX_OUTPUT_DIR, GDX_OUTPUT_FILE)), "")}',
+  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_FILES}={OUTPUT_DIR_SUBMIT}/{output_prefixes}.$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extensions}"), collapse=";"), "")}{str_c(str_sub(GAMS_FILE_PATH, 1, -5), ".lst=", path_norm(path(log_dir, PREFIX)), "_$(cluster).$(job).lst")}{ifelse(GET_G00_OUTPUT, str_c(";", G00_OUTPUT_FILE, "=", path_norm(path(G00_OUTPUT_DIR_SUBMIT, g00_prefix)), ".$(job).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_c(";", GDX_OUTPUT_FILE, "=", path_norm(path(GDX_OUTPUT_DIR_SUBMIT, gdx_prefix)), ".$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -475,6 +479,10 @@ if (tools::file_ext(file_arg) == "7z") {
     LABEL <- PROJECT
     rm(PROJECT)
   }
+  if (exists("OUTPUT_FILE")) {
+    OUTPUT_FILES <- OUTPUT_FILE
+    rm(OUTPUT_FILE)
+  }
 
   # Check and massage specific config settings
   if (GAMS_CURDIR != "" && !dir_exists(GAMS_CURDIR)) stop(str_glue("No {GAMS_CURDIR} directory as configured in GAMS_CURDIR found relative to working directory {getwd()}!"))
@@ -515,7 +523,24 @@ if (tools::file_ext(file_arg) == "7z") {
   }
 
   # Check and massage configuration for output
-  if (!(GET_G00_OUTPUT || GET_GDX_OUTPUT)) warning("Neither GET_G00_OUTPUT nor GET_GDX_OUTPUT are TRUE! A run without output is pointless. Are you returning the output via a network filesystem?")
+  if (!(GET_OUTPUT || GET_G00_OUTPUT || GET_GDX_OUTPUT)) warning("GET_OUTPUT, GET_G00_OUTPUT, and GET_GDX_OUTPUT are not set to TRUE. A run without output is pointless. Are you returning the output via a network filesystem?")
+  if (GET_OUTPUT) {
+    if (any(str_detect(OUTPUT_FILES, ',[<>|:?*" \\t/\\\\]'))) stop(str_glue("Configured OUTPUT_FILE or OUTPUT_FILES has forbidden character(s)!"))
+    if (OUTPUT_DIR == "") stop(str_glue('Configured OUTPUT_DIR may not be an empty path! Must be a valid relative path. Configure "." for the working directory.'))
+    if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
+    if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
+    if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
+    if (is.null(OUTPUT_DIR_SUBMIT)) {
+      # Use OUTPUT_DIR on the submit machine side as well.
+      OUTPUT_DIR_SUBMIT <- OUTPUT_DIR
+    } else {
+      # Use a separate OUTPUT_DIR_SUBMIT configuration on the submit machine side.
+      OUTPUT_DIR_SUBMIT <- str_glue(OUTPUT_DIR_SUBMIT)
+      if (OUTPUT_DIR_SUBMIT == "") stop(str_glue('Configured OUTPUT_DIR_SUBMIT may not be an empty path! Must be a valid relative path. Configure "." for the working directory.'))
+      if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s) after {} expansion! Use / as path separator."))
+    }
+    dir_create(OUTPUT_DIR_SUBMIT)
+  }
   if (GET_G00_OUTPUT) {
     # Check and massage configuration for work/save file output
     if (str_sub(G00_OUTPUT_FILE, -4) != ".g00") stop(str_glue("Configured G00_OUTPUT_FILE has no .g00 extension!"))
@@ -606,6 +631,7 @@ if (tools::file_ext(file_arg) == "7z") {
     unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
     ifelse(excludable(CONDOR_DIR), "-xr!{CONDOR_DIR}", ""),
+    ifelse(excludable(OUTPUT_DIR_SUBMIT), "-xr!{OUTPUT_DIR_SUBMIT}", ""),
     ifelse(excludable(G00_OUTPUT_DIR_SUBMIT), "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
     ifelse(excludable(GDX_OUTPUT_DIR_SUBMIT), "-xr!{GDX_OUTPUT_DIR_SUBMIT}", ""),
     tmp_bundle_path,
@@ -1262,8 +1288,10 @@ writeLines(unlist(lapply(BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
 
-# Generate G00 and GDX output file remapping prefixes for keeping output files of different runs separate.
+# Generate output file remapping prefixes for keeping output files of different runs separate.
 # Separating the output files of different jobs within a run is handled in the job template.
+output_prefixes <- str_glue("{tools::file_path_sans_ext(OUTPUT_FILES)}_{predicted_cluster}")
+output_extensions <- tools::file_ext(OUTPUT_FILES)
 g00_prefix <- ifelse(GET_G00_OUTPUT, str_glue("{tools::file_path_sans_ext(G00_OUTPUT_FILE)}_{predicted_cluster}"), "")
 gdx_prefix <- ifelse(GET_GDX_OUTPUT, str_glue("{tools::file_path_sans_ext(GDX_OUTPUT_FILE)}_{predicted_cluster}"), "")
 
@@ -1325,6 +1353,9 @@ if (WAIT_FOR_RUN_COMPLETION) {
 
   # Check that result files exist and are not empty, warn otherwise and delete empty files
   all_exist_and_not_empty(log_dir, "_{PREFIX}_{cluster}.{job}.err", warn=FALSE)
+  if (GET_OUTPUT) {
+    output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR_SUBMIT, '{output_prefixes}.{sprintf("%06d", job)}.{output_extensions}')
+  }
   all_exist_and_not_empty(log_dir, "{PREFIX}_{cluster}.{job}.lst")
   if (GET_G00_OUTPUT) {
     g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, "{g00_prefix}.{job}.g00")
@@ -1438,6 +1469,11 @@ if (WAIT_FOR_RUN_COMPLETION) {
   alarm()
 } else {
   cat(str_glue("You can monitor progress of the run with: condor_q {cluster}."), sep="\n")
+  if (GET_OUTPUT) {
+    cat("After the run completes, you can find the output files at:",
+        str_glue("    {OUTPUT_DIR_SUBMIT}/{output_prefixes}.*"),
+        sep="\n")
+  }
   if (GET_G00_OUTPUT) {
     cat(str_glue("After the run completes, you can find the G00 results at: {G00_OUTPUT_DIR_SUBMIT}/{g00_prefix}.*.g00"), sep="\n")
   }
