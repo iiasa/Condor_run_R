@@ -456,6 +456,7 @@ if (tools::file_ext(file_arg) == "7z") {
   }
 
   # Check and massage configuration for output
+  if (!(GET_OUTPUT)) warning("GET_OUTPUT is not set to TRUE. A run without output is pointless. Are you returning the output via a network filesystem?")
   if (GET_OUTPUT) {
     if (any(str_detect(OUTPUT_FILES, ',[<>|:?*" \\t/\\\\]'))) stop(str_glue("Configured OUTPUT_FILE or OUTPUT_FILES has forbidden character(s)!"))
     if (OUTPUT_DIR == "") stop(str_glue('Configured OUTPUT_DIR may not be an empty path! Must be a valid relative path. Configure "." for the working directory.'))
