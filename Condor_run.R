@@ -326,7 +326,7 @@ excludable <- function(dir_path) {
 create_log_dir <- function() {
   tryCatch({
       dir_create(CONDOR_DIR)
-      log_dir <- path(CONDOR_DIR, LABEL)
+      log_dir <- path_norm(path(CONDOR_DIR, LABEL))
       dir_create(log_dir)
       return(log_dir)
     },
