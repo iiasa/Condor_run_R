@@ -138,7 +138,7 @@ SEED_JOB_TEMPLATE <- c(
   "error = {log_dir}/_seed_{hostname}.err",
   "",
   "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
-  "periodic_remove = (NumJobMatches > 1) || ((JobStatus == 1) && (time() - EnteredCurrentStatus > 120 ))", # if seed job is matched multiple times or remains idle for more than 2 minutes, remove it as presumably the execution point is not responding
+  "periodic_remove = (NumJobMatches > 1) || ((JobStatus == 1) && (time() - EnteredCurrentStatus > 180 ))", # if seed job is matched multiple times or remains idle for more than 3 minutes, remove it as presumably the execution point is not responding
   "",
   "{build_requirements_expression(REQUIREMENTS, hostdom)}",
   "request_memory = 0",
