@@ -306,7 +306,7 @@ Default value: `""` for `Condor_run.R`.
 
 Directory for output files. Relative to the current working directory on the execution point and also on the submit machine when [`OUTPUT_DIR_SUBMIT`](#output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
 
-When `OUTPUT_DIR` does not exist, it will be created.
+When `OUTPUT_DIR` does not exist, it will be created if `GET_OUTPUT` is `TRUE`.
 
 ### OUTPUT_DIR_SUBMIT
 
@@ -383,7 +383,7 @@ Default value: `""`
 
 When set (changed from its `""` default), this sets the directory for storing GDX output files. Relative to [`GAMS_CURDIR`](#gams_curdir) on the execution point also on the submit machine when [`GDX_OUTPUT_DIR_SUBMIT`](#gdx_output_dir_submit) is not set. In that case, the directory is excluded from the bundle.
 
-When `GDX_OUTPUT_DIR` is set and does not exist it will be created unless `GET_GDX_OUTPUT` is `FALSE`.
+When `GDX_OUTPUT_DIR` is set and does not exist it will be created if `GET_GDX_OUTPUT` is `TRUE`.
 
 ### GDX_OUTPUT_DIR_SUBMIT
 
