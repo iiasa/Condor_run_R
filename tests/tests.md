@@ -20,6 +20,7 @@ Tests listing:
 - [simple condor](simple_condor/purpose.md)
 - [submit_bundle](submit_bundle/purpose.md)
 - [transport](transport/purpose.md)
+- [transport_output](transport_output/purpose.md)
 - [year guessing](year_guessing/purpose.md)
 
 Note that some tests execute the `Condor_run_stats.R` script on run
