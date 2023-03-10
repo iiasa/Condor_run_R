@@ -107,7 +107,6 @@ JOB_TEMPLATE <- c(
   "request_cpus = {REQUEST_CPUS}", # Number of "CPUs" (hardware threads) to reserve for each job
   "request_disk = {REQUEST_DISK}",
   "",
-  '+IIASAGroup = "ESM"', # Identifies you as part of the group allowed to use ESM cluster
   "run_as_owner = {ifelse(RUN_AS_OWNER, 'True', 'False')}",
   "",
   "should_transfer_files = YES",
@@ -180,7 +179,6 @@ SEED_JOB_TEMPLATE <- c(
   "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
   "request_disk = {2*floor(file_size(bundle_path)/1024)+500}", # KiB, twice needed for move, add some for the extra files
   "",
-  '+IIASAGroup = "ESM"',
   "run_as_owner = False",
   "",
   "should_transfer_files = YES",
