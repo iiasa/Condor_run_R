@@ -375,8 +375,10 @@ if (bundle_only && tools::file_ext(file_arg) == "7z") {
   stop(str_c("The --bundle-only argument does not apply when you already have a bundle!", USAGE, sep="\n"))
 }
 
-# When passed a bundle, extract and load checkpoint and skip to submission
+# ---- Proceed with passed bundle, or create a bundle as configured ----
+
 if (tools::file_ext(file_arg) == "7z") {
+  # Extract bundle and load checkpoint and skip to submission
   api <- API
   api_version <- API_VERSION
   rm(API, API_VERSION)
