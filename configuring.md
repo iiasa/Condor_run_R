@@ -407,7 +407,7 @@ Name of the GDX output file produced by a job on the execution point the [`gdx=`
 
 Default value: `c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2")`
 
-GAMS versions installed on execution points advertising the `GAMS`` requirement.
+GAMS versions installed on execution points advertising the `GAMS` capability.
 
 ### GAMS_CURDIR
 
