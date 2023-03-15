@@ -63,9 +63,11 @@ When you are sure that no other submission is ongoing, delete the lock file loca
 
 ## Seeding jobs remain idle and then abort through the PeriodicRemove expression
 
-A likely reason is that your cluster administrator has not given you access to the cluster yet. Ask your cluster administrator to provide access / white-list you. However, if you have successfully submitted jobs before, read on because the cause is likely different.
+The cluster may not be collecting your jobs on account of an outage in one of the central services. Check if your colleagues can run jobs. If not notify your cluster administrator.
 
-It may be that the entire cluster is unavailable, but that is somewhat unlikely. Also, it may be that the entire cluster is fully occupied and the execution points have not been [properly configured to always accept seeding jobs](condor.md) by the Condor administrator. Use [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) to check availability and occupation.
+Another possible reason is that your cluster administrator has not given you access to the cluster yet. Ask your cluster administrator to provide access / white-list you. However, if you have successfully submitted jobs before, read on because the cause is likely different.
+
+Possibly the entire cluster is fully occupied and the execution points have not been [properly configured to always accept seeding jobs](condor.md) by the Condor administrator. Use [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) to check availability and occupation.
 
 Alternatively, the machine you submit from announcing itself with a wrong domain is a possible cause. It has been seen to happen that submit machines announce themselves with the `local` domain, which is not valid for remote access so that jobs cannot be collected. To check whether the submit machine has announced itself wrongly, issue the [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) command. The output should contain the hostname and domain of your machine. If the domain is `local` the issue is likely present and can be resolved by restarting the Condor background processes on the submit machine.
 
