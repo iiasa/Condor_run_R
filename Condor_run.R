@@ -1185,7 +1185,7 @@ rm(return_values, err_file_sizes)
 
 # Check whether seed jobs failed
 if (all(failed_seeds)) {
-  stop(str_glue("All seed jobs failed! For details, see the _seed_* files in {log_dir}. The likely causes are explained here: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#all-seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
+  stop(str_glue("All seed jobs failed! For details, see the _seed_* files in {log_dir}. The likely causes are explained here: https://github.com/iiasa/Condor_run_R/blob/master/troubleshooting.md#seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression"))
 }
 if (any(failed_seeds)) {
   if (length(failed_seeds[failed_seeds == TRUE]) == 1) {
