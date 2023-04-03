@@ -640,6 +640,7 @@ if (tools::file_ext(file_arg) == "7z") {
   ), str_glue))
   cat("Compressing files into bundle...\n")
   size <- bundle_with_7z(args_for_7z)
+  if (size$added == 0) warning("Nothing was bundled! Is your configuration correct? Maybe your current working directory is not as expected by your configuration? Note that configured paths may be relative to your current working directory. For more information, see here: https://github.com/iiasa/Condor_run_R/blob/master/configuring.md#path-handling")
   added_size <- size$added
   rm(args_for_7z, size, BUNDLE_INCLUDE, BUNDLE_INCLUDE_DIRS, BUNDLE_INCLUDE_FILES, BUNDLE_EXCLUDE_DIRS, BUNDLE_EXCLUDE_FILES)
   cat("\n")
