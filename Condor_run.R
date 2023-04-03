@@ -561,13 +561,6 @@ if (tools::file_ext(file_arg) == "7z") {
   if (REMOVE_MERGED_GDX_FILES && !MERGE_GDX_OUTPUT) stop("Cannot REMOVE_MERGED_GDX_FILES without first doing MERGE_GDX_OUTPUT!")
   if (MERGE_GDX_OUTPUT) check_on_path("gdxmerge")
 
-  # Though not utilized unless GET_G00_OUTPUT or GET_GDX_OUTPUT are TRUE, the below variables are
-  # used in conditional string expansion via str_glue() such that the non-use is enacted only
-  # only after the expansion already happened. Hence we need to assign some dummy values here when
-  # when no assignment happened above.
-  if (is.null(G00_OUTPUT_DIR_SUBMIT)) G00_OUTPUT_DIR_SUBMIT <- ""
-  if (is.null(GDX_OUTPUT_DIR_SUBMIT)) GDX_OUTPUT_DIR_SUBMIT <- ""
-
   # Determine GAMS version used to generate RESTART_FILE_PATH, verify that it is <= GAMS_VERSION
   if (RESTART_FILE_PATH != "") {
     conn <- file(in_gams_curdir(RESTART_FILE_PATH), "rb")
@@ -607,9 +600,9 @@ if (tools::file_ext(file_arg) == "7z") {
     unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
     ifelse(excludable(CONDOR_DIR), "-xr!{CONDOR_DIR}", ""),
-    ifelse(excludable(OUTPUT_DIR_SUBMIT), "-xr!{OUTPUT_DIR_SUBMIT}", ""),
-    ifelse(excludable(G00_OUTPUT_DIR_SUBMIT), "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
-    ifelse(excludable(GDX_OUTPUT_DIR_SUBMIT), "-xr!{GDX_OUTPUT_DIR_SUBMIT}", ""),
+    ifelse(GET_OUTPUT && excludable(OUTPUT_DIR_SUBMIT), "-xr!{OUTPUT_DIR_SUBMIT}", ""),
+    ifelse(GET_G00_OUTPUT && excludable(G00_OUTPUT_DIR_SUBMIT), "-xr!{G00_OUTPUT_DIR_SUBMIT}", ""),
+    ifelse(GET_GDX_OUTPUT && excludable(GDX_OUTPUT_DIR_SUBMIT), "-xr!{GDX_OUTPUT_DIR_SUBMIT}", ""),
     tmp_bundle_path,
     "{BUNDLE_INCLUDE}"
   ), str_glue))

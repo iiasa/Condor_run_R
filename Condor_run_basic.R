@@ -474,7 +474,7 @@ if (tools::file_ext(file_arg) == "7z") {
     unlist(lapply(BUNDLE_EXCLUDE_DIRS,  function(p) return(str_glue("-xr!", p)))),
     unlist(lapply(BUNDLE_EXCLUDE_FILES, function(p) return(str_glue("-x!",  p)))),
     ifelse(excludable(CONDOR_DIR), "-xr!{CONDOR_DIR}", ""),
-    ifelse(excludable(OUTPUT_DIR_SUBMIT), "-xr!{OUTPUT_DIR_SUBMIT}", ""),
+    ifelse(GET_OUTPUT && excludable(OUTPUT_DIR_SUBMIT), "-xr!{OUTPUT_DIR_SUBMIT}", ""),
     tmp_bundle_path,
     "{BUNDLE_INCLUDE}"
   ), str_glue))
