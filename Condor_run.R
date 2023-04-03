@@ -282,7 +282,7 @@ bundle_with_7z <- function(args_for_7z) {
     # Parse out the added number of bytes
     scan_line <- out[[str_which(out, "^Scanning the drive:") + 1]]
     cat(scan_line, sep = "\n")
-    added_size <- as.double(str_match(scan_line, ", (\\d+) bytes \\(")[2])
+    added_size <- as.double(str_match(scan_line, ", (\\d+) bytes")[2])
     if (is.na(added_size))
       stop("7-Zip added size parsing failed!", call. = FALSE) # 7-Zip output format has changed?
     # Parse out the size of the bundle on completion
