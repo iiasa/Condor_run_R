@@ -537,7 +537,6 @@ if (tools::file_ext(file_arg) == "7z") {
       G00_OUTPUT_DIR_SUBMIT <- str_glue(G00_OUTPUT_DIR_SUBMIT)
       if (str_detect(G00_OUTPUT_DIR_SUBMIT, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured G00_OUTPUT_DIR_SUBMIT has forbidden character(s) after {} expansion! Use / as path separator."))
     }
-    dir_create(G00_OUTPUT_DIR_SUBMIT)
   }
   if (GET_GDX_OUTPUT) {
     # Check and massage configuration for GDX output
@@ -1301,6 +1300,7 @@ rm(job_conn, job_lines, s)
 # ---- Submit the run and clean up temp files ----
 
 if (GET_OUTPUT) dir_create(OUTPUT_DIR_SUBMIT)
+if (GET_G00_OUTPUT) dir_create(G00_OUTPUT_DIR_SUBMIT)
 outerr <- system2("condor_submit", args=job_file, stdout=TRUE, stderr=TRUE)
 cat(outerr, sep="\n")
 if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
