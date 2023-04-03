@@ -520,7 +520,6 @@ if (tools::file_ext(file_arg) == "7z") {
       if (OUTPUT_DIR_SUBMIT == "") stop(str_glue('Configured OUTPUT_DIR_SUBMIT may not be an empty path! Must be a valid relative path. Configure "." for the working directory.'))
       if (str_detect(OUTPUT_DIR_SUBMIT, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR_SUBMIT has forbidden character(s) after {} expansion! Use / as path separator."))
     }
-    dir_create(OUTPUT_DIR_SUBMIT)
   }
   if (GET_G00_OUTPUT) {
     # Check and massage configuration for work/save file output
@@ -1301,6 +1300,7 @@ rm(job_conn, job_lines, s)
 
 # ---- Submit the run and clean up temp files ----
 
+if (GET_OUTPUT) dir_create(OUTPUT_DIR_SUBMIT)
 outerr <- system2("condor_submit", args=job_file, stdout=TRUE, stderr=TRUE)
 cat(outerr, sep="\n")
 if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
