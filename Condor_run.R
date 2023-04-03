@@ -1346,7 +1346,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   }
   all_exist_and_not_empty(log_dir, "{PREFIX}_{cluster}.{job}.lst")
   if (GET_G00_OUTPUT) {
-    g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, "{g00_prefix}.{job}.g00")
+    g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, '{g00_prefix}.{sprintf("%06d", job)}.g00')
   }
   if (GET_GDX_OUTPUT) {
     gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR_SUBMIT, '{gdx_prefix}.{sprintf("%06d", job)}.gdx')
