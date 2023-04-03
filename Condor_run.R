@@ -318,24 +318,6 @@ excludable <- function(dir_path) {
   return(TRUE)
 }
 
-# Create log directory to hold the .log/.err/.out files and other artifacts
-# when not extant already.
-# Returns the path to the log directory.
-create_log_dir <- function() {
-  tryCatch({
-      dir_create(CONDOR_DIR)
-      log_dir <- path_norm(path(CONDOR_DIR, LABEL))
-      dir_create(log_dir)
-      return(log_dir)
-    },
-    error=function(cond) {
-      message("Could not create log directory!")
-      message(cond)
-      stop()
-    }
-  )
-}
-
 # Define a function to turn a path relative to GAMS_CURDIR into a path
 # relative to the working directory when GAMS_CURDIR is set. You can
 # specify an optional second path element.
@@ -416,8 +398,6 @@ if (tools::file_ext(file_arg) == "7z") {
     stop(str_glue("Incompatible API_VERSION '{API_VERSION}': this script supports API_VERSION '{api_version}'!"))
   }
   rm(api, api_version)
-
-  log_dir <- create_log_dir()
 } else {
   # ---- Check configuration file and settings ----
 
@@ -619,10 +599,8 @@ if (tools::file_ext(file_arg) == "7z") {
   timestamped_bundle_name <- str_glue('_bundle_{timestamp}.7z')
   timestamped_bundle_list_name <- str_glue("_bundle_{timestamp}_contents.txt")
   timestamped_config_name <- str_glue("_config_{timestamp}.R")
-  rm(timestamp)
-
-  log_dir <- create_log_dir()
   tmp_bundle_path <- path(tempdir(), timestamped_bundle_name)
+  rm(timestamp)
 
   # Include/exclude files in/from bundle
   args_for_7z <- unlist(lapply(c(
@@ -727,6 +705,10 @@ if (tools::file_ext(file_arg) == "7z") {
   )
 
   if (BUNDLE_ONLY) {
+    # Ensure that a log directory to hold bundling artifacts exists
+    log_dir <- path_norm(path(CONDOR_DIR, LABEL))
+    dir_create(log_dir)
+
     # Store the bundle in the log directory by default or BUNDLE_DIR when set.
     tryCatch({
         bundle_store_path <- path(ifelse(is.null(BUNDLE_DIR), log_dir, BUNDLE_DIR), timestamped_bundle_name)
@@ -1094,6 +1076,10 @@ bat_conn<-file(seed_bat, open="wt")
 writeLines(unlist(lapply(SEED_BAT_TEMPLATE, str_glue)), bat_conn)
 close(bat_conn)
 rm(bat_conn)
+
+# Ensure that a log directory to hold processing artifacts exists
+log_dir <- path_norm(path(CONDOR_DIR, LABEL))
+dir_create(log_dir)
 
 # Try to seed each available execution point with the bundle by submitting seed jobs.
 # Caching and automated bundle cleanup is assumed to be active on execute points, see ticket:
