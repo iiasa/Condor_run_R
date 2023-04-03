@@ -7,6 +7,7 @@ Tests listing:
 - [bundling additionals](bundling_additionals/purpose.md)
 - [bundling GAMS](bundling_GAMS/purpose.md)
 - [bundling GAMS CURDIR](bundling_GAMS_CURDIR/purpose.md)
+- [bundling nothing](bundling_nothing/purpose.md)
 - [disconnect](disconnect/purpose.md)
 - [noscript](noscript/purpose.md)
 - [output multiple](output_multiple/purpose.md)
