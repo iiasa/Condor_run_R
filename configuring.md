@@ -469,7 +469,7 @@ The template parameters configure Condor `.job` files and job launch scripts (th
 
 ### JOB_TEMPLATE
 
-Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L73) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L85).
+Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L73) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L89).
 
 Template of the Condor `.job` file to submit the run with. The [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) produced with this template through `{}` expansion is preserved in the [log directory of the run](#condor_dir).
 
@@ -477,13 +477,13 @@ Template of the Condor `.job` file to submit the run with. The [submit descripti
 
 ### BAT_TEMPLATE
 
-Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L107) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L119).
+Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L106) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L122).
 
 Template for the `.bat` file that launches jobs on the execution point (EP). The default uses POSIX commands which are not normally available on Windows EPs and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir).
 
 ### SEED_JOB_TEMPLATE
 
-Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L131) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L161).
+Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L130) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L165).
 
 Template of the Condor `.job` file to submit the bundle seed jobs with. The [submit description files](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) produced with this template through `{}` expansion are preserved in the [log directory of the run](#condor_dir) when seeding fails.
 
@@ -491,6 +491,6 @@ Template of the Condor `.job` file to submit the bundle seed jobs with. The [sub
 
 ### SEED_BAT_TEMPLATE
 
-Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L156) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L186).
+Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L154) or [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L189).
 
 Template for the `.bat` file that caches the bundle on the execution point for a seeding job. The default uses POSIX commands which are not normally available on Windows EPs and require a POSIX command distribution to be installed and put on-path. GAMS installations have such commands in the `gbin` subdirectory. The `.bat` file produced with this template is preserved in the [log directory of the run](#condor_dir) when seeding fails.
