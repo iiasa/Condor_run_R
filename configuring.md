@@ -32,7 +32,7 @@ Typically, the script that is run when your jobs are started accepts the job num
 
 An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execution point (EP) when the sum of their memory requests exceeds the memory allocated to the execution slot of on the execution point. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the EP at risk of running out of memory, which can endanger other jobs as well. It is therefore important to configure a good estimate.
 
-You can find a job's actual, requested, and allocated memory use in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir) after tge job completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
+You can find a job's actual, requested, and allocated memory use in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir) after tge job completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
 
 **:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient memory to satisfy your request. To see what memory resources your cluster has available issue [`condor_status -avail`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
@@ -243,7 +243,7 @@ Default value: `1000000`
 
 An estimate of the amount of execution-point-side disk space required per job for storing intermediate and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add to this value the uncompressed size of the bundle to yield a disk request reflecting the overall storage requirement of the job. This sum is used to allocate disk space for a job when it is started on an EP.
   
-You can find a job's actual, requested (with added uncompressed bundle size), and allocated disk space in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir) after the job completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
+You can find a job's actual, requested (with added uncompressed bundle size), and allocated disk space in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir) after the job completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
 
 **:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
   
@@ -431,7 +431,7 @@ If you are unsure which GAMS version a restart file was generated with, you can 
 
 Default value: `FALSE`
 
-If `TRUE`, use [GDXMERGE](https://www.gams.com/latest/docs/T_GDXMERGE.html) on the GDX output files when all jobs in the run are done. Requires that the GDXMERGE executable (located in the GAMS system directory) is on-path and that [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)` = TRUE`.
+If `TRUE`, use [GDXMERGE](https://www.gams.com/latest/docs/T_GDXMERGE.html) on the GDX output files when all jobs in the run are done. Requires that the GDXMERGE executable (located in the GAMS system directory) is on-path and that [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`.
 
 **:warning:Beware:** GDXMERGE is limited. It sometimes gives "Symbol is too large" errors, and neither the `big=` (via the [`MERGE_BIG`](#merge_big) configuration setting below) nor running GDXMERGE on a large-memory machine can avoid that. Moreover, no non-zero return code results in case of such errors, so silent failures are possible. This may or may not have improved in more recent versions of GDXMERGE.
 
