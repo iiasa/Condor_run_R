@@ -63,15 +63,15 @@ When you are sure that no other submission is ongoing, delete the lock file loca
 
 ## Seeding jobs remain idle and then abort through the PeriodicRemove expression
 
+A likely possibility is that the cluster is not collecting the seed jobs on account of a confused networking state. This can happen when your machine has hibernated for example. Resolve by restarting the Condor background processes on the submit machine. The crude way to restart Condor is to reboot the submit machine. The better way is to restart the Condor service. This can be done via the Services application on Windows or via [`systemctl restart condor.service`](https://manpages.debian.org/bullseye/systemctl/systemctl.1.en.html) with root privileges on Linux.
+
+Alternatively, the machine you submit from may be announcing itself with a wrong domain, the `local` domain for example. This prevents remote access so that jobs cannot be collected. To check whether the submit machine has announced itself wrongly, issue the [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) command. The output should contain the hostname and domain of your machine. If the domain is `local` or otherwise weird the issue is likely present. This too can be resolved by restarting the Condor background processes on the submit machine (see above).
+
 The cluster may not be collecting your jobs on account of an outage in one of the central services. Check if your colleagues can run jobs. If not notify your cluster administrator.
 
-Another possible reason is that your cluster administrator has not given you access to the cluster yet. Ask your cluster administrator to provide access / white-list you. However, if you have successfully submitted jobs before, read on because the cause is likely different.
+Another possible reason is that your cluster administrator has not given you access to the cluster yet for running jobs with [`RUN_AS_OWNER`](configuring.md#run_as_owner)`= TRUE`. Ask your cluster administrator to provide access / white-list you. However, if you have successfully submitted jobs before, read on because the cause is likely different.
 
 Possibly the entire cluster is fully occupied and the execution points have not been [properly configured to always accept seeding jobs](condor.md) by the Condor administrator. Use [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) to check availability and occupation.
-
-Alternatively, the machine you submit from announcing itself with a wrong domain is a possible cause. It has been seen to happen that submit machines announce themselves with the `local` domain, which is not valid for remote access so that jobs cannot be collected. To check whether the submit machine has announced itself wrongly, issue the [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) command. The output should contain the hostname and domain of your machine. If the domain is `local` the issue is likely present and can be resolved by restarting the Condor background processes on the submit machine.
-
-The crude way to restart Condor is to reboot the submit machine. The better way is to restart the Condor service. This can be done via the Services application on Windows or via [`systemctl restart condor.service`](https://manpages.debian.org/bullseye/systemctl/systemctl.1.en.html) with root privileges on Linux.
 
 ## Seeding jobs stay in the running state indefinitely
 
