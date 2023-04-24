@@ -69,7 +69,7 @@ Alternatively, the machine you submit from may be announcing itself with a wrong
 
 The cluster may not be collecting your jobs on account of an outage in one of the central services. Check if your colleagues can run jobs. If not notify your cluster administrator.
 
-Another possible reason is that your cluster administrator has not given you access to the cluster yet for running jobs with [`RUN_AS_OWNER`](configuring.md#run_as_owner)`= TRUE`. Ask your cluster administrator to provide access / white-list you. However, if you have successfully submitted jobs before, read on because the cause is likely different.
+Another possible reason is that your cluster administrator has not given you submit access to the cluster yet. Ask your cluster administrator to provide access / white-list you. However, if you have successfully submitted jobs before, read on because the cause is likely different.
 
 Possibly the entire cluster is fully occupied and the execution points have not been [properly configured to always accept seeding jobs](condor.md) by the Condor administrator. Use [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html) to check availability and occupation.
 
