@@ -75,9 +75,7 @@ Possibly the entire cluster is fully occupied and the execution points have not 
 
 ## Seeding jobs stay in the running state indefinitely
 
-This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke [`condor_restart -schedd`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_restart.html), and try to submit again.
-
-If the resubmission also stays stuck in the running state when transferring the bundle, stop the script, reboot, and then try to submit again.
+This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke [`condor_restart -schedd`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_restart.html), and try to submit again. You can also try to stop the script, restart the Condor service, and try to subnmit again. Restarting the service can be done via the Services application on Windows or via [`systemctl restart condor.service`](https://manpages.debian.org/bullseye/systemctl/systemctl.1.en.html) with root privileges on Linux.
 
 ## Seeding fails or jobs go on hold without producing matching `.log` files
 
@@ -102,7 +100,7 @@ the Condor daemon does not have sufficient permissions to access the [log direct
 
 ## Jobs are idle and do not run, or only some do
 
-The cluster may be busy. To see who else has submitted jobs, issue [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue [`condor_userprio`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_userprio.html). Large numbers mean low priority. Your cluster administrator can set your priority.
+Being in the idle state means that the job is queued. The cluster may be busy. To see who else has submitted jobs, issue [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue [`condor_userprio`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_userprio.html). Large numbers mean low priority. Your cluster administrator can set your priority.
 
 If the cluster has unused capacity, it may be that your jobs remain idle (queued and waiting to be scheduled) because they are requesting more memory or other resources than currently available. For details, see [`REQUEST_MEMORY`](configuring.md#request_memory), [`REQUEST_DISK`](configuring.md#request_disk), and [`REQUEST_CPUS`](configuring.md#request_cpus). Either wait for sufficient resources to become available, or reduce the requested resources if possible. **:warning:Beware:** use the right units for each of the request configurations!
 
