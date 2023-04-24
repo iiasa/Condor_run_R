@@ -4,18 +4,18 @@ When you have an issue with getting your jobs to run or with retrieving output, 
 
 - [Submit script immediately aborts with an error](#submit-script-immediately-aborts-with-an-error)
 - [Cannot submit jobs](#cannot-submit-jobs)
-- [The script does not progress](#the-script-does-not-progress)
+- [You continue to get a `Submission lock file` message](#you-continue-to-get-a-submission-lock-file-message)
 - [You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials](#you-get-error-no-credential-stored-for-userdomain-but-did-store-your-credentials)
+- [The script does not progress](#the-script-does-not-progress)
 - [Seeding jobs remain idle and then abort through the PeriodicRemove expression](#seeding-jobs-remain-idle-and-then-abort-through-the-periodicremove-expression)
 - [Seeding jobs stay in the running state indefinitely](#seeding-jobs-stay-in-the-running-state-indefinitely)
+- [Seeding fails or jobs go on hold without producing matching `.log` files](#seeding-fails-or-jobs-go-on-hold-without-producing-matching-log-files)
+- [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
 - [Jobs go on hold](#jobs-go-on-hold)
 - [Jobs go on hold but then run again](#jobs-go-on-hold-but-then-run-again)
-- [Seeding fails or jobs go on hold without producing matching `.log` files](#seeding-fails-or-jobs-go-on-hold-without-producing-matching-log-files)
-- [Jobs run but at the end fail to send and write output files](#jobs-run-but-at-the-end-fail-to-send-and-write-output-files)
-- [Jobs are idle and do not run, or only some do](#jobs-are-idle-and-do-not-run-or-only-some-do)
+- [Jobs run but `.log` files show that at the end they fail to send and write output files](#jobs-run-but-log-files-show-that-at-the-end-they-fail-to-send-and-write-output-files)
 - [Condor commands like `condor_q` fail](#condor-commands-like-condor_q-fail)
 - [You get `ERROR: Failed to connect to local queue manager`](#you-get-error-failed-to-connect-to-local-queue-manager)
-- [You continue to get a `Submission lock file` message](#you-continue-to-get-a-submission-lock-file-message)
 - [`Condor_run_stats.R` produces empty plots](#condor_run_statsr-produces-empty-plots)
 - [None of the above solves my problem](#none-of-the-above-solves-my-problem)
 - [Further information](#further-information)
@@ -40,16 +40,6 @@ When you cannot submit jobs, ensure that:
 - The [templates are adapted to your cluster](configuring.md#configuring-templates-for-a-different-cluster).
 - You are using [up-to-date scripts](README.md#updating).
 
-## The script does not progress
-
-The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt title bar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**. After doing so, you can left-click and drag to select text in the Command Prompt window only after first entering CTRL-M or selecting the **Edit → Mark** menu item.
-
-## You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials
-
-Try to submit again. It might be a transient error.
-
-If not, you may have recently changed your password and need to store your user credentials again with [`condor_store_cred add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) (see above).
-
 ## You continue to get a `Submission lock file` message
 
 For technical reasons, you cannot submit two things at the same time, though two sets of jobs can run at the same time: it is just the submission stage that cannot be parallel. For that reason a lock file is used that notifies that a submission is ongoing. When you run the submit script while the lock file exists, the script will wait until it disappears.
@@ -60,6 +50,16 @@ Submission lock file <some file path> exists, another submission must be ongoing
 Waiting for the submission lock file to disappear...
 ```
 When you are sure that no other submission is ongoing, delete the lock file located at `<some file path>` and the submission will proceed.
+
+## You get `ERROR: No credential stored for` *`<user>@<domain>`* but did store your credentials
+
+Try to submit again. It might be a transient error.
+
+If not, you may have recently changed your password and need to store your user credentials again with [`condor_store_cred add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) (see above).
+
+## The script does not progress
+
+The output may be blocked. On Linux, this can happen on account of entering CTRL-S, enter CTRL-Q to unblock. On Windows, this may happen when clicking on the Command Prompt window. Give the window focus and hit backspace or enter CTRL-Q to unblock it. To get rid of this annoying behavior permanently, right-click on the Command Prompt title bar and select **Defaults**. In the dialog that appears, in the **Options** tab, deselect **QuickEdit Mode** and click **OK**. After doing so, you can left-click and drag to select text in the Command Prompt window only after first entering CTRL-M or selecting the **Edit → Mark** menu item.
 
 ## Seeding jobs remain idle and then abort through the PeriodicRemove expression
 
@@ -78,6 +78,33 @@ Possibly the entire cluster is fully occupied and the execution points have not 
 This can occur on account of outdated state such as a stale IP address being cached by HTCondor daemons. Stop the script, invoke [`condor_restart -schedd`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_restart.html), and try to submit again.
 
 If the resubmission also stays stuck in the running state when transferring the bundle, stop the script, reboot, and then try to submit again.
+
+## Seeding fails or jobs go on hold without producing matching `.log` files
+
+When seeding or regular jobs produce no `.log` files in a subdirectory of [`CONDOR_DIR`](configuring.md#condor_dir) there are three likely causes:
+
+- The pool credentials are not stored or outdated. Store the pool password again using [`condor_store_cred -c add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) and retry. Ask your cluster administrator for the pool password.
+
+- [`CONDOR_DIR`](configuring.md#condor_dir) is on a network share that your user account can access but the locally running Condor daemon/service cannot. This can be resolved in several ways:
+  * Move the whole project file tree containing `CONDOR_DIR` from the network share to a local disk.
+  * Reconfigure [`CONDOR_DIR`](configuring.md#condor_dir) to point to a directory on a local disk (absolute paths are allowed) that Condor can access.
+  * Try to reconfigure the Condor service/daemon to run from a different account or with additional rights as needed to access the network share.
+
+- The permissions on [`CONDOR_DIR`](configuring.md#condor_dir) prevent access by the locally running Condor daemon/service. Either change the permissions on [`CONDOR_DIR`](configuring.md#condor_dir) to give Condor access or reconfigure the Condor daemon/service to run from a different account or with additional rights as needed to access the [`CONDOR_DIR`](configuring.md#condor_dir) directory.
+
+## Seeding fails when removing a `.log` file
+
+When you get an error such as
+```
+Error: [EPERM] Failed to remove 'Condor/basic_2022-12-20/_seed_limpopo1.log': operation not permitted
+```
+the Condor daemon does not have sufficient permissions to access the [log directory of the run](configuring.md#condor_dir). The underlying problem is that the Condor daemon that does the logging does not run under your user account and as such does not have the same permissions as you do. Give other user accounts more rights on the log directory, or recursively from one of its parent directories.
+
+## Jobs are idle and do not run, or only some do
+
+The cluster may be busy. To see who else has submitted jobs, issue [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue [`condor_userprio`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_userprio.html). Large numbers mean low priority. Your cluster administrator can set your priority.
+
+If the cluster has unused capacity, it may be that your jobs remain idle (queued and waiting to be scheduled) because they are requesting more memory or other resources than currently available. For details, see [`REQUEST_MEMORY`](configuring.md#request_memory), [`REQUEST_DISK`](configuring.md#request_disk), and [`REQUEST_CPUS`](configuring.md#request_cpus). Either wait for sufficient resources to become available, or reduce the requested resources if possible. **:warning:Beware:** use the right units for each of the request configurations!
 
 ## Jobs go on hold
 
@@ -110,40 +137,13 @@ This is useful when the error is on account of a transient condition such as an 
 
 However, when the error is intrinsic to the job itself, for example a coding error, retrying is not useful since the job will go on hold every time. It is therefore makes sense to configure `JOB_RELEASES = 0` until you are sure that your jobs are working without problems.
 
-## Seeding fails or jobs go on hold without producing matching `.log` files
-
-When seeding or regular jobs produce no `.log` files in a subdirectory of [`CONDOR_DIR`](configuring.md#condor_dir) there are three likely causes:
-
-- The pool credentials are not stored or outdated. Store the pool password again using [`condor_store_cred -c add`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_store_cred.html) and retry. Ask your cluster administrator for the pool password.
-
-- [`CONDOR_DIR`](configuring.md#condor_dir) is on a network share that your user account can access but the locally running Condor daemon/service cannot. This can be resolved in several ways:
-  * Move the whole project file tree containing `CONDOR_DIR` from the network share to a local disk.
-  * Reconfigure [`CONDOR_DIR`](configuring.md#condor_dir) to point to a directory on a local disk (absolute paths are allowed) that Condor can access.
-  * Try to reconfigure the Condor service/daemon to run from a different account or with additional rights as needed to access the network share.
-
-- The permissions on [`CONDOR_DIR`](configuring.md#condor_dir) prevent access by the locally running Condor daemon/service. Either change the permissions on [`CONDOR_DIR`](configuring.md#condor_dir) to give Condor access or reconfigure the Condor daemon/service to run from a different account or with additional rights as needed to access the [`CONDOR_DIR`](configuring.md#condor_dir) directory.
-
-## Seeding fails when removing a `.log` file
-
-When you get an error such as
-```
-Error: [EPERM] Failed to remove 'Condor/basic_2022-12-20/_seed_limpopo1.log': operation not permitted
-```
-the Condor daemon does not have sufficient permissions to access the [log directory of the run](configuring.md#condor_dir). The underlying problem is that the Condor daemon that does the logging does not run under your user account and as such does not have the same permissions as you do. Give other user accounts more rights on the log directory, or recursively from one of its parent directories.
-
-## Jobs run but at the end fail to send and write output files
+## Jobs run but `.log` files show that at the end they fail to send and write output files
 
 There are two likely causes:
 
 1. An [`[G00_|GDX_]OUTPUT_DIR[_SUBMIT]`](configuring.md#output_dir) configuration setting is pointing to a directory on a network share that your user account can access but the locally running Condor daemon/service cannot. Either reconfigure that configuration setting to point to a directory on a local disk (absolute paths are allowed in case of the `_SUBMIT` variants) that Condor can access or try to reconfigure the Condor service/daemon to run from a different account or with additional rights as needed to access the network share.
 
 2. The permissions on the directory pointed to by [`[G00_|GDX_]OUTPUT_DIR[_SUBMIT]`](configuring.md#output_dir) prevent access by the locally running Condor daemon/service. Either change the permissions on that directory to give Condor access or reconfigure the Condor daemon/service to run from a different account or with additional rights as needed to gain access.
-
-## Jobs are idle and do not run, or only some do
-
-The cluster may be busy. To see who else has submitted jobs, issue [`condor_status -submitters`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). In addition, you may have a low priority so that jobs of others are given priority, pushing your jobs to the back of the queue. To see your priority issue [`condor_userprio`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_userprio.html). Large numbers mean low priority. Your cluster administrator can set your priority.
-
-If the cluster has unused capacity, it may be that your jobs remain idle (queued and waiting to be scheduled) because they are requesting more memory or other resources than currently available. For details, see [`REQUEST_MEMORY`](configuring.md#request_memory), [`REQUEST_DISK`](configuring.md#request_disk), and [`REQUEST_CPUS`](configuring.md#request_cpus). Either wait for sufficient resources to become available, or reduce the requested resources if possible. **:warning:Beware:** use the right units for each of the request configurations!
 
 ## Condor commands like `condor_q` fail
 
