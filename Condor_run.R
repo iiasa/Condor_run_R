@@ -112,7 +112,7 @@ JOB_TEMPLATE <- c(
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
   'transfer_output_files = {str_sub(in_gams_curdir(GAMS_FILE_PATH), 1, -5)}.lst{ifelse(GET_OUTPUT, str_c(",", str_c(path_norm(path(OUTPUT_DIR, OUTPUT_FILES)), collapse=",")), "")}{ifelse(GET_G00_OUTPUT, str_c(",", in_gams_curdir(G00_OUTPUT_DIR, G00_OUTPUT_FILE)), "")}{ifelse(GET_GDX_OUTPUT, str_c(",", in_gams_curdir(GDX_OUTPUT_DIR, GDX_OUTPUT_FILE)), "")}',
-  'transfer_output_remaps = "{str_c(str_sub(GAMS_FILE_PATH, 1, -5), ".lst=", path_norm(path(log_dir, PREFIX)), "_$(cluster).$(job).lst")}{ifelse(GET_OUTPUT, str_c(";", str_c(str_glue("{OUTPUT_FILES}={path_norm(path(OUTPUT_DIR_SUBMIT, output_prefixes))}.$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extensions}"), collapse=";")), "")}{ifelse(GET_G00_OUTPUT, str_c(";", G00_OUTPUT_FILE, "=", path_norm(path_tworel(G00_OUTPUT_DIR_SUBMIT, g00_prefix)), ".$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_c(";", GDX_OUTPUT_FILE, "=", path_norm(path(GDX_OUTPUT_DIR_SUBMIT, gdx_prefix)), ".$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
+  'transfer_output_remaps = "{str_c(str_sub(GAMS_FILE_PATH, 1, -5), ".lst=", path_norm(path(log_dir, PREFIX)), "_$(cluster).$(job).lst")}{ifelse(GET_OUTPUT, str_c(";", str_c(str_glue("{OUTPUT_FILES}={path_norm(path(OUTPUT_DIR_SUBMIT, output_prefixes))}.$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extensions}"), collapse=";")), "")}{ifelse(GET_G00_OUTPUT, str_c(";", G00_OUTPUT_FILE, "=", path_norm(path_tworel(G00_OUTPUT_DIR_SUBMIT, g00_prefix)), ".$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).g00"), "")}{ifelse(GET_GDX_OUTPUT, str_c(";", GDX_OUTPUT_FILE, "=", path_norm(path_tworel(GDX_OUTPUT_DIR_SUBMIT, gdx_prefix)), ".$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).gdx"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -1471,7 +1471,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   }
   if (GET_GDX_OUTPUT) {
     cat("After the run completes, you can find the GDX results at:",
-        str_glue("    {GDX_OUTPUT_DIR_SUBMIT}/{gdx_prefix}.*.gdx"),
+        str_glue("    {path_tworel(GDX_OUTPUT_DIR_SUBMIT, gdx_prefix)}.*.gdx"),
         sep="\n")
   }
 }
