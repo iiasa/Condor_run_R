@@ -367,7 +367,7 @@ Supports `{}` expansion, you can for example use `work/{LABEL}` to receive the w
 
 Default value: `""`
 
-Name of work/save file produced by a job on the execution point via the [`save=` GAMS argument](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). When `GET_G00_OUTPUT` is `TRUE`, the default [`BAT_TEMPLATE`](#bat_template) automatically adds such a `save=` argument based on `G00_OUTPUT_DIR` and `G00_OUTPUT_FILES` to the GAMS argument list. Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred to the submit machine.
+Name of work/save file produced by a job on the execution point via the [`save=` GAMS argument](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). When `GET_G00_OUTPUT` is `TRUE`, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` automatically adds such a `save=` argument based on `G00_OUTPUT_DIR` and `G00_OUTPUT_FILE` to the GAMS argument list. Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred to the submit machine.
 
 **:point_right:Note:** to automatically process G00 output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
 
