@@ -1345,24 +1345,13 @@ if (WAIT_FOR_RUN_COMPLETION) {
   all_exist_and_not_empty(log_dir, "_{PREFIX}_{cluster}.{job}.err", warn=FALSE)
   if (GET_OUTPUT) {
     output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR_SUBMIT, '{output_prefixes}.{sprintf("%06d", job)}.{output_extensions}')
-    cat("You can find the output files at:",
-        str_glue("    {OUTPUT_DIR_SUBMIT}/{output_prefixes}.*"),
-        sep="\n")
   }
   all_exist_and_not_empty(log_dir, "{PREFIX}_{cluster}.{job}.lst")
   if (GET_G00_OUTPUT) {
     g00s_complete <- all_exist_and_not_empty(G00_OUTPUT_DIR_SUBMIT, '{g00_prefix}.{sprintf("%06d", job)}.g00')
-    cat("You can find the G00 output files at:",
-        str_glue("    {path_tworel(G00_OUTPUT_DIR_SUBMIT, g00_prefix)}.*.g00"),
-        sep="\n")
   }
   if (GET_GDX_OUTPUT) {
     gdxs_complete <- all_exist_and_not_empty(GDX_OUTPUT_DIR_SUBMIT, '{gdx_prefix}.{sprintf("%06d", job)}.gdx')
-    if (!MERGE_GDX_OUTPUT || !REMOVE_MERGED_GDX_FILES) {
-    cat("You can find the GDX output files at:",
-        str_glue("    {path_tworel(GDX_OUTPUT_DIR_SUBMIT, gdx_prefix)}.*.gdx"),
-        sep="\n")
-    }
   }
 
   return_values <- get_return_values(path(log_dir, str_glue("{PREFIX}_{cluster}.{JOBS}.log")))
@@ -1373,6 +1362,25 @@ if (WAIT_FOR_RUN_COMPLETION) {
     stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{cluster}.* files in {log_dir}"))
   }
   cat("All jobs are done.\n")
+
+  # Report location of output files
+  if (GET_OUTPUT) {
+    cat("You can find the output files at:",
+        str_glue("    {OUTPUT_DIR_SUBMIT}/{output_prefixes}.*"),
+        sep="\n")
+  }
+  if (GET_G00_OUTPUT) {
+    cat("You can find the G00 output files at:",
+        str_glue("    {path_tworel(G00_OUTPUT_DIR_SUBMIT, g00_prefix)}.*.g00"),
+        sep="\n")
+  }
+  if (GET_GDX_OUTPUT) {
+    if (!MERGE_GDX_OUTPUT || !REMOVE_MERGED_GDX_FILES) {
+      cat("You can find the GDX output files at:",
+          str_glue("    {path_tworel(GDX_OUTPUT_DIR_SUBMIT, gdx_prefix)}.*.gdx"),
+          sep="\n")
+    }
+  }
 
   # Warn when REQUEST_MEMORY or REQUEST_DISK turns out to have been set
   # too low or significantly too high.

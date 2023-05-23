@@ -1182,9 +1182,6 @@ if (WAIT_FOR_RUN_COMPLETION) {
   all_exist_and_not_empty(log_dir, "_{PREFIX}_{cluster}.{job}.err", warn=FALSE)
   if (GET_OUTPUT) {
     output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR_SUBMIT, '{output_prefixes}.{sprintf("%06d", job)}.{output_extensions}')
-    cat("You can find the output files at:",
-        str_glue("    {OUTPUT_DIR_SUBMIT}/{output_prefixes}.*"),
-        sep="\n")
   }
 
   return_values <- get_return_values(path(log_dir, str_glue("{PREFIX}_{cluster}.{JOBS}.log")))
@@ -1195,6 +1192,13 @@ if (WAIT_FOR_RUN_COMPLETION) {
     stop(str_glue("Job(s) {summarize_jobs(JOBS[return_values != 0])} returned a non-zero return value! For details, see the {PREFIX}_{cluster}.* files in {log_dir}"))
   }
   cat("All jobs are done.\n")
+
+  # Report location of output files
+  if (GET_OUTPUT) {
+    cat("You can find the output files at:",
+        str_glue("    {OUTPUT_DIR_SUBMIT}/{output_prefixes}.*"),
+        sep="\n")
+  }
 
   # Warn when REQUEST_MEMORY or REQUEST_DISK turns out to have been set
   # too low or significantly too high.
