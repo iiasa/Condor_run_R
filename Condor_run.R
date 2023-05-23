@@ -23,7 +23,6 @@ JOBS = c()
 REQUEST_MEMORY = 100
 GAMS_FILE_PATH = "model.gms"
 GAMS_ARGUMENTS = "//job_number=%1 checkErrorLevel=1"
-GAMS_VERSION = "32.1"
 WAIT_FOR_RUN_COMPLETION = TRUE
 # .......8><....snippy.snappy....8><.........................................
 mandatory_config_names <- ls()
@@ -50,6 +49,7 @@ JOB_OVERRIDES = list()
 JOB_RELEASES = 3
 JOB_RELEASE_DELAY = 120
 HOST_REGEXP = ".*"
+GAMS_VERSION = NULL
 REQUIREMENTS = c("GAMS")
 REQUEST_CPUS = 1
 REQUEST_DISK = 1000000 # KiB
@@ -132,18 +132,19 @@ BAT_TEMPLATE <- c(
   '{ifelse(in_gams_curdir(GDX_OUTPUT_DIR) %in% c("", "."), "", str_glue("mkdir \\"{in_gams_curdir(GDX_OUTPUT_DIR)}\\" 2>NUL"))}',
   "set bundle_root=d:\\condor\\bundles",
   "if not exist %bundle_root% set bundle_root=e:\\condor\\bundles",
-  "set gams_dir=c:\\GAMS\\win64\\{GAMS_VERSION}",
-  "if not exist %gams_dir% set gams_dir=c:\\GAMS\\{major_gams_version}",
-  "if not exist %gams_dir% (",
-  "  echo ERROR: GAMS version {GAMS_VERSION} is not installed on this machine!",
-  "  exit /b 1",
-  ")",
+  '{ifelse(is.null(GAMS_VERSION), "", str_glue("set gams_dir=c:\\\\GAMS\\\\win64\\\\{GAMS_VERSION}"))}',
+  '{ifelse(is.null(GAMS_VERSION), "", str_glue("if not exist %gams_dir% set gams_dir=c:\\\\GAMS\\\\{major_gams_version}"))}',
+  '{ifelse(is.null(GAMS_VERSION), "", "if not exist %gams_dir% (")}',
+  '{ifelse(is.null(GAMS_VERSION), "", str_glue("  echo ERROR: GAMS version {GAMS_VERSION} is not installed on this machine!"))}',
+  '{ifelse(is.null(GAMS_VERSION), "", "  exit /b 1")}',
+  '{ifelse(is.null(GAMS_VERSION), "", ")")}',
   "@echo on",
   "touch %bundle_root%\\{username}\\{timestamped_bundle_name} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
   '7z x %bundle_root%\\{username}\\{timestamped_bundle_name} -y -x!{CHECKPOINT_FILE} >NUL || exit /b %errorlevel%',
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
+  "echo %PATH%",
   paste(
-    '%gams_dir%\\gams',
+    '{ifelse(is.null(GAMS_VERSION),"gams", "%gams_dir%\\\\gams")}',
     "{GAMS_FILE_PATH}",
     '-logOption=3',
     '{ifelse(GAMS_CURDIR != "", str_glue("curDir=\\"{GAMS_CURDIR}\\" "), "")}',
@@ -498,11 +499,14 @@ if (tools::file_ext(file_arg) == "7z") {
     if (str_detect(RESTART_FILE_PATH, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured RESTART_FILE_PATH has forbidden character(s)! Use / as path separator."))
   }
 
-  version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
-  if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
-  dotless_gams_version <- str_glue(version_match[2], version_match[3])
-  major_gams_version <- version_match[2]
-  rm(version_match)
+  # Determine the major and minor versoin numbers of any configured GAMS_VERSION
+  if (!is.null(GAMS_VERSION)) {
+    version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
+    if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
+    dotless_gams_version <- str_glue(version_match[2], version_match[3])
+    major_gams_version <- version_match[2]
+    rm(version_match)
+  }
 
   if (length(JOBS) < 1 && !str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
   if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
@@ -569,7 +573,7 @@ if (tools::file_ext(file_arg) == "7z") {
   if (MERGE_GDX_OUTPUT) check_on_path("gdxmerge")
 
   # Determine GAMS version used to generate RESTART_FILE_PATH, verify that it is <= GAMS_VERSION
-  if (RESTART_FILE_PATH != "") {
+  if (RESTART_FILE_PATH != "" && !is.null(GAMS_VERSION)) {
     conn <- file(in_gams_curdir(RESTART_FILE_PATH), "rb")
     byte_count <- min(4000, file_size(in_gams_curdir(RESTART_FILE_PATH)))
     invisible(seek(conn, where=-byte_count, origin="end"))

@@ -54,12 +54,6 @@ Arguments to the script or, when [`SCRIPT`](#script) is empty, the [`LAUNCHER`](
 
 ## `Condor_run.R`-specific mandatory configuration parameters
 
-### GAMS_VERSION
-
-GAMS version to run the job with. Must be installed on all selected execution points.
-
-Available GAMS versions are configured by [`AVAILABLE_GAMS_VERSIONS`](#available_gams_versions).
-
 ### GAMS_FILE_PATH
 
 Path to GAMS file to run for each job, relative to [`GAMS_CURDIR`](#gams_curdir).
@@ -338,6 +332,12 @@ Default value: `""`
 The script to launch with [`LAUNCHER`](#launcher). When empty (the default) the job is not defined by a script but rather by the executable/binary specified in the [`LAUNCHER`](#launcher) setting.
 
 ## `Condor_run.R`-specific optional configuration parameters
+
+### GAMS_VERSION
+
+Default value: `NULL`
+
+GAMS version to run the job with. When set to `NULL`, the GAMS version reachable through the `PATH` environment variable on the execute point is used, or the job will fail if no gams executable can be found via `PATH`.
 
 ### GET_G00_OUTPUT
 
