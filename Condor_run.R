@@ -816,7 +816,7 @@ build_requirements_expression <- function(requirements, hostdoms) {
   if (length(requirements) > 0) {
     r <- str_c(
       "  (",
-      str_c(requirements, collapse = '\") && \\\n  (')
+      str_c(requirements, collapse = ") && \\\n  (")
     )
     if (h == "")
       r <- str_c(r, ")\n")
