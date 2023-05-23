@@ -403,12 +403,6 @@ Name of the GDX output file produced by a job on the execution point the [`gdx=`
 
 **:point_right:Note:** to automatically process GDX output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
 
-### AVAILABLE_GAMS_VERSIONS
-
-Default value: `c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2")`
-
-GAMS versions installed on execution points advertising the `GAMS` capability.
-
 ### GAMS_CURDIR
 
 Default value: `"."`

@@ -34,7 +34,6 @@ mandatory_config_names <- ls()
 # Add to a separate configuration file the parameters that you need to override.
 # See https://github.com/iiasa/Condor_run_R/blob/master/configuring.md
 LABEL = "{Sys.Date()}"
-AVAILABLE_GAMS_VERSIONS = c("24.2", "24.4", "24.9", "25.1", "29.1", "32.2")
 BUNDLE_INCLUDE = c("*")
 BUNDLE_INCLUDE_DIRS = c()
 BUNDLE_EXCLUDE_DIRS = c(".git", ".svn", "225*")
@@ -501,7 +500,6 @@ if (tools::file_ext(file_arg) == "7z") {
 
   version_match <- str_match(GAMS_VERSION, "^(\\d+)[.](\\d+)$")
   if (any(is.na(version_match))) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! Format must be "<major>.<minor>".'))
-  if (!(GAMS_VERSION %in% AVAILABLE_GAMS_VERSIONS)) stop(str_glue('Invalid GAMS_VERSION "{GAMS_VERSION}"! The GAMS-capable execution points have only these GAMS versions installed: {str_c(AVAILABLE_GAMS_VERSIONS, collapse=" ")}'))
   dotless_gams_version <- str_glue(version_match[2], version_match[3])
   major_gams_version <- version_match[2]
   rm(version_match)
