@@ -95,8 +95,8 @@ JOB_TEMPLATE <- c(
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
-  'transfer_output_files = {ifelse(GET_OUTPUT, str_c(path_norm(path(OUTPUT_DIR, OUTPUT_FILES)), collapse=","), "")}',
-  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_FILES}={path_norm(path(OUTPUT_DIR_SUBMIT, output_prefixes))}.$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extensions}"), collapse=";"), "")}"',
+  'transfer_output_files = {ifelse(GET_OUTPUT, str_c(path_tworel(OUTPUT_DIR, OUTPUT_FILES), collapse=","), "")}',
+  'transfer_output_remaps = "{ifelse(GET_OUTPUT, str_c(str_glue("{OUTPUT_FILES}={path_tworel(OUTPUT_DIR_SUBMIT, output_prefixes)}.$$([substr(strcat(string(0),string(0),string(0),string(0),string(0),string(0),string($(job))),-6)]).{output_extensions}"), collapse=";"), "")}"',
   "",
   "notification = {NOTIFICATION}",
   '{ifelse(is.null(EMAIL_ADDRESS), "", str_glue("notify_user = {EMAIL_ADDRESS}"))}',
@@ -191,6 +191,16 @@ check_on_path <- function(binaries) {
     if (where[bin] == "") {
       stop(str_glue("Required binary/executable '{bin}' was not found! Please add its containing directory to the PATH environment variable."), call.=FALSE)
     }
+  }
+}
+
+# Construct a true relative path from two elements even if the first element is "".
+# Workaround for fs::path returning absolute path in that case.
+path_tworel <- function(element1, element2) {
+  if (element1 == "") {
+    return(path_norm(path(element2)))
+  } else {
+    return(path_norm(path(element1, element2)))
   }
 }
 
@@ -440,7 +450,6 @@ if (tools::file_ext(file_arg) == "7z") {
   if (!(GET_OUTPUT)) warning("GET_OUTPUT is not set to TRUE. A run without output is pointless. Are you returning the output via a network filesystem?")
   if (GET_OUTPUT) {
     if (any(str_detect(OUTPUT_FILES, ',[<>|:?*" \\t/\\\\]'))) stop(str_glue("Configured OUTPUT_FILE or OUTPUT_FILES has forbidden character(s)!"))
-    if (OUTPUT_DIR == "") stop(str_glue('Configured OUTPUT_DIR may not be an empty path! Must be a valid relative path. Configure "." for the working directory.'))
     if (str_detect(OUTPUT_DIR, "^/") || str_detect(OUTPUT_DIR, "^.:")) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: absolute paths not allowed!"))
     if (str_detect(OUTPUT_DIR, fixed("../"))) stop(str_glue("Configured OUTPUT_DIR must be located under the working directory: you may not go up to parent directories using ../"))
     if (str_detect(OUTPUT_DIR, '[<>|:?*" \\t\\\\]')) stop(str_glue("Configured OUTPUT_DIR has forbidden character(s)! Use / as path separator."))
@@ -1196,7 +1205,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   # Report location of output files
   if (GET_OUTPUT) {
     cat("You can find the output files at:",
-        str_glue("    {OUTPUT_DIR_SUBMIT}/{output_prefixes}.*"),
+        str_glue("    {path_tworel(OUTPUT_DIR_SUBMIT, output_prefixes)}.*"),
         sep="\n")
   }
 
@@ -1264,7 +1273,7 @@ if (WAIT_FOR_RUN_COMPLETION) {
   cat(str_glue("You can monitor progress of the run with: condor_q {cluster}."), sep="\n")
   if (GET_OUTPUT) {
     cat("After the run completes, you can find the output files at:",
-        str_glue("    {OUTPUT_DIR_SUBMIT}/{output_prefixes}.*"),
+        str_glue("    {path_tworel(OUTPUT_DIR_SUBMIT, output_prefixes)}.*"),
         sep="\n")
   }
 }
