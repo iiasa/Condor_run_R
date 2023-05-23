@@ -1182,6 +1182,9 @@ if (WAIT_FOR_RUN_COMPLETION) {
   all_exist_and_not_empty(log_dir, "_{PREFIX}_{cluster}.{job}.err", warn=FALSE)
   if (GET_OUTPUT) {
     output_files_complete <- all_exist_and_not_empty(OUTPUT_DIR_SUBMIT, '{output_prefixes}.{sprintf("%06d", job)}.{output_extensions}')
+    cat("You can find the output files at:",
+        str_glue("    {OUTPUT_DIR_SUBMIT}/{output_prefixes}.*"),
+        sep="\n")
   }
 
   return_values <- get_return_values(path(log_dir, str_glue("{PREFIX}_{cluster}.{JOBS}.log")))
