@@ -649,7 +649,7 @@ constraints <- function(requirements) {
 # Any bare ClassId identifiers found in the requirements will be converted
 # to '<identifier> =?= True' expressions for convenience.
 #
-# The input host domain names are concatined with ||.
+# The input host domain names are concatenated with ||.
 build_requirements_expression <- function(requirements, hostdoms) {
   h <- ""
   if (length(hostdoms) > 0) {
@@ -871,12 +871,13 @@ check_on_path(c("condor_submit", "condor_status", "condor_q", "condor_reschedule
 
 # Construct clause stating what execution points are selected by
 selected_by <- str_glue(
-  "{ifelse(HOST_REGEXP == '.*', '', ' matching HOST_REGEXP')}",
-  "{ifelse(HOST_REGEXP == '.*' || length(REQUIREMENTS) == 0,'', ' and')}",
-  "{ifelse(length(REQUIREMENTS) == 0, '', ' meeting REQUIREMENTS')}"
+  "{ifelse(HOST_REGEXP == '.*', '', 'matching HOST_REGEXP')}",
+  "{ifelse(HOST_REGEXP == '.*' || length(REQUIREMENTS) == 0,'', ' and ')}",
+  '{ifelse(length(REQUIREMENTS) == 0, "", str_glue("meeting requirement{ifelse(length(REQUIREMENTS) == 1, \\"\\", \\"s\\")} "))}',
+  '{ifelse(length(REQUIREMENTS) == 0, "", str_c(str_glue("{REQUIREMENTS}"), collapse=", "))}'
 )
 
-cat(str_glue("Available resources on execution points{selected_by}:"), sep="\n")
+cat(str_glue("Available resources on execution points {selected_by}:"), sep="\n")
 error_code <- system2("condor_status", args=c("-compact", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
 if (error_code > 0) stop("Cannot show Condor pool status! Probably, your submit machine is unable to connect to the central manager. Possibly, you are running a too-old (< V8.7.2) Condor version.")
 cat("\n")
