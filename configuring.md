@@ -12,13 +12,15 @@ IIASA GLOBIOM developers can start from a ready-made configuration located in th
 
 ## Path handling
 
-Since the submit script and configuration file may not be located in the the chosen current working directory, you may need to prefix them with a path on invocation:
+Several configuration parameters specify paths to files or directories. **Use only `/`** as directory separator in path values. Paths are relative to the current working directory unless otherwise indicated in the description of the configuration parameter. Things are easiest to configure when you use the root of the file tree of your project as current working directory when submitting. This root will typically be the directory where you cloned/checked-out the repository holding your project files.
+
+Since the submit script and configuration file may not be located in the the chosen current working directory on your submit machine, you may need to prefix them with a path on invocation:
 
 `Rscript [<path to>]Condor_run_basic.R [<path to>]my_configuration.R`
 
-Several configuration parameters specify paths to files or directories. **Use only `/`** as directory separator in path values. Paths are relative to the current working directory unless otherwise indicated in the description of the configuration parameter. Things are easiest to configure when you use the root of the file tree of your project as current working directory when submitting. This root will typically be the directory where you cloned/checked-out the repository holding your project files.
+The submit script can then bundle up all files needed by a job relative to the current working directory. On an execute point when a job is run, the bundle is unpacked and the current working directory of a job will equal the location where the bundle is unpacked. For each job that is run on an execute point, this replicates a fresh copy of the needed subset of the tree of files located under your current working directory on your submit machine at the current working directory given to the job on the execute point.
 
-This approach allows you to test jobs on your submit machine, and then easily use the submit script to bundle up your project's file tree via 7-Zip for transfer to and execution on the cluster. The `BUNDLE_*` parameters detailed below control which files are added to the bundle. In addition, parameters specifying the location of input and output files—when so indicated in their documentation—can cause files to be included or excluded from the bundle. For some examples of how to set this up, see [the tests](tests/tests.md). To verify what was bundled, check the `_bundle_<cluster number>_contents.txt` listing file that is written to the [log directory of the run](configuring.md#condor_dir) on submission.
+The `BUNDLE_*` parameters detailed below control which files are added to the bundle. In addition, parameters specifying the location of input and output files—when so indicated in their documentation—can cause files to be included or excluded from the bundle. For some examples of how to set this up, see [the tests](tests/tests.md). To verify what was bundled, check the `_bundle_<cluster number>_contents.txt` listing file that is written to the [log directory of the run](configuring.md#condor_dir) on submission.
 
 ## Mandatory configuration parameters
 
