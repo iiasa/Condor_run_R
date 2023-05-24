@@ -440,6 +440,7 @@ if (tools::file_ext(file_arg) == "7z") {
   if (SCRIPT != "" && !(file_exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
   if (str_detect(SCRIPT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCRIPT has forbidden character(s)!"))
   if (length(JOBS) > 1 && !str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
+  REQUIREMENTS <- c(REQUIREMENTS, "BundleCache") # Require that execute points can cache bundles
   if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
   if (!is.null(BUNDLE_DIR)) {
     if (BUNDLE_DIR == "") stop("Configured BUNDLE_DIR may not be an empty path!")

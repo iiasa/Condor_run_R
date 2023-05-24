@@ -213,7 +213,9 @@ Requirements expressions `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"'` respecti
 For more information on requirement expressions, see the documentation of
 the `requirements` command of the [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands).
 
-**:point_right:Note:** custom [`ClassAds`] may have been defined on the EPs that allow you select their capabilities on a more fine-grained level via requirement expressions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. The [`GAMS_VERSION`](#gams_version) configuration setting is an example thereof, and when set it is automatically added to the list of configured `REQUIREMENTS`.
+**:point_right:Note:** custom [`ClassAds`] may have been defined on the EPs that allow you select their capabilities on a more fine-grained level via requirement expressions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. The [`GAMS_VERSION`](#gams_version) configuration setting is an example thereof, and when set it is added to the list of configured `REQUIREMENTS`.
+
+**:point_right:Note:** the [`"BundleCache"`] requirement is always added to the list of requirements. This ensures that only execute points that advertise the capability to cache bundles are sent bundles.
 
 ### HOST_REGEXP
 
@@ -341,7 +343,7 @@ GAMS version to run the job with on the execute point. When set to `NULL`, the G
 
 **:point_right:Note:** when configuring a [`RESTART_FILE_PATH`](#restart_file_path), you typically will want to also configure a matching `GAMS_VERSION` to guarantee that the restart file can be read by GAMS on the execute point.
 
-**:point_right:Note:** the selection of the GAMS version on the execute point is arranged for by the configured [`BAT_TEMPLATE`](#bat_template)
+**:point_right:Note:** the selection of the GAMS version on the execute point is arranged for by the configured [`BAT_TEMPLATE`](#bat_template).
 
 ### GET_G00_OUTPUT
 
