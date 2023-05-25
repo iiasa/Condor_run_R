@@ -7,7 +7,7 @@
 #
 # Author:   Albert Brouwer
 # Based on: GLOBIOM-limpopo scripts by David Leclere
-# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2023-04-04
+# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2023-05-25
 # API version: V2
 
 # Remove any objects from active environment so that below it will contain only the default configuration
@@ -307,8 +307,8 @@ if (length(args) == 0) {
     stop(str_c("Invalid arguments!", USAGE, sep="\n"))
   } else {
     bundle_only <- TRUE
+    file_arg <- args[[2]]
   }
-  file_arg <- args[[2]]
 } else {
   file_arg <- args[[1]]
 }
