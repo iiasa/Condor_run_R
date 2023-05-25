@@ -349,7 +349,6 @@ in_gams_curdir <- function(path1, path2 = NULL) {
 # Sanity check arguments
 args <- commandArgs(trailingOnly=TRUE)
 bundle_only <- FALSE
-file_arg <- args[[1]]
 if (length(args) == 0) {
   stop(str_c("No arguments!", USAGE, sep="\n"))
 } else if (length(args) > 2) {
@@ -361,6 +360,8 @@ if (length(args) == 0) {
     bundle_only <- TRUE
   }
   file_arg <- args[[2]]
+} else {
+  file_arg <- args[[1]]
 }
 rm(args)
 if (bundle_only && tools::file_ext(file_arg) == "7z") {
