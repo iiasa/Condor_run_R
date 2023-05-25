@@ -68,7 +68,7 @@ Automatic notification of new releases can be enabled by going to the [main repo
 1. Bundle up the job files using 7-Zip.
 2. Seed the execution points (EPs) with the bundle.
    - Seeding jobs transfer the bundle once for each EP.
-   - The EP cache the bundle for use by your jobs.
+   - The EPs cache the bundle for use by your jobs.
 3. Submit the jobs.
    - Jobs unpack the cached bundle when run.
 5. Optionally [wait for the jobs to finish](configuring.md#wait_for_run_completion).
