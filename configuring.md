@@ -217,7 +217,7 @@ the `requirements` command of the [submit description file](https://htcondor.rea
 
 **:point_right:Note:** custom [`ClassAds`] may have been defined on the EPs that allow you select their capabilities on a more fine-grained level via requirement expressions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. The [`GAMS_VERSION`](#gams_version) configuration setting is an example thereof, and when set it is added to the list of configured `REQUIREMENTS`.
 
-**:point_right:Note:** the [`"BundleCache"`] requirement is always added to the list of requirements. This ensures that only execute points that advertise the capability to cache bundles are sent bundles.
+**:point_right:Note:** the `"BundleCache"` requirement is always added to the list of requirements. This ensures that only execute points that advertise the capability to cache bundles are sent bundles.
 
 ### HOST_REGEXP
 
