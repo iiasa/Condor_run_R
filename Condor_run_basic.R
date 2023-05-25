@@ -1172,7 +1172,7 @@ rm(lock_file)
 
 # Report successful submission to the user
 message(str_glue('Run "{LABEL}" with cluster number {cluster} has been submitted.'))
-message(str_glue("Run log directory: {path_abs(log_dir)}"))
+message(str_glue("The log directory of the run is {log_dir}"))
 
 # Log the cluster number if requested. If you parse the above stdout, you can parse out the cluster number.
 # If you cannot capture the stdout, you can request the cluster number to be logged by specifying a log file
