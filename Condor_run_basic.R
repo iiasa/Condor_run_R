@@ -527,6 +527,7 @@ if (tools::file_ext(file_arg) == "7z") {
       stop()
     }
   )
+  cat("Bundling environment checkpoint...\n")
   size <- bundle_with_7z(c(
     "a",
     tmp_bundle_path,
@@ -534,6 +535,7 @@ if (tools::file_ext(file_arg) == "7z") {
   ))
   added_size <- added_size + size$added
   rm(size, bundle_with_7z)
+  cat("\n")
 
   # Add uncompressed bundle size to the disk request in KiB
   REQUEST_DISK <- REQUEST_DISK + ceiling(added_size / 1024)
