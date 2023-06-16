@@ -239,12 +239,16 @@ The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CP
 
 Default value: `1000000`
 
-An estimate of the amount of execution-point-side disk space required per job for storing intermediate and output data. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add to this value the uncompressed size of the bundle to yield a disk request reflecting the overall storage requirement of the job. This sum is used to allocate disk space for a job when it is started on an EP.
-  
-You can find a job's actual, requested (with added uncompressed bundle size), and allocated disk space in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir) after the job completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
+Set this to an estimate of the amount of disk space required per job for storing intermediate and output data. This allows HT Condor to reserve an appropriate amount of disk space for each job such that there is no risk of disk space being exhausted or significantly underutilized. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add the unpacked size of the bundle to yield a disk request reflecting the rough overall storage requirement of a job. This sum is used to allocate disk space for a job when it is started on an EP, and each job is given its own private directory that becomes the current working directory for the job. In this directory, the bundle is unpacked and then the job is launched.
 
-**:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
-  
+When a job completes successfully, you can find a job's actual, requested (with added unpacked bundle size), and allocated disk space in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir). When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`, the submit script will analyze the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
+
+**:warning:Warning:** do not submit many jobs if you have no good estimate for how much disk your jobs actually use since that may cause the execute point to run out of disk, making your jobs **and the jobs of other users fail**. To determine how much disk your jobs use, submit just a single job first with a roomy rough estimate for `REQUEST_DISK` and examine its `.log` file on completion. Note that the actual use includes the space taken up by the unpacked bundle.
+
+**:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). This means that if your REQUEST_DISK is significantly too high, fewer of your jobs may get scheduled than could have safely been scheduled since all available disk space on an execute point might get reserved but not actually used.
+
+**:point_right:Tip:** avoid bundling files that your jobs do not need. That reduces the amount of disk reserved for per job, allowing more jobs to run at the same time when disk space is tight. You can do so via the `BUNDLE_*` configuration settings.
+
 ### RUN_AS_OWNER
 
 Default value: `TRUE`
