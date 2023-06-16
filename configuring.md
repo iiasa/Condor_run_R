@@ -32,9 +32,13 @@ Typically, the script that is run when your jobs are started accepts the job num
 
 ### REQUEST_MEMORY
 
-An estimate of the amount of memory (in MiB) required per job. Condor will stop scheduling jobs on an execution point (EP) when the sum of their memory requests exceeds the memory allocated to the execution slot of on the execution point. Overestimating your memory request may therefore allow fewer jobs to run than there actually could. Underestimating it puts the EP at risk of running out of memory, which can endanger other jobs as well. It is therefore important to configure a good estimate.
+Set this to an estimate of the amount of memory (in MiB) required per job. This allows HT Condor to reserve an appropriate amount of memory for each job such that there is no risk of memory being exhausted or significantly underutilized. Condor will not schedule a job in a slot of an execution point (EP) when the memory requests exceeds the remaining memory available in that slot.
 
-You can find a job's actual, requested, and allocated memory use in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir) after tge job completes. When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`, the submit script will analyse the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
+When a job completes successfully, you can find a job's actual, requested, and allocated memory use in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir). When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`, the submit script will analyze the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
+
+**:warning:Warning:** do not submit many jobs if you have no good estimate for how much memory they use since that may cause the execute point to run out of memory, making your jobs **and the jobs of other users fail**. To determine how much memory you should request, submit just a single job first with a roomy rough estimate for `REQUEST_MEMORY` and examine its `.log` file on completion.
+
+**:point_right:Note:** overestimating `REQUEST_MEMORY` may will allow fewer jobs to run than there actually could.
 
 **:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient memory to satisfy your request. To see what memory resources your cluster has available issue [`condor_status -avail`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
@@ -239,7 +243,7 @@ The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CP
 
 Default value: `1000000`
 
-Set this to an estimate of the amount of disk space required per job for storing intermediate and output data. This allows HT Condor to reserve an appropriate amount of disk space for each job such that there is no risk of disk space being exhausted or significantly underutilized. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add the unpacked size of the bundle to yield a disk request reflecting the rough overall storage requirement of a job. This sum is used to allocate disk space for a job when it is started on an EP, and each job is given its own private directory that becomes the current working directory for the job. In this directory, the bundle is unpacked and then the job is launched.
+Set this to an estimate of the amount of disk space required per job for storing intermediate and output data. This allows HT Condor to reserve an appropriate amount of disk space for each job such that there is no risk of disk space being exhausted or significantly underutilized. Specify the value in [KiB](https://en.wikipedia.org/wiki/Byte#Multiple-byte_units) units. The submit script will add the unpacked size of the bundle to yield a disk request reflecting the rough overall disk requirement of a job. This sum is used to allocate disk space for a job when it is started on an EP, and each job is given its own private directory that becomes the current working directory for the job. In this directory, the bundle is unpacked and then the job is launched.
 
 When a job completes successfully, you can find a job's actual, requested (with added unpacked bundle size), and allocated disk space in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir). When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`, the submit script will analyze the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
 
