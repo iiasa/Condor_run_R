@@ -18,7 +18,7 @@ Since the submit script and configuration file may not be located in the the cho
 
 `Rscript [<path to>]Condor_run_basic.R [<path to>]my_configuration.R`
 
-The submit script can then bundle up all files needed by a job relative to the current working directory. On an execute point when a job is run, the bundle is unpacked and the current working directory of a job will equal the location where the bundle is unpacked. For each job that is run on an execute point, this replicates a fresh copy of the needed subset of the tree of files located under your current working directory on your submit machine at the current working directory given to the job on the execute point.
+The submit script can then bundle up all files needed by a job relative to the current working directory. On an execute point when a job is run, the bundle is unpacked to a newly created private per-job directory. That directory will be the initial current working directory of the job. For each job that is run on an execute point, this approach replicates a fresh copy of the needed subset of the tree of files located under your current working directory on your submit machine at the current working directory given to the job on the execute point. The job is thereby enabled to process, modify, and generate files in that directory without conflicting with other jobs.
 
 The `BUNDLE_*` parameters detailed below control which files are added to the bundle. In addition, parameters specifying the location of input and output files—when so indicated in their documentation—can cause files to be included or excluded from the bundle. For some examples of how to set this up, see [the tests](tests/tests.md). To verify what was bundled, check the `_bundle_<cluster number>_contents.txt` listing file that is written to the [log directory of the run](configuring.md#condor_dir) on submission.
 
@@ -249,7 +249,7 @@ When a job completes successfully, you can find its actual, requested (with adde
 
 **:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). This means that if your REQUEST_DISK is significantly too high, fewer of your jobs may get scheduled than could have safely been scheduled since all available disk space on an execute point might get reserved but not actually used.
 
-**:point_right:Tip:** avoid bundling files that your jobs do not need. That reduces the amount of disk reserved for per job, allowing more jobs to run at the same time when disk space is tight. You can do so via the `BUNDLE_*` configuration settings.
+**:point_right:Tip:** avoid bundling files that your jobs do not need. That reduces the amount of disk reserved per job, allowing more jobs to run at the same time when disk space is tight. You can do so via the `BUNDLE_*` configuration settings.
 
 ### RUN_AS_OWNER
 
