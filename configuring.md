@@ -20,7 +20,16 @@ Since the submit script and configuration file may not be located in the the cho
 
 The submit script can then bundle up all files needed by a job relative to the current working directory. On an execute point when a job is run, the bundle is unpacked to a newly created private per-job directory. That directory will be the initial current working directory of the job. For each job that is run on an execute point, this approach replicates a fresh copy of the needed subset of the tree of files located under your current working directory on your submit machine at the current working directory given to the job on the execute point. The job is thereby enabled to process, modify, and generate files in that directory without conflicting with other jobs.
 
+In summary, there are two kinds of current working directory:
+1. The current working directory of the submit script on your submit machine.
+   - The same as the working directory as current when invoking the submit script.
+2. The current working directory of a job on an execute point.
+   - A unique working directory is given to every job.
+   - Of course, the job itself can change the current working directory once launched. For example, GAMS jobs do so when [`GAMS_CURDIR`](#gams_curdir) is set.
+
 The `BUNDLE_*` parameters detailed below control which files are added to the bundle. In addition, parameters specifying the location of input and output files—when so indicated in their documentation—can cause files to be included or excluded from the bundle. For some examples of how to set this up, see [the tests](tests/tests.md). To verify what was bundled, check the `_bundle_<cluster number>_contents.txt` listing file that is written to the [log directory of the run](configuring.md#condor_dir) on submission.
+
+**:warning:Caution:** avoid bundling big files that your jobs do not need. A common mistake is to bundle the output returned by previous job runs. This will make each job use an unnecesary amount of disk space, and my limit the number of jobs that can be scheduled simulteneously.
 
 ## Mandatory configuration parameters
 
