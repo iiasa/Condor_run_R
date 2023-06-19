@@ -29,7 +29,7 @@ In summary, there are two kinds of current working directory:
 
 The `BUNDLE_*` parameters detailed below control which files are added to the bundle. In addition, parameters specifying the location of input and output files—when so indicated in their documentation—can cause files to be included or excluded from the bundle. For some examples of how to set this up, see [the tests](tests/tests.md). To verify what was bundled, check the `_bundle_<cluster number>_contents.txt` listing file that is written to the [log directory of the run](configuring.md#condor_dir) on submission.
 
-**:warning:Caution:** avoid bundling big files that your jobs do not need. A common mistake is to bundle the output returned by previous job runs. This will make each job use an unnecesary amount of disk space, and my limit the number of jobs that can be scheduled simulteneously.
+**:warning:Caution:** avoid bundling big files that your jobs do not need. A common mistake is to bundle the output returned by previous job runs. This will make each job use an unnecesary amount of disk space, and may limit the number of jobs that can be scheduled simultaneously.
 
 ## Mandatory configuration parameters
 
