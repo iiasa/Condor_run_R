@@ -80,7 +80,7 @@ When a job is run on an EP, the cached bundle is decompressed in a scratch direc
 
 ## Use
 
-Use the `Condor_run_basic.R` submit script for generic runs and the `Condor_run.R` submit script for GAMS runs. On Windows, invoke via `Rscript`. On MacOS/Linux that is not necessary ([shebang invokaction](https://en.wikipedia.org/wiki/Shebang_(Unix))).
+Use the `Condor_run_basic.R` submit script for generic runs and the `Condor_run.R` submit script for GAMS runs. On Windows, invoke via `Rscript`. On MacOS/Linux that is not necessary ([shebang invocation](https://en.wikipedia.org/wiki/Shebang_(Unix))).
 
 To bundle and submit a run, use:
 
