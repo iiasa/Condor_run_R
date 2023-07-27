@@ -203,9 +203,11 @@ Override lines in the `.job` file generated from [`JOB_TEMPLATE`](#job_template)
 
 ### JOB_RELEASES
 
-Default value: `3`
+Default value: `0`
 
 Number of times to auto-release (retry) held (failed) jobs before giving up. This allows your jobs to recover from transient errors such as a network outage or an execution point running out of memory. When the re-tries have run out, your jobs will remain in the held state. Then the error is likely not transient and requires some analysis as described [here](troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold).
+
+Use `0` (no retries) until you have tested your workload and know that your jobs are unlikely to fail on account of an intrinsic instead of a transient error.
 
 ### JOB_RELEASE_DELAY
 
