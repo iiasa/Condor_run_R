@@ -213,7 +213,7 @@ Default value: `0`
 
 Number of times to auto-release (retry) held (failed) jobs before giving up. This allows your jobs to recover from transient errors such as a network outage or an execute point going down or running out of disk or memory. Released jobs may be rescheduled on a different execute point. When the re-tries have run out, your jobs will remain in the held state. Then the error is likely not transient and requires some analysis as described [here](troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold).
 
-Use `0` (no retries) until you have tested your workload and know that your jobs are unlikely to fail on account of an intrinsic instead of a transient error.
+Use `0` (no retries) until you have [tested your workload](#first-test-your-workload-and-configuration) and know that your jobs are unlikely to fail on account of an intrinsic instead of a transient error.
 
 ### JOB_RELEASE_DELAY
 
