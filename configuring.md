@@ -10,6 +10,12 @@ Your configuration may need adaptation to the particulars of your Condor cluster
 
 IIASA GLOBIOM developers can start from a ready-made configuration located in the GLOBIOM Trunk at `R/sample_config.R` which is adapted to the Limpopo cluster. Note that that configuration assumes that your current working directory is at the root of the GLOBIOM working copy when you invoke via `Rscript`. For more information, see the GLOBIOM wiki [here](https://github.com/iiasa/GLOBIOM/wiki/Running-scenarios-in-parallel-on-Limpopo#configuration).
 
+## First test your workload and configuration
+
+When your workload is untested, try first with a small number of [`JOBS`](#jobs). Things that work on your local machine may need some adjustment before they work on an execute point. The configuration will need some tweaking to bundle up all the needed code and input and return the output correctly.
+
+**:point_right:Tip:** once you are confident that your jobs run without error, consider adding the [`JOB_RELEASES`](#job_releases) setting to your configuration. Setting it somewhere in the 2 to 4 range makes the run gracefully handle transient errors — such as a network outage or the execute point on which a job runs going down or running out of disk or memory —  by retrying failed jobs a few times: in case of transient errors, typically only a few jobs will fail and these are likely to succeed on being retried. This can save a lot of time compared to analyzing the problem, manually resubmitting the failed jobs, and combining their output with that of the prior partially successful run.
+
 ## Path handling
 
 Several configuration parameters specify paths to files or directories. **Use only `/`** as directory separator in path values. Paths are relative to the current working directory unless otherwise indicated in the description of the configuration parameter. Things are easiest to configure when you use the root of the file tree of your project as current working directory when submitting. This root will typically be the directory where you cloned/checked-out the repository holding your project files.
@@ -191,7 +197,7 @@ Default value: `0`
 
 Number of times to auto-release (retry) held bundle-seeding jobs before giving up. Not retrying—by using the 0 default value—is fine when you have plenty of execution points (EPs) in the cluster: execution points that could not receive the bundle are assumed to be unavailable and will be excluded from the subsequent job submission stage. The execution points that could receive the bundle will still process your jobs.
 
-When the cluster has only one or a couple of EPs, or there are intermittent failures on account of networking issues, it may be worthwhile to retry a few times. This can make the seeding process take longer.
+When the cluster has only one or a couple of EPs, or there are intermittent failures on account of networking issues, it may be worthwhile to retry a few times. This can make the seeding process take longer, but since more execute points end up caching the bundle, the jobs can be distributed over more execute points thereby increasing throughput.
 
 ### JOB_OVERRIDES
 
@@ -205,7 +211,7 @@ Override lines in the `.job` file generated from [`JOB_TEMPLATE`](#job_template)
 
 Default value: `0`
 
-Number of times to auto-release (retry) held (failed) jobs before giving up. This allows your jobs to recover from transient errors such as a network outage or an execution point running out of memory. When the re-tries have run out, your jobs will remain in the held state. Then the error is likely not transient and requires some analysis as described [here](troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold).
+Number of times to auto-release (retry) held (failed) jobs before giving up. This allows your jobs to recover from transient errors such as a network outage or an execute point going down or running out of disk or memory. Released jobs may be rescheduled on a different execute point. When the re-tries have run out, your jobs will remain in the held state. Then the error is likely not transient and requires some analysis as described [here](troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold).
 
 Use `0` (no retries) until you have tested your workload and know that your jobs are unlikely to fail on account of an intrinsic instead of a transient error.
 
