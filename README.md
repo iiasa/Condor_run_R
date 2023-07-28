@@ -90,7 +90,7 @@ To only bundle the files and preserve the bundle, use:
 
 `[Rscript ][path to]Condor_run[_basic].R --bundle-only <configuration file>.R`
 
-This can also be achieved by setting [`BUNDLE_ONLY = TRUE`](configuring.md#bundle_only) in the configuration file. To learn how to set up a configuration file, see the [documentation on configuring](configuring.md).
+This can also be achieved by setting [`BUNDLE_ONLY = TRUE`](configuring.md#bundle_only) in the configuration file. To learn how to set up a configuration file, see the [documentation on configuring](configuring.md). Make sure to [first test your workload and configuration](configuring.md#first-test-your-workload-and-configuration).
 
 To (re)seed a bundle and (re)submit a run from a pre-existing bundle, use:
 
