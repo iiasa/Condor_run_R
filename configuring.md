@@ -16,6 +16,8 @@ When your workload is untested, try first with a small number of [`JOBS`](#jobs)
 
 **:point_right:Tip:** once you are confident that your jobs run without error, consider adding the [`JOB_RELEASES`](#job_releases) setting to your configuration. Setting it somewhere in the 2 to 4 range makes the run gracefully handle transient errors — such as a network outage or the execute point on which a job runs going down or running out of disk or memory —  by retrying failed jobs a few times: in case of transient errors, typically only a few jobs will fail and these are likely to succeed on being retried. This can save a lot of time compared to analyzing the problem, manually resubmitting the failed jobs, and combining their output with that of the prior partially successful run.
 
+**:warning:Attention:** pay particular mind to obtaining good estimates for [`REQUEST_DISK`](#request_disk) and [`REQUEST_MEMORY`](#request_memory) from your small test runs before submitting jobs in bulk or else jobs may still fail on account of resource exhaustion.
+
 ## Path handling
 
 Several configuration parameters specify paths to files or directories. **Use only `/`** as directory separator in path values. Paths are relative to the current working directory unless otherwise indicated in the description of the configuration parameter. Things are easiest to configure when you use the root of the file tree of your project as current working directory when submitting. This root will typically be the directory where you cloned/checked-out the repository holding your project files.
