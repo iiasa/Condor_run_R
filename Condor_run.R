@@ -7,7 +7,7 @@
 #
 # Author:   Albert Brouwer
 # Based on: GLOBIOM-limpopo scripts by David Leclere
-# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2023-08-07
+# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2023-08-07 (post-release development version)
 # API version: V2
 
 # Remove any objects from active environment so that below it will contain only the default configuration
@@ -326,6 +326,17 @@ excludable <- function(dir_path) {
   if (any(path_has_parent(BUNDLE_INCLUDE_FILES, dir_path))) return(FALSE)
   if (any(path_has_parent(BUNDLE_INCLUDE_DIRS, dir_path))) return(FALSE)
   return(TRUE)
+}
+
+# Return the size of the directory non-recursively
+dirsize <- function(dir_path) {
+  size <- 0
+  for (f in dir_ls(dir_path)) {
+    if (is_file(f)) {
+      size <- size + file_size(f)
+    }
+  }
+  return(size)
 }
 
 # Define a function to turn a path relative to GAMS_CURDIR into a path
@@ -1350,6 +1361,15 @@ if (WAIT_FOR_RUN_COMPLETION) {
   # Monitor the run until it completes
   cat(str_glue('Waiting for run "{LABEL}" to complete...'), sep="\n")
   monitor(cluster)
+
+  # Wait for file transfer to complete
+  prior_size <- -1
+  repeat {
+    new_size = dirsize(log_dir) + dirsize(OUTPUT_DIR_SUBMIT)
+    if (prior_size == new_size) break
+    Sys.sleep(3)
+    prior_size <- new_size
+  }
 
   # Check that result files exist and are not empty, warn otherwise and delete empty files
   all_exist_and_not_empty(log_dir, "_{PREFIX}_{cluster}.{job}.err", warn=FALSE)
