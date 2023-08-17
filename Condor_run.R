@@ -1365,7 +1365,10 @@ if (WAIT_FOR_RUN_COMPLETION) {
   # Wait for file transfer to complete
   prior_size <- -1
   repeat {
-    new_size = dirsize(log_dir) + dirsize(OUTPUT_DIR_SUBMIT)
+    new_size = dirsize(log_dir)
+    if (GET_OUTPUT) {
+      new_size = new_size  + dirsize(OUTPUT_DIR_SUBMIT)
+    }
     if (prior_size == new_size) break
     Sys.sleep(3)
     prior_size <- new_size
