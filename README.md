@@ -98,15 +98,17 @@ To (re)seed a bundle and (re)submit a run from a pre-existing bundle, use:
 
 **:point_right:Note:** the configuration settings provided on creation of the bundle are used. These are stored in the bundle as a checkpoint file during bundling.
 
-After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. The command line arguments specify which runs to analyse and can either be a submit configuration `.R` file or a paths to a [directory containing run log files and other artifacts](configuring.md#condor_dir).
+After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. The command line argument is either a path to a [directory containing run log files and other artifacts](configuring.md#condor_dir) or a path to a run configuration `.R` file as passed to `Condor_run[_basic].R`:
 
-When passing a configuration file as one of the arguments to `Condor_run_stats.R`, and the [`CONDOR_DIR`](configuring.md#condor_dir) configuration setting holds a relative path or is absent and therefore has its default relative path setting, the current working directory must be the same as was the case when invoking `Condor_run.R` or `Condor_run_basic.R` with that configuration file because otherwise the log directory cannot be located.
+`Rscript Condor_run_stats.R <run log directory>`
 
-An example command line invocation is:
+or
 
-`Rscript Condor_run_stats.R Condor/2021-11-25 config.R`
+`Rscript Condor_run_stats.R <configuration file>.R`
 
-This produces a PDF with plots in the current working directory. When invoking `Condor_run_stats.R` from RStudio by sourcing the script, set the first instance of LOG_DIRECTORIES to the path or paths of one or more directories containing Condor run log files to be analysed.
+When using the latter form, the current working directory must be the same as was the case when invoking `Condor_run[_basic].R`/
+
+The invocation produces a PDF with plots in the current working directory. When invoking `Condor_run_stats.R` from RStudio by sourcing the script, set the first instance of LOG_DIRECTORIES to the path or paths of one or more directories containing Condor run log files to be analysed.
 
 **:warning:Beware:** when you have made customizations to your R installation via site, profile or user environment files, this may cause anomalies that make it necessary to have `Rscript` ignore these customizations by using the `Rscript --vanilla` option on invocation.
 
