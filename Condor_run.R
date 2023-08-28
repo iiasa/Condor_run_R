@@ -140,7 +140,12 @@ BAT_TEMPLATE <- c(
   '{ifelse(is.null(GAMS_VERSION), "", ")")}',
   "@echo on",
   "touch %bundle_root%\\{username}\\{timestamped_bundle_name} 2>NUL", # postpone automated cleanup of bundle, can fail when another job is using the bundle but that's fine as the touch will already have happened
-  '7z x %bundle_root%\\{username}\\{timestamped_bundle_name} -y -x!{CHECKPOINT_FILE} >NUL || exit /b %errorlevel%',
+  '7z x %bundle_root%\\{username}\\{timestamped_bundle_name} -y -x!{CHECKPOINT_FILE} >NUL',
+  "if %errorlevel% neq 0 (",
+  "  echo Unbundling failed. Waiting 10 seconds and retrying... 1>&2", # Happens very rarely.
+  "  sleep 10",
+  '  7z x %bundle_root%\\{username}\\{timestamped_bundle_name} -y -x!{CHECKPOINT_FILE} >NUL || exit /b %errorlevel%',
+  ")",
   "set GDXCOMPRESS=1", # causes GAMS to compress the GDX output file
   "echo %PATH%",
   paste(
