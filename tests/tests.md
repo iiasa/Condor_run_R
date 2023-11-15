@@ -9,6 +9,7 @@ Tests listing:
 - [bundling GAMS CURDIR](bundling_GAMS_CURDIR/purpose.md)
 - [bundling nothing](bundling_nothing/purpose.md)
 - [disconnect](disconnect/purpose.md)
+- [limpopo_R_stack](limpopo_R_stack/purpose.md)
 - [noscript](noscript/purpose.md)
 - [output multiple](output_multiple/purpose.md)
 - [output empty](output_empty/purpose.md)
