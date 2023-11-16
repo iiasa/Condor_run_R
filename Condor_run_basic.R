@@ -914,7 +914,7 @@ cat("\n")
 hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machine", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE))
 if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
 if (length(hostdoms) == 0) {
-  stop(str_glue("No available execution points{selected_by}!"))
+  stop(str_glue("No available execution points {selected_by}!"))
 }
 rm(selected_by)
 
