@@ -240,6 +240,8 @@ the `requirements` command of the [submit description file](https://htcondor.rea
 
 **:point_right:Note:** the `"BundleCache"` requirement is always added to the list of requirements. This ensures that only execute points that advertise the capability to cache bundles are sent bundles.
 
+**:point_right:Note:** expressions containing a `$(JOB)` job number expansion are dropped when seeding but remain included during the actual submission.
+
 ### HOST_REGEXP
 
 Default value: `.*`
