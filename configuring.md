@@ -244,7 +244,7 @@ the `requirements` command of the [submit description file](https://htcondor.rea
 
 ### HOST_REGEXP
 
-Default value: `.*`
+Default value: `".*"`
 
 A [regular expression](https://www.w3schools.com/java/java_regex.asp) to select a subset of execution points from the cluster by hostname. Jobs will be scheduled only on the machines thus selected. The default value selects all available EPs.
 
