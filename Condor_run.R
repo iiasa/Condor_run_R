@@ -179,7 +179,7 @@ SEED_JOB_TEMPLATE <- c(
   "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
   "periodic_remove = (NumJobMatches > 1) || ((JobStatus == 1) && (time() - EnteredCurrentStatus > 180 ))", # if seed job is matched multiple times or remains idle for more than 3 minutes, remove it as presumably the execution point is not responding
   "",
-  "{build_seeding_requirements_expression(REQUIREMENTS, hostdom)}",
+  "{build_requirements_expression(SEEDING_REQUIREMENTS, hostdom)}",
   "request_memory = 0",
   "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
   "request_disk = {2*floor(file_size(bundle_path)/1024)+500}", # KiB, twice needed for move, add some for the extra files
@@ -530,6 +530,7 @@ if (tools::file_ext(file_arg) == "7z") {
   # Check and massage specific config settings
   if (length(JOBS) < 1 && !str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
   REQUIREMENTS <- c(REQUIREMENTS, "BundleCache") # Require that execute points can cache bundles
+  SEEDING_REQUIREMENTS <- REQUIREMENTS[!str_detect(REQUIREMENTS, fixed("$(JOB)", ignore_case=TRUE))]
   if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
   if (!is.null(BUNDLE_DIR)) {
     if (BUNDLE_DIR == "") stop("Configured BUNDLE_DIR may not be an empty path!")
@@ -854,14 +855,6 @@ build_requirements_expression <- function(requirements, hostdoms) {
   str_c("requirements = \\\n", r, h)
 }
 
-# Identical to build_requirements_expression() other than that requirements
-# containing the '$(JOB)' expansion are filtered out. This allows non-seeding
-# jobs to have requirements based on their job number while all otherwise
-# eligible execute points will receive the bundle.
-build_seeding_requirements_expression <- function(requirements, hostdoms) {
-  build_requirements_expression(requirements[!str_detect(requirements, fixed("$(JOB)", ignore_case=TRUE))], hostdoms)
-}
-
 # Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
 monitor <- function(clusters) {
   # Clear text displayed on current line and reset cursor to start of line
@@ -1057,7 +1050,7 @@ selected_by <- str_glue(
   "{ifelse(HOST_REGEXP == '.*', '', 'matching HOST_REGEXP')}",
   "{ifelse(HOST_REGEXP == '.*' || length(REQUIREMENTS) == 0,'', ' and ')}",
   '{ifelse(length(REQUIREMENTS) == 0, "", str_glue("meeting requirement{ifelse(length(REQUIREMENTS) == 1, \\"\\", \\"s\\")} "))}',
-  '{ifelse(length(REQUIREMENTS) == 0, "", str_c(str_glue("{REQUIREMENTS}"), collapse=", "))}'
+  '{ifelse(length(REQUIREMENTS) == 0, "", str_c(str_glue("{SEEDING_REQUIREMENTS}"), collapse=", "))}'
 )
 
 cat(str_glue("Available resources on execution points {selected_by}:"), sep="\n")
@@ -1065,8 +1058,8 @@ error_code <- system2("condor_status", args=c("-compact", constraints(REQUIREMEN
 if (error_code > 0) stop("Cannot show Condor pool status! Probably, your submit machine is unable to connect to the central manager. Possibly, you are running a too-old (< V8.7.2) Condor version.")
 cat("\n")
 
-# Collect host name and domain of available execution points matching HOST_REGEXP and meeting REQUIREMENTS
-hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machine", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE))
+# Collect host name and domain of available execution points matching HOST_REGEXP and meeting SEEDING_REQUIREMENTS
+hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machine", constraints(SEEDING_REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE))
 if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
 if (length(hostdoms) == 0) {
   stop(str_glue("No available execution points {selected_by}!"))
