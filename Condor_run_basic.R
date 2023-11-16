@@ -144,7 +144,7 @@ SEED_JOB_TEMPLATE <- c(
   "periodic_release = (NumJobStarts <= {SEED_JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > 60)", # if seed job goes on hold for more than 1 minute, release it up to SEED_JOB_RELEASES times
   "periodic_remove = (NumJobMatches > 1) || ((JobStatus == 1) && (time() - EnteredCurrentStatus > 180 ))", # if seed job is matched multiple times or remains idle for more than 3 minutes, remove it as presumably the execution point is not responding
   "",
-  "{build_requirements_expression(REQUIREMENTS, hostdom)}",
+  "{build_seeding_requirements_expression(REQUIREMENTS, hostdom)}",
   "request_memory = 0",
   "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
   "request_disk = {2*floor(file_size(bundle_path)/1024)+500}", # KiB, twice needed for move, add some for the extra files
@@ -697,6 +697,14 @@ build_requirements_expression <- function(requirements, hostdoms) {
     return("")
   }
   str_c("requirements = \\\n", r, h)
+}
+
+# Identical to build_requirements_expression() other than that requirements
+# containing the '$(JOB)' expansion are filtered out. This allows non-seeding
+# jobs to have requirements based on their job number while all otherwise
+# eligible execute points will receive the bundle.
+build_seeding_requirements_expression <- function(requirements, hostdoms) {
+  build_requirements_expression(requirements[!str_detect(requirements, fixed("$(JOB)", ignore_case=TRUE))], hostdoms)
 }
 
 # Monitor jobs by waiting for them to finish while reporting queue totals changes and sending reschedule commands to the local schedd
