@@ -99,7 +99,9 @@ Default value: `"{Sys.Date()}"`
 
 Synonyms: NAME, EXPERIMENT, PROJECT
 
-Label/name of your project/experiment that is conducted by performing the run. This label will be used to name the [log directory of the run](#condor_dir). This directory is created when it does not exist. The LABEL should therefore be short and contain only characters that are allowed as part of directory names. You can use `{}` expansions as part of the label.
+Label/name of your project/experiment that is conducted by performing the run. This label will be used to name the [log directory of the run](#condor_dir). This directory is created when it does not exist. The `LABEL` should therefore be short and contain only characters that are allowed as part of directory names. You can use `{}` expansions as part of the label.
+
+The value of `LABEL` is also used as the batch name of the run so that when you examine the job queue using the [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) command, the jobs in the run are listed with an appropriate name.
 
 ### PREFIX
 
