@@ -89,6 +89,7 @@ JOB_TEMPLATE <- c(
   "executable = {bat_path}",
   "arguments = $(job)",
   "universe = vanilla",
+  "batch_name  = {LABEL}",
   "",
   "nice_user = {ifelse(NICE_USER, 'True', 'False')}",
   "",
