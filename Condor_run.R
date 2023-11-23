@@ -170,6 +170,7 @@ BAT_TEMPLATE <- c(
 SEED_JOB_TEMPLATE <- c(
   "executable = {seed_bat}",
   "universe = vanilla",
+  "batch_name = seed_{hostname}",
   "",
   "# Job log, stdout, and stderr files",
   "log = {log_dir}/_seed_{hostname}.log",
