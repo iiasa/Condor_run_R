@@ -1185,6 +1185,15 @@ cat("Waiting for bundle seeding to complete...\n")
 monitor(clusters)
 rm(clusters)
 
+# Wait for the log files to stabilize
+prior_size <- -1
+repeat {
+  new_size = dirsize(log_dir)
+  if (prior_size == new_size) break
+  Sys.sleep(3)
+  prior_size <- new_size
+}
+
 # Check if any seed jobs produced .log files
 if (!any(file_exists(path(log_dir, str_glue("_seed_{hostnames}.log"))))) {
   message("None of the seed jobs produced a .log file!")
