@@ -96,7 +96,8 @@ To (re)seed a bundle and (re)submit a run from a pre-existing bundle, use:
 
 `[Rscript ][path to]Condor_run[_basic].R <bundle file>.7z`
 
-**:point_right:Note:** the configuration settings provided on creation of the bundle are used. These are stored in the bundle as a checkpoint file during bundling.
+> [!NOTE]
+> The configuration settings provided on creation of the bundle are used. These are stored in the bundle as a checkpoint file during bundling.
 
 After a run completes, the analysis script `Condor_run_stats.R` can be used to obtain plots and statistics on run and cluster performance. This script can be run from [RStudio](https://rstudio.com/) or the command line via `Rscript`. The command line argument is either a path to a [directory containing run log files and other artifacts](configuring.md#condor_dir) or a path to a run configuration `.R` file as passed to `Condor_run[_basic].R`:
 
@@ -110,7 +111,8 @@ When using the latter form, the current working directory must be the same as wa
 
 When  instead invoking `Condor_run_stats.R` from RStudio by sourcing the script, set the first instance of `LOG_DIRECTORIES` in the script to the path or paths of one or more directories containing Condor run log files to be analysed. The output of `Condor_run_stats.R` is a PDF containing tables and plots.
 
-**:warning:Beware:** when you have made customizations to your R installation via site, profile or user environment files, this may cause anomalies that make it necessary to have `Rscript` ignore these customizations by using the `Rscript --vanilla` option on invocation.
+> [!WARNING]
+> When you have made customizations to your R installation via site, profile or user environment files, this may cause anomalies that make it necessary to have `Rscript` ignore these customizations by using the `Rscript --vanilla option on invocation.
 
 ## Job output
 

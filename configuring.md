@@ -14,9 +14,11 @@ IIASA GLOBIOM developers can start from a ready-made configuration located in th
 
 When your workload is untested, try first with a small number of [`JOBS`](#jobs). Things that work on your local machine may need some adjustment before they work on an execute point. The configuration will need some tweaking to bundle up all the needed code and input and return the output correctly.
 
-**:point_right:Tip:** once you are confident that your jobs run without error, consider adding the [`JOB_RELEASES`](#job_releases) setting to your configuration. Setting it somewhere in the 2 to 4 range makes the run gracefully handle transient errors — such as a network outage or the execute point on which a job runs going down or running out of disk or memory —  by retrying failed jobs a few times: in case of transient errors, typically only a few jobs will fail and these are likely to succeed on being retried. This can save a lot of time compared to analyzing the problem, manually resubmitting the failed jobs, and combining their output with that of the prior partially successful run.
+> [!TIP]
+> Once you are confident that your jobs run without error, consider adding the [`JOB_RELEASES`](#job_releases) setting to your configuration. Setting it somewhere in the 2 to 4 range makes the run gracefully handle transient errors — such as a network outage or the execute point on which a job runs going down or running out of disk or memory —  by retrying failed jobs a few times: in case of transient errors, typically only a few jobs will fail and these are likely to succeed on being retried. This can save a lot of time compared to analyzing the problem, manually resubmitting the failed jobs, and combining their output with that of the prior partially successful run.
 
-**:warning:Attention:** pay particular mind to obtaining good estimates for [`REQUEST_DISK`](#request_disk) and [`REQUEST_MEMORY`](#request_memory) from your small test runs before submitting jobs in bulk or else jobs may still fail on account of resource exhaustion.
+> [!CAUTION]
+> Pay particular mind to obtaining good estimates for [`REQUEST_DISK`](#request_disk) and [`REQUEST_MEMORY`](#request_memory) from your small test runs before submitting jobs in bulk or else jobs may still fail on account of resource exhaustion.
 
 ## Path handling
 
@@ -37,7 +39,8 @@ In summary, there are two kinds of current working directory:
 
 The `BUNDLE_*` parameters detailed below control which files are added to the bundle. In addition, parameters specifying the location of input and output files—when so indicated in their documentation—can cause files to be included or excluded from the bundle. For some examples of how to set this up, see [the tests](tests/tests.md). To verify what was bundled, check the `_bundle_<cluster number>_contents.txt` listing file that is written to the [log directory of the run](configuring.md#condor_dir) on submission.
 
-**:warning:Caution:** avoid bundling big files that your jobs do not need. A common mistake is to bundle the output returned by previous job runs. This will make each job use an unnecesary amount of disk space, and may limit the number of jobs that can be scheduled simultaneously.
+> [!CAUTION]
+> Avoid bundling big files that your jobs do not need. A common mistake is to bundle the output returned by previous job runs. This will make each job use an unnecesary amount of disk space, and may limit the number of jobs that can be scheduled simultaneously.
 
 ## Mandatory configuration parameters
 
@@ -53,9 +56,11 @@ Set this to an estimate of the amount of memory (in MiB) required per job. This 
 
 When a job completes successfully, you can find its actual, requested, and allocated memory use in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir). When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`, the submit script will analyze the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
 
-**:warning:Warning:** do not submit many jobs if you have no good estimate for how much memory they use since that may cause the execute point to run out of memory, making your jobs **and the jobs of other users fail**. To determine how much memory you should request, submit just a single job first with a roomy rough estimate for `REQUEST_MEMORY` and examine its `.log` file on completion.
+> [!IMPORTANT]
+> Do not submit many jobs if you have no good estimate for how much memory they use since that may cause the execute point to run out of memory, making your jobs **and the jobs of other users fail**. To determine how much memory you should request, submit just a single job first with a roomy rough estimate for `REQUEST_MEMORY` and examine its `.log` file on completion.
 
-**:point_right:Note:** overestimating `REQUEST_MEMORY` may cause fewer jobs to run in parallel than there actually could.
+> [!NOTE]
+> Overestimating `REQUEST_MEMORY` may cause fewer jobs to run in parallel than there actually could.
 
 ### WAIT_FOR_RUN_COMPLETION
 
@@ -155,7 +160,8 @@ Default value: `c()`
 
 Paths and wildcards specifying additional files to add to the bundle. When a path points to a directory, or a wildcard matches a directory, the files contained in that directory will be added recursively. Each entry is processed via a separate invocation of 7-Zip so that there are no limits on the number of entries.
 
-**:point_right:Note:** the configuration options that exclude files from the bundle, such as `BUNDLE_EXCLUDE_DIRS`, do not affect the bundling of additional files.
+> [!NOTE]
+> The configuration options that exclude files from the bundle, such as `BUNDLE_EXCLUDE_DIRS`, do not affect the bundling of additional files.
 
 ### BUNDLE_ONLY
 
@@ -163,7 +169,8 @@ Default value: `FALSE`
 
 Set to `TRUE` to perform only the bundling without subsequent submission. The 7-Zip invocation command lines will be echoed to the console for reference. On completion of bundling, the submit script will quit with explanatory messages stating where the bundle and a listing of its contents are stored. These have a timestamp included in their name so as to prevent them from overwriting existing bundle and listing files.
 
-**:point_right:Note:** see also [`BUNDLE_DIR`](#bundle_dir)
+> [!TIP]
+> See also [`BUNDLE_DIR`](#bundle_dir)
 
 ### BUNDLE_DIR
 
@@ -179,7 +186,8 @@ Set to `TRUE` retain the bundle the bundle in the [log directory of the run](#co
 
 Retaining the bundle enables you to later re-submit the very same run by passing the bundle on the command line. It also allows you to locally analyze execution-point-side issues with jobs by extracting the bundle and trying to run a job locally.
 
-**:point_right:Note:** when submitting an existing bundle, using `--bundle-only` on the command line, or setting `BUNDLE_ONLY = TRUE`, `RETAIN_BUNDLE = TRUE` does nothing since the bundle is already being stored somewhere.
+> [!NOTE]
+> When submitting an existing bundle, using `--bundle-only` on the command line, or setting `BUNDLE_ONLY = TRUE`, `RETAIN_BUNDLE = TRUE` does nothing since the bundle is already being stored somewhere.
 
 ### RETAIN_SEED_ARTIFACTS
 
@@ -193,7 +201,8 @@ Default value: `list()`
 
 Override lines in the `.job` files generated from [`SEED_JOB_TEMPLATE`](#seed_job_template). These [submit description files](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) contain commands that you may wish to override while stopping short of overriding the full template. To do so, the list can be filled with one or more key/value pairs, where each key should exactly match the start of the to-be-replaced line in the submit descriptions, and the value provides a template for the replacement line that is first subjected to `{}` expansion.
 
-**:point_right:Note:** the submit descriptions are derived from the `SEED_JOB_TEMPLATE` via `{}` expansion. Keys in the list are matched to the start of so-expanded lines, not to the unexpanded lines present in the template.
+> [!NOTE]
+> The submit descriptions are derived from the `SEED_JOB_TEMPLATE` via `{}` expansion. Keys in the list are matched to the start of so-expanded lines, not to the unexpanded lines present in the template.
 
 ### SEED_JOB_RELEASES
 
@@ -209,7 +218,8 @@ Default value: `list()`
 
 Override lines in the `.job` file generated from [`JOB_TEMPLATE`](#job_template). This [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) contains commands that you may wish to override while stopping short of overriding the full template. To do so, the list can be filled with one or more key/value pairs, where each key should exactly match the start of the to-be-replaced line in the submit description, and the value provides a template for the replacement line that is first subjected to `{}` expansion.
 
-**:point_right:Note:** the submit description is derived from the `JOB_TEMPLATE` via `{}` expansion. Keys in the list are matched to the start of so-expanded lines, not to the unexpanded lines present in the template.
+> [!NOTE]
+> The submit description is derived from the `JOB_TEMPLATE` via `{}` expansion. Keys in the list are matched to the start of so-expanded lines, not to the unexpanded lines present in the template.
 
 ### JOB_RELEASES
 
@@ -238,11 +248,14 @@ Requirements expressions `'OpSys ==  "LINUX"'` and `'Arch == "X86_64"'` respecti
 For more information on requirement expressions, see the documentation of
 the `requirements` command of the [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands).
 
-**:point_right:Note:** custom [`ClassAds`] may have been defined on the EPs that allow you select their capabilities on a more fine-grained level via requirement expressions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. The [`GAMS_VERSION`](#gams_version) configuration setting is an example thereof, and when set it is added to the list of configured `REQUIREMENTS`.
+> [!NOTE]
+> Custom [`ClassAds`] may have been defined on the EPs that allow you select their capabilities on a more fine-grained level via requirement expressions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. The [`GAMS_VERSION`](#gams_version) configuration setting is an example thereof, and when set it is added to the list of configured `REQUIREMENTS`.
 
-**:point_right:Note:** the `"BundleCache"` requirement is always added to the list of requirements. This ensures that only execute points that advertise the capability to cache bundles are sent bundles.
+> [!NOTE]
+> The `"BundleCache"` requirement is always added to the list of requirements. This ensures that only execute points that advertise the capability to cache bundles are sent bundles.
 
-**:point_right:Note:** expressions containing a `$(JOB)` job number expansion are dropped when seeding but remain included during the actual submission.
+> [!NOTE]
+> Expressions containing a `$(JOB)` job number expansion are dropped when seeding but remain included during the actual submission.
 
 ### HOST_REGEXP
 
@@ -258,7 +271,8 @@ Number of hardware threads to reserve for each job. The default value is good fo
   
 The "CPUS" naming is Condor speak for hardware threads. In normal parlance, a CPU can contain multiple processing cores, with each core potentially able to run multiple hardware threads, typically two per core. It is those hardware threads—each able to support an independent parallel execution context—that this setting and the statistic in the `.log` file refers to.
 
-**:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
+> [!NOTE]
+> Your jobs will get scheduled only in "slots" of EPs that have sufficient "CPUS" to satisfy your request. To see how many "CPUS" your cluster has available issue [`condor_status -avail -state`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). 
 
 ### REQUEST_DISK
 
@@ -268,11 +282,14 @@ Set this to an estimate of the amount of disk space required per job for storing
 
 When a job completes successfully, you can find its actual, requested (with added unpacked bundle size), and allocated disk space in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir). When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`, the submit script will analyze the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
 
-**:warning:Warning:** do not submit many jobs if you have no good estimate for how much disk they use since that may cause the execute point to run out of disk, making your jobs **and the jobs of other users fail**. To determine how much disk your jobs use, submit just a single job first with a roomy rough estimate for `REQUEST_DISK` and examine its `.log` file on completion. Note that the actual use includes the space taken up by the unpacked bundle.
+> [!WARNING]
+> Do not submit many jobs if you have no good estimate for how much disk they use since that may cause the execute point to run out of disk, making your jobs **and the jobs of other users fail**. To determine how much disk your jobs use, submit just a single job first with a roomy rough estimate for `REQUEST_DISK` and examine its `.log` file on completion. Note that the actual use includes the space taken up by the unpacked bundle.
 
-**:point_right:Note:** your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). This means that if your REQUEST_DISK is significantly too high, fewer of your jobs may get scheduled than could have safely been scheduled since all available disk space on an execute point might get reserved but not actually used.
+> [!NOTE]
+> Your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). This means that if your REQUEST_DISK is significantly too high, fewer of your jobs may get scheduled than could have safely been scheduled since all available disk space on an execute point might get reserved but not actually used.
 
-**:point_right:Tip:** avoid bundling files that your jobs do not need. That reduces the amount of disk reserved per job, allowing more jobs to run at the same time when disk space is tight. You can do so via the `BUNDLE_*` configuration settings.
+> [!TIP]
+> Avoid bundling files that your jobs do not need. That reduces the amount of disk reserved per job, allowing more jobs to run at the same time when disk space is tight. You can do so via the `BUNDLE_*` configuration settings.
 
 ### RUN_AS_OWNER
 
@@ -289,7 +306,8 @@ Specify when to send notification emails. Alternatives are:
 - `"Error"`, when a job errors or goes on hold.
 - `"Always"`, when a job completes or reaches checkpoint.
 
-**:warning:Beware:** when your run has many jobs, selecting anything other than `"Never"` will be very spammy.
+> [!CAUTION]
+> When your run has many jobs, selecting anything other than `"Never"` will be very spammy.
 
 ### EMAIL_ADDRESS
 
@@ -355,7 +373,8 @@ Synonym: OUTPUT_FILE
 
 Name(s) of the output file(s) as produced by a job on the execution point. Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred back to the submit machine.
 
-**:point_right:Note:** to automatically process output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
+> [!NOTE]
+> To automatically process output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
 
 ## `Condor_run_basic.R`-specific optional configuration parameters
 
@@ -372,9 +391,11 @@ Default value: `NULL`
 
 GAMS version to run the job with on the execute point. When set to `NULL`, the GAMS version reachable through the `PATH` environment variable on the execute point is used, or the job will fail if no gams executable can be found via `PATH`. When set to `xx.yy`, where `xx` is the major GAMS version and `yy` is the minor GAMS version, the entry `GAMSxx_yy` will be added to the [`REQUIREMENTS`](#requirements) so that execute points are selected that have the desired GAMS version installed.
 
-**:point_right:Note:** when configuring a [`RESTART_FILE_PATH`](#restart_file_path), you typically will want to also configure a matching `GAMS_VERSION` to guarantee that the restart file can be read by GAMS on the execute point.
+> [!TIP]
+> When configuring a [`RESTART_FILE_PATH`](#restart_file_path), you typically will want to also configure a matching `GAMS_VERSION` to guarantee that the restart file can be read by GAMS on the execute point.
 
-**:point_right:Note:** the selection of the GAMS version on the execute point is arranged for by the configured [`BAT_TEMPLATE`](#bat_template).
+> [!NOTE]
+> The selection of the GAMS version on the execute point is arranged for by the configured [`BAT_TEMPLATE`](#bat_template).
 
 ### GET_G00_OUTPUT
 
@@ -406,7 +427,8 @@ Default value: `""`
 
 Name of work/save file produced by a job on the execution point via the [`save=` GAMS argument](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOsave). When `GET_G00_OUTPUT` is `TRUE`, the default [`BAT_TEMPLATE`](#bat_template) of `Condor_run.R` automatically adds such a `save=` argument based on `G00_OUTPUT_DIR` and `G00_OUTPUT_FILE` to the GAMS argument list. Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred to the submit machine.
 
-**:point_right:Note:** to automatically process G00 output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
+> [!TIP]
+> To automatically process G00 output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
 
 ### GET_GDX_OUTPUT
 
@@ -438,7 +460,8 @@ Default value: `""`
 
 Name of the GDX output file produced by a job on the execution point the [`gdx=` GAMS parameter](https://www.gams.com/latest/docs/UG_GamsCall.html#GAMSAOgdx) or an [`execute_unload` statement](https://www.gams.com/latest/docs/UG_GDX.html#UG_GDX_WRITE_EXECUTION_EXECUTE_UNLOAD). Will be renamed with the cluster number (submission sequence number) and job number to avoid name collisions when transferred to the submit machine.
 
-**:point_right:Note:** to automatically process GDX output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
+> [!TIP]
+> To automatically process GDX output files renamed with the cluster number, it is helpful to have an easy means of obtaining the cluster number. The [`CLUSTER_NUMBER_LOG`](#cluster_number_log) option serves this purpose.
 
 ### GAMS_CURDIR
 
@@ -452,9 +475,11 @@ Default value: `""`
 
 Path relative to [`GAMS_CURDIR`](#gams_curdir) pointing to the [work/restart file](https://www.gams.com/latest/docs/UG_SaveRestart.html) to launch GAMS with on the execution point. If set, the restart file is added to the bundle via a separate 7-Zip invocation.
 
-**:point_right:Note:** the configuration options that exclude files from the bundle, such as `BUNDLE_EXCLUDE_DIRS`, do not affect the bundling of the restart file.
+> [!NOTE]
+> The configuration options that exclude files from the bundle, such as `BUNDLE_EXCLUDE_DIRS`, do not affect the bundling of the restart file.
 
-**:warning:Beware:** the restart file will not work if the GAMS version on the EP (see [GAMS_VERSION](#gams_version)) is older than the GAMS version used to generated it. The `Condor_run.R` submit script will throw an explanatory error in that case to prevent the run's jobs from later going on hold for this somewhat obscure reason.
+> [!WARNING]
+> The restart file will not work if the GAMS version on the EP (see [GAMS_VERSION](#gams_version)) is older than the GAMS version used to generated it. The `Condor_run.R` submit script will throw an explanatory error in that case to prevent the run's jobs from later going on hold for this somewhat obscure reason.
 
 If you are unsure which GAMS version a restart file was generated with, you can determine that by using the [`restart_version.R`](https://github.com/iiasa/Condor_run_R/blob/master/restart_version.R) script.
 
@@ -464,7 +489,8 @@ Default value: `FALSE`
 
 If `TRUE`, use [GDXMERGE](https://www.gams.com/latest/docs/T_GDXMERGE.html) on the GDX output files when all jobs in the run are done. Requires that the GDXMERGE executable (located in the GAMS system directory) is on-path and that [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`.
 
-**:warning:Beware:** GDXMERGE is limited. It sometimes gives "Symbol is too large" errors, and neither the `big=` (via the [`MERGE_BIG`](#merge_big) configuration setting below) nor running GDXMERGE on a large-memory machine can avoid that. Moreover, no non-zero return code results in case of such errors, so silent failures are possible. This may or may not have improved in more recent versions of GDXMERGE.
+> [!CAUTION]
+> GDXMERGE is limited. It sometimes gives "Symbol is too large" errors, and neither the `big=` (via the [`MERGE_BIG`](#merge_big) configuration setting below) nor running GDXMERGE on a large-memory machine can avoid that. Moreover, no non-zero return code results in case of such errors, so silent failures are possible. This may or may not have improved in more recent versions of GDXMERGE.
 
 ### MERGE_BIG
 
@@ -494,9 +520,11 @@ When `TRUE`, remove per-job GDX output files after having been merged.
 
 The template parameters configure Condor `.job` files and job launch scripts (that run on the execute-point side). These files are generated from the templates on submitting a run. The template strings can use `{}` expansion to include other configuration parameters and run-time state in the generated files.
 
-**:point_right:Note:** Templates are cluster-specific. Your cluster administrator can provide templates adapted to your cluster. To do so, cluster administrators can follow the guidance on [configuring templates for a different cluster](condor.md#configuring-templates-for-a-different-cluster).
+> [!NOTE]
+> Templates are cluster-specific. Your cluster administrator can provide templates adapted to your cluster. To do so, cluster administrators can follow the guidance on [configuring templates for a different cluster](condor.md#configuring-templates-for-a-different-cluster).
 
-**:warning:Caution:** When [updating to a new release](README.md#updating) additional functionality may be present in the default template values, in particular there where `{}` expansions are used. When overriding templates, it is therefore important to keep an eye on the [release notes](https://github.com/iiasa/Condor_run_R/releases) to see if template default values were changed: you may need to update your templates, for example by applying your template customizations to the new defaults.
+> [!CAUTION]
+> When [updating to a new release](README.md#updating) additional functionality may be present in the default template values, in particular there where `{}` expansions are used. When overriding templates, it is therefore important to keep an eye on the [release notes](https://github.com/iiasa/Condor_run_R/releases) to see if template default values were changed: you may need to update your templates, for example by applying your template customizations to the new defaults.
 
 ### JOB_TEMPLATE
 
@@ -504,7 +532,8 @@ Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/
 
 Template of the Condor `.job` file to submit the run with. The [submit description file](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) produced with this template through `{}` expansion is preserved in the [log directory of the run](#condor_dir).
 
-**:point_right:Note:** since keeping a custom template up-to-date with new releases is a maintenance burden, consider using [`JOB_OVERRIDES`](#job_overrides) instead. That will suffice when you need to customize only one or a few lines in the submit description.
+> [!TIP]
+> Since keeping a custom template up-to-date with new releases is a maintenance burden, consider using [`JOB_OVERRIDES`](#job_overrides) instead. That will suffice when you need to customize only one or a few lines in the submit description.
 
 ### BAT_TEMPLATE
 
@@ -518,7 +547,8 @@ Default value: see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/
 
 Template of the Condor `.job` file to submit the bundle seed jobs with. The [submit description files](https://htcondor.readthedocs.io/en/latest/man-pages/condor_submit.html#submit-description-file-commands) produced with this template through `{}` expansion are preserved in the [log directory of the run](#condor_dir) when seeding fails.
 
-**:point_right:Note:** since keeping a custom template up-to-date with new releases is a maintenance burden, consider using [`SEED_JOB_OVERRIDES`](#seed_job_overrides) instead. That will suffice when you need to customize only one or a few lines in the submit description.
+> [!TIP]
+> Since keeping a custom template up-to-date with new releases is a maintenance burden, consider using [`SEED_JOB_OVERRIDES`](#seed_job_overrides) instead. That will suffice when you need to customize only one or a few lines in the submit description.
 
 ### SEED_BAT_TEMPLATE
 

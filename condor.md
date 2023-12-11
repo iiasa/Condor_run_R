@@ -61,7 +61,8 @@ STARTD_ATTRS = \
   $(STARTD_ATTRS)
 ```
 
-**:point_right:Note:** any valid (but preferably descriptive) ClassId name that is not in use yet can be chosen to identify a custom capability. After configuring custom capabilities, notify the users of your cluster what capabilities are available, and how to configure requirements to select custom capabilities for their job runs.
+> [!NOTE]
+> Any valid (but preferably descriptive) ClassId name that is not in use yet can be chosen to identify a custom capability. After configuring custom capabilities, notify the users of your cluster what capabilities are available, and how to configure requirements to select custom capabilities for their job runs.
 
 ## Configuring [templates](configuring.md#templates) for a different cluster
 
