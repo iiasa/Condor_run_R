@@ -112,7 +112,7 @@ When using the latter form, the current working directory must be the same as wa
 When  instead invoking `Condor_run_stats.R` from RStudio by sourcing the script, set the first instance of `LOG_DIRECTORIES` in the script to the path or paths of one or more directories containing Condor run log files to be analysed. The output of `Condor_run_stats.R` is a PDF containing tables and plots.
 
 > [!WARNING]
-> When you have made customizations to your R installation via site, profile or user environment files, this may cause anomalies that make it necessary to have `Rscript` ignore these customizations by using the `Rscript --vanilla option on invocation.
+> When you have made customizations to your R installation via site, profile or user environment files, this may cause anomalies that make it necessary to have `Rscript` ignore these customizations by using the `--vanilla` option on invocation.
 
 ## Job output
 
