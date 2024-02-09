@@ -533,6 +533,7 @@ if (tools::file_ext(file_arg) == "7z") {
   if (length(JOBS) < 1 && !str_detect(GAMS_ARGUMENTS, fixed("%1"))) stop("Configured GAMS_ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
   REQUIREMENTS <- c(REQUIREMENTS, "BundleCache") # Require that execute points can cache bundles
   SEEDING_REQUIREMENTS <- REQUIREMENTS[!str_detect(REQUIREMENTS, fixed("$(JOB)", ignore_case=TRUE))]
+  SEEDING_REQUIREMENTS <- c(SEEDING_REQUIREMENTS, "Draining =!= True") # Only seed EPs that are not draining
   if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
   if (!is.null(BUNDLE_DIR)) {
     if (BUNDLE_DIR == "") stop("Configured BUNDLE_DIR may not be an empty path!")
@@ -1051,12 +1052,12 @@ check_on_path(c("condor_submit", "condor_status", "condor_q", "condor_reschedule
 selected_by <- str_glue(
   "{ifelse(HOST_REGEXP == '.*', '', 'matching HOST_REGEXP')}",
   "{ifelse(HOST_REGEXP == '.*' || length(REQUIREMENTS) == 0,'', ' and ')}",
-  '{ifelse(length(REQUIREMENTS) == 0, "", str_glue("meeting requirement{ifelse(length(REQUIREMENTS) == 1, \\"\\", \\"s\\")} "))}',
-  '{ifelse(length(REQUIREMENTS) == 0, "", str_c(str_glue("{SEEDING_REQUIREMENTS}"), collapse=", "))}'
+  '{ifelse(length(SEEDING_REQUIREMENTS) == 0, "", str_glue("meeting requirement{ifelse(length(SEEDING_REQUIREMENTS) == 1, \\"\\", \\"s\\")} "))}',
+  '{ifelse(length(SEEDING_REQUIREMENTS) == 0, "", str_c(str_glue("{SEEDING_REQUIREMENTS}"), collapse=", "))}'
 )
 
 cat(str_glue("Available resources on execution points {selected_by}:"), sep="\n")
-error_code <- system2("condor_status", args=c("-compact", constraints(REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
+error_code <- system2("condor_status", args=c("-compact", constraints(SEEDING_REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')))
 if (error_code > 0) stop("Cannot show Condor pool status! Probably, your submit machine is unable to connect to the central manager. Possibly, you are running a too-old (< V8.7.2) Condor version.")
 cat("\n")
 
