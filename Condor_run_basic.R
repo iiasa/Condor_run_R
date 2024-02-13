@@ -459,7 +459,7 @@ if (tools::file_ext(file_arg) == "7z") {
   if (SCRIPT != "" && !(file_exists(SCRIPT))) stop(str_glue('Configured SCRIPT "{SCRIPT}" does not exist relative to working directory!'))
   if (str_detect(SCRIPT, '[<>|:?*" \\t/\\\\]')) stop(str_glue("Configured SCRIPT has forbidden character(s)!"))
   if (length(JOBS) > 1 && !str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
-  REQUIREMENTS <- c(REQUIREMENTS, "BundleCache") # Require that execute points can cache bundles
+  REQUIREMENTS <- c(REQUIREMENTS, "BundleCache") # Require that execution points can cache bundles
   SEEDING_REQUIREMENTS <- REQUIREMENTS[!str_detect(REQUIREMENTS, fixed("$(JOB)", ignore_case=TRUE))]
   SEEDING_REQUIREMENTS <- c(SEEDING_REQUIREMENTS, "Draining =!= True") # Only seed EPs that are not draining
   if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
@@ -956,7 +956,7 @@ log_dir <- path_norm(path(CONDOR_DIR, LABEL))
 dir_create(log_dir)
 
 # Try to seed each available execution point with the bundle by submitting seed jobs.
-# Caching and automated bundle cleanup is assumed to be active on execute points, see ticket:
+# Caching and automated bundle cleanup is assumed to be active on execution points, see ticket:
 # https://mis.iiasa.ac.at/portal/page/portal/IIASA/Content/TicketS/Ticket?defpar=1%26pWFLType=24%26pItemKey=103034818402942720
 cluster_regexp <- "submitted to cluster (\\d+)[.]$"
 clusters <- c()
@@ -983,7 +983,7 @@ for (hostdom in hostdoms) {
   close(seed_job_conn)
   rm(seed_job_conn, seed_job_lines, s)
 
-  # Try to submit the seed job to the current execute point
+  # Try to submit the seed job to the current execution point
   tries_left <- 2
   while (tries_left > 0) {
     tries_left <- tries_left - 1
@@ -995,14 +995,14 @@ for (hostdom in hostdoms) {
 
     outerr <- suppressWarnings(system2("condor_submit", args=seed_job_file, stdout=TRUE, stderr=TRUE))
     if (!is.null(attr(outerr, "status")) && attr(outerr, "status") != 0) {
-      message(str_glue("Invoking condor_submit for transfer of bundle to execute point '{hostname}' failed:"))
+      message(str_glue("Invoking condor_submit for transfer of bundle to execution point '{hostname}' failed:"))
       message(str_glue("{outerr}"))
       if (tries_left > 0) {
         message("Retrying...")
         # Wait a bit to give transient error conditions time to disappear
         Sys.sleep(10)
       } else {
-        message(str_glue("No retries left, giving up on execute point '{hostname}'."))
+        message(str_glue("No retries left, giving up on execution point '{hostname}'."))
       }
     } else {
       # Seed job submitted, extract the cluster number
