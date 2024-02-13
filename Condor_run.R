@@ -1051,7 +1051,7 @@ check_on_path(c("condor_submit", "condor_status", "condor_q", "condor_reschedule
 # Construct clause stating what execution points are selected by
 selected_by <- str_glue(
   "{ifelse(HOST_REGEXP == '.*', '', 'matching HOST_REGEXP')}",
-  "{ifelse(HOST_REGEXP == '.*' || length(REQUIREMENTS) == 0,'', ' and ')}",
+  "{ifelse(HOST_REGEXP == '.*' || length(SEEDING_REQUIREMENTS) == 0,'', ' and ')}",
   '{ifelse(length(SEEDING_REQUIREMENTS) == 0, "", str_glue("meeting requirement{ifelse(length(SEEDING_REQUIREMENTS) == 1, \\"\\", \\"s\\")} "))}',
   '{ifelse(length(SEEDING_REQUIREMENTS) == 0, "", str_c(str_glue("{SEEDING_REQUIREMENTS}"), collapse=", "))}'
 )
@@ -1061,7 +1061,7 @@ error_code <- system2("condor_status", args=c("-compact", constraints(SEEDING_RE
 if (error_code > 0) stop("Cannot show Condor pool status! Probably, your submit machine is unable to connect to the central manager. Possibly, you are running a too-old (< V8.7.2) Condor version.")
 cat("\n")
 
-# Collect host name and domain of available execution points matching HOST_REGEXP and meeting SEEDING_REQUIREMENTS
+# Collect host name and domain of available and eligible execution points
 hostdoms <- unique(system2("condor_status", c("-compact", "-autoformat", "Machine", constraints(SEEDING_REQUIREMENTS), "-constraint", str_glue('"regexp(\\"{HOST_REGEXP}\\",machine)"')), stdout=TRUE))
 if (!is.null(attr(hostdoms, "status")) && attr(hostdoms, "status") != 0) stop("Cannot show Condor pool status! Are you running a too old (< V8.7.2) Condor version?")
 if (length(hostdoms) == 0) {
