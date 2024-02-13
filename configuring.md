@@ -12,10 +12,10 @@ IIASA GLOBIOM developers can start from a ready-made configuration located in th
 
 ## First test your workload and configuration
 
-When your workload is untested, try first with a small number of [`JOBS`](#jobs). Things that work on your local machine may need some adjustment before they work on an execute point. The configuration will need some tweaking to bundle up all the needed code and input and return the output correctly.
+When your workload is untested, try first with a small number of [`JOBS`](#jobs). Things that work on your local machine may need some adjustment before they work on an execution point. The configuration will need some tweaking to bundle up all the needed code and input and return the output correctly.
 
 > [!TIP]
-> Once you are confident that your jobs run without error, consider adding the [`JOB_RELEASES`](#job_releases) setting to your configuration. Setting it somewhere in the 2 to 4 range makes the run gracefully handle transient errors — such as a network outage or the execute point on which a job runs going down or running out of disk or memory —  by retrying failed jobs a few times: in case of transient errors, typically only a few jobs will fail and these are likely to succeed on being retried. This can save a lot of time compared to analyzing the problem, manually resubmitting the failed jobs, and combining their output with that of the prior partially successful run.
+> Once you are confident that your jobs run without error, consider adding the [`JOB_RELEASES`](#job_releases) setting to your configuration. Setting it somewhere in the 2 to 4 range makes the run gracefully handle transient errors — such as a network outage or the execution point on which a job runs going down or running out of disk or memory —  by retrying failed jobs a few times: in case of transient errors, typically only a few jobs will fail and these are likely to succeed on being retried. This can save a lot of time compared to analyzing the problem, manually resubmitting the failed jobs, and combining their output with that of the prior partially successful run.
 
 > [!CAUTION]
 > Pay particular mind to obtaining good estimates for [`REQUEST_DISK`](#request_disk) and [`REQUEST_MEMORY`](#request_memory) from your small test runs before submitting jobs in bulk or else jobs may still fail on account of resource exhaustion.
@@ -28,12 +28,12 @@ Since the submit script and configuration file may not be located in the the cho
 
 `Rscript [<path to>]Condor_run_basic.R [<path to>]my_configuration.R`
 
-The submit script can then bundle up all files needed by a job relative to the current working directory. On an execute point when a job is run, the bundle is unpacked to a newly created private per-job directory. That directory will be the initial current working directory of the job. For each job that is run on an execute point, this approach replicates a fresh copy of the needed subset of the tree of files located under your current working directory on your submit machine at the current working directory given to the job on the execute point. The job is thereby enabled to process, modify, and generate files in that directory without conflicting with other jobs.
+The submit script can then bundle up all files needed by a job relative to the current working directory. On an execution point when a job is run, the bundle is unpacked to a newly created private per-job directory. That directory will be the initial current working directory of the job. For each job that is run on an execution point, this approach replicates a fresh copy of the needed subset of the tree of files located under your current working directory on your submit machine at the current working directory given to the job on the execution point. The job is thereby enabled to process, modify, and generate files in that directory without conflicting with other jobs.
 
 In summary, there are two kinds of current working directory:
 1. The current working directory of the submit script on your submit machine.
    - The same as the working directory as current when invoking the submit script.
-2. The current working directory of a job on an execute point.
+2. The current working directory of a job on an execution point.
    - A unique working directory is given to every job.
    - Of course, the job itself can change the current working directory once launched. For example, GAMS jobs do so when [`GAMS_CURDIR`](#gams_curdir) is set.
 
@@ -57,7 +57,7 @@ Set this to an estimate of the amount of memory (in MiB) required per job. This 
 When a job completes successfully, you can find its actual, requested, and allocated memory use in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir). When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`, the submit script will analyze the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_MEMORY` estimate is too low or significantly too high.
 
 > [!IMPORTANT]
-> Do not submit many jobs if you have no good estimate for how much memory they use since that may cause the execute point to run out of memory, making your jobs **and the jobs of other users fail**. To determine how much memory you should request, submit just a single job first with a roomy rough estimate for `REQUEST_MEMORY` and examine its `.log` file on completion.
+> Do not submit many jobs if you have no good estimate for how much memory they use since that may cause the execution point to run out of memory, making your jobs **and the jobs of other users fail**. To determine how much memory you should request, submit just a single job first with a roomy rough estimate for `REQUEST_MEMORY` and examine its `.log` file on completion.
 
 > [!NOTE]
 > Overestimating `REQUEST_MEMORY` may cause fewer jobs to run in parallel than there actually could.
@@ -210,7 +210,7 @@ Default value: `0`
 
 Number of times to auto-release (retry) held bundle-seeding jobs before giving up. Not retrying—by using the 0 default value—is fine when you have plenty of execution points (EPs) in the cluster: execution points that could not receive the bundle are assumed to be unavailable and will be excluded from the subsequent job submission stage. The execution points that could receive the bundle will still process your jobs.
 
-When the cluster has only one or a couple of EPs, or there are intermittent failures on account of networking issues, it may be worthwhile to retry a few times. This can make the seeding process take longer, but since more execute points end up caching the bundle, the jobs can be distributed over more execute points thereby increasing throughput.
+When the cluster has only one or a couple of EPs, or there are intermittent failures on account of networking issues, it may be worthwhile to retry a few times. This can make the seeding process take longer, but since more execution points end up caching the bundle, the jobs can be distributed over more execution points thereby increasing throughput.
 
 ### JOB_OVERRIDES
 
@@ -225,7 +225,7 @@ Override lines in the `.job` file generated from [`JOB_TEMPLATE`](#job_template)
 
 Default value: `0`
 
-Number of times to auto-release (retry) held (failed) jobs before giving up. This allows your jobs to recover from transient errors such as a network outage or an execute point going down or running out of disk or memory. Released jobs may be rescheduled on a different execute point. When the re-tries have run out, your jobs will remain in the held state. Then the error is likely not transient and requires some analysis as described [here](troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold).
+Number of times to auto-release (retry) held (failed) jobs before giving up. This allows your jobs to recover from transient errors such as a network outage or an execution point going down or running out of disk or memory. Released jobs may be rescheduled on a different execution point. When the re-tries have run out, your jobs will remain in the held state. Then the error is likely not transient and requires some analysis as described [here](troubleshooting.md#jobs-do-not-run-but-instead-go-on-hold).
 
 Use `0` (no retries) until you have [tested your workload](#first-test-your-workload-and-configuration) and know that your jobs are unlikely to fail on account of an intrinsic instead of a transient error.
 
@@ -252,7 +252,7 @@ the `requirements` command of the [submit description file](https://htcondor.rea
 > Custom [`ClassAds`] may have been defined on the EPs that allow you select their capabilities on a more fine-grained level via requirement expressions. For example a `ClassAdd` that advertises the availability of a particular version of a language interpreter. The [`GAMS_VERSION`](#gams_version) configuration setting is an example thereof, and when set it is added to the list of configured `REQUIREMENTS`.
 
 > [!NOTE]
-> The `"BundleCache"` requirement is always added to the list of requirements. This ensures that only execute points that advertise the capability to cache bundles are sent bundles.
+> The `"BundleCache"` requirement is always added to the list of requirements. This ensures that only execution points that advertise the capability to cache bundles are sent bundles.
 
 > [!NOTE]
 > Expressions containing a `$(JOB)` job number expansion are dropped when seeding but remain included during the actual submission.
@@ -283,10 +283,10 @@ Set this to an estimate of the amount of disk space required per job for storing
 When a job completes successfully, you can find its actual, requested (with added unpacked bundle size), and allocated disk space in a small table at the end of its `.log` file located in the [log directory of the run](#condor_dir). When you use [`WAIT_FOR_RUN_COMPLETION`](#wait_for_run_completion)`= TRUE`, the submit script will analyze the `.log` files of the jobs for you at the end of the run, and produce a warning when the `REQUEST_DISK` estimate is too low or significantly too high.
 
 > [!WARNING]
-> Do not submit many jobs if you have no good estimate for how much disk they use since that may cause the execute point to run out of disk, making your jobs **and the jobs of other users fail**. To determine how much disk your jobs use, submit just a single job first with a roomy rough estimate for `REQUEST_DISK` and examine its `.log` file on completion. Note that the actual use includes the space taken up by the unpacked bundle.
+> Do not submit many jobs if you have no good estimate for how much disk they use since that may cause the execution point to run out of disk, making your jobs **and the jobs of other users fail**. To determine how much disk your jobs use, submit just a single job first with a roomy rough estimate for `REQUEST_DISK` and examine its `.log` file on completion. Note that the actual use includes the space taken up by the unpacked bundle.
 
 > [!NOTE]
-> Your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). This means that if your REQUEST_DISK is significantly too high, fewer of your jobs may get scheduled than could have safely been scheduled since all available disk space on an execute point might get reserved but not actually used.
+> Your jobs will get scheduled only in "slots" of EPs that have sufficient disk to satisfy your request. To see what disk resources your cluster has available issue [`condor_status -avail -server`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_status.html). This means that if your REQUEST_DISK is significantly too high, fewer of your jobs may get scheduled than could have safely been scheduled since all available disk space on an execution point might get reserved but not actually used.
 
 > [!TIP]
 > Avoid bundling files that your jobs do not need. That reduces the amount of disk reserved per job, allowing more jobs to run at the same time when disk space is tight. You can do so via the `BUNDLE_*` configuration settings.
@@ -389,13 +389,13 @@ The script to launch with [`LAUNCHER`](#launcher). When empty (the default) the 
 
 Default value: `NULL`
 
-GAMS version to run the job with on the execute point. When set to `NULL`, the GAMS version reachable through the `PATH` environment variable on the execute point is used, or the job will fail if no gams executable can be found via `PATH`. When set to `xx.yy`, where `xx` is the major GAMS version and `yy` is the minor GAMS version, the entry `GAMSxx_yy` will be added to the [`REQUIREMENTS`](#requirements) so that execute points are selected that have the desired GAMS version installed.
+GAMS version to run the job with on the execution point. When set to `NULL`, the GAMS version reachable through the `PATH` environment variable on the execution point is used, or the job will fail if no gams executable can be found via `PATH`. When set to `xx.yy`, where `xx` is the major GAMS version and `yy` is the minor GAMS version, the entry `GAMSxx_yy` will be added to the [`REQUIREMENTS`](#requirements) so that execution points are selected that have the desired GAMS version installed.
 
 > [!TIP]
-> When configuring a [`RESTART_FILE_PATH`](#restart_file_path), you typically will want to also configure a matching `GAMS_VERSION` to guarantee that the restart file can be read by GAMS on the execute point.
+> When configuring a [`RESTART_FILE_PATH`](#restart_file_path), you typically will want to also configure a matching `GAMS_VERSION` to guarantee that the restart file can be read by GAMS on the execution point.
 
 > [!NOTE]
-> The selection of the GAMS version on the execute point is arranged for by the configured [`BAT_TEMPLATE`](#bat_template).
+> The selection of the GAMS version on the execution point is arranged for by the configured [`BAT_TEMPLATE`](#bat_template).
 
 ### GET_G00_OUTPUT
 

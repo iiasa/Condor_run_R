@@ -31,7 +31,7 @@ Make the needed POSIX commands available on your Windows execution points by ins
 
 For a job to run on an execution point, certain capabilities may need to be in place. For example, a language interpreter may need to be installed. To ensure that jobs get scheduled on execution points that have the capability to run them, the user can configure [`REQUIREMENTS`](configuring.md#requirements) for a run of jobs. When these match the advertised capabilities of an execution point, jobs can execute there.
 
-To advertise custom capabilities of execution points, define ClassAds in their HTCondor configuration. This is done by editing the `condor_config.local` configuration file on each host. For example, to advertise that both an R and GAMS language interpreter are available and on-path and that the execute point can receive and cache bundles, add the following lines:
+To advertise custom capabilities of execution points, define ClassAds in their HTCondor configuration. This is done by editing the `condor_config.local` configuration file on each host. For example, to advertise that both an R and GAMS language interpreter are available and on-path and that the execution point can receive and cache bundles, add the following lines:
 ```
 # Have a bundle cache with timed cleanup
 BundleCache = True
