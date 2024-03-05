@@ -1362,7 +1362,7 @@ invisible(gc())
 rm(lock_file)
 
 # Report successful submission to the user
-message(str_glue('Run "{LABEL}" with cluster number {cluster} has been submitted.'))
+message(str_glue('Run "{LABEL}" with cluster number {cluster} has been submitted on {format(Sys.time(), "%F %H:%M")}.'))
 message(str_glue("The log directory of the run is {log_dir}"))
 
 # Log the cluster number if requested. If you parse the above stdout, you can parse out the cluster number.
