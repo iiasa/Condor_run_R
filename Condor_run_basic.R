@@ -300,10 +300,11 @@ excludable <- function(dir_path) {
   return(TRUE)
 }
 
-# Return the size of the directory non-recursively
-dirsize <- function(dir_path) {
+# Return the summed size of a directory's files whose _path_ matches regexp.
+# Not recursive.
+sum_file_size <- function(dir_path, regexp=NULL) {
   size <- 0
-  for (f in dir_ls(dir_path)) {
+  for (f in dir_ls(dir_path, regexp=regexp)) {
     if (is_file(f)) {
       size <- size + file_size(f)
     }
@@ -1031,10 +1032,11 @@ cat("Waiting for bundle seeding to complete...\n")
 monitor(clusters)
 rm(clusters)
 
-# Wait for the log files to stabilize
+# Wait for seeding log files to stabilize
+cat("Waiting for seeding log files...\n")
 prior_size <- -1
 repeat {
-  new_size = dirsize(log_dir)
+  new_size = sum_file_size(log_dir, regexp=".*/_seed_[^/]+")
   if (prior_size == new_size) break
   Sys.sleep(3)
   prior_size <- new_size
@@ -1221,12 +1223,17 @@ if (WAIT_FOR_RUN_COMPLETION) {
   cat(str_glue('Waiting for run "{LABEL}" to complete...'), sep="\n")
   monitor(cluster)
 
-  # Wait for file transfer to complete
+  # Wait for logs to stabilize and output file transfer to complete
+  if (GET_OUTPUT) {
+    cat("Waiting for logs and output...\n")
+  } else {
+    cat("Waiting for logs...\n")
+  }
   prior_size <- -1
   repeat {
-    new_size = dirsize(log_dir)
+    new_size = sum_file_size(log_dir, regexp=str_glue(".*/[^/]+_{cluster}[^/]+"))
     if (GET_OUTPUT) {
-      new_size = new_size  + dirsize(OUTPUT_DIR_SUBMIT)
+      new_size = new_size  + sum_file_size(OUTPUT_DIR_SUBMIT, regexp=str_glue(".*/[^/]+_{cluster}[^/]+"))
     }
     if (prior_size == new_size) break
     Sys.sleep(3)
