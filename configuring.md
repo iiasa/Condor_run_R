@@ -387,7 +387,7 @@ The script to launch with [`LAUNCHER`](#launcher). When empty (the default) the 
 
 ### GAMS_VERSION
 
-Default value: `NULL`
+Default value: `NULL` (this means that the GAMS version that is on-PATH on the EP is used)
 
 GAMS version to run the job with on the execution point. When set to `NULL`, the GAMS version reachable through the `PATH` environment variable on the execution point is used, or the job will fail if no gams executable can be found via `PATH`. When set to `xx.yy`, where `xx` is the major GAMS version and `yy` is the minor GAMS version, the entry `GAMSxx_yy` will be added to the [`REQUIREMENTS`](#requirements) so that execution points are selected that have the desired GAMS version installed.
 
