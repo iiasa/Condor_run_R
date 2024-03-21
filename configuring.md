@@ -108,6 +108,9 @@ Label/name of your project/experiment that is conducted by performing the run. T
 
 The value of `LABEL` is also used as the batch name of the run so that when you examine the job queue using the [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) command, the jobs in the run are listed with an appropriate name.
 
+> [!NOTE]
+> If you leave the value of `LABEL` unchanged between runs, the log files will go to the same log directory. This will not cause the log files to overwrite each other since the unique cluster number of the run is included in the file names. Use common sense to decide whether it is fine to give successive runs the same name — and for all their log files to go to a single directory — or whether you would rather uniquely label runs.
+
 ### PREFIX
 
 Default value: `"job"`
