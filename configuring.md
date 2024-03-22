@@ -104,12 +104,16 @@ Default value: `"{Sys.Date()}"`
 
 Synonyms: NAME, EXPERIMENT, PROJECT
 
-Label/name of your project/experiment that is conducted by performing the run. This label will be used to name the [log directory of the run](#condor_dir). This directory is created when it does not exist. The `LABEL` should therefore be short and contain only characters that are allowed as part of directory names. You can use `{}` expansions as part of the label.
+This optional but recommended configuration parameter allows you to provide the label/name of your project/experiment that is conducted by performing the run. This label is used in various places to make it easier to manage multiple runs. You can pick any of the `LABEL|NAME|EXPERIMENT|PROJECT` synonyms. For example, when you provide a value that represents a project name, you may prefer to use `PROJECT = "MyProjectName"`.
 
-The value of `LABEL` is also used as the batch name of the run so that when you examine the job queue using the [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) command, the jobs in the run are listed with an appropriate name.
+The label is used to name the [log directory of the run](#condor_dir). This directory is created when it does not exist. The label should therefore be short and contain only characters that are allowed as part of a directory name.
 
 > [!NOTE]
-> If you leave the value of `LABEL` unchanged between runs, the log files will go to the same log directory. This will not cause the log files to overwrite each other since the unique cluster number of the run is included in the file names. Use common sense to decide whether it is fine to give successive runs the same name — and for all their log files to go to a single directory — or whether you would rather uniquely label runs.
+> If you leave the label unchanged between runs, the log files will go to the same log directory. This will *not* cause the log files to overwrite each other since the unique cluster number of the run is included in the file names. Use common sense to decide whether it is fine to give successive runs the same label — and for all their log files to go to a single directory — or whether you would rather uniquely label runs.
+
+The label is also used as the batch name of the run so that when you examine the job queue using the [`condor_q`](https://htcondor.readthedocs.io/en/latest/man-pages/condor_q.html) command, the jobs in the run are listed with an appropriate name.
+
+You can use `{}` expansions as part of the label value.
 
 ### PREFIX
 
