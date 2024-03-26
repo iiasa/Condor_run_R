@@ -322,12 +322,6 @@ Default value: `NULL`
 
 Set with your email if you don't receive notifications. Typically not needed as Condor by default tries to infer your email from your username.
 
-### NICE_USER
-
-Default value: `FALSE`
-
-Be nice, give jobs of other users priority by setting this to `TRUE`. This is a good option to use when you schedule many low-priority jobs that will take a long time too complete. When submitted with `NICE_USER = TRUE` your running jobs will be evicted when other users submit jobs and no more free scheduling slots are available. Your evicted jobs with be restarted (not resumed) once there is again leftover capacity.
-
 ### CLUSTER_NUMBER_LOG
 
 Default value: `""`

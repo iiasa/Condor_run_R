@@ -61,10 +61,10 @@ OUTPUT_FILES = c("output.RData")
 RUN_AS_OWNER = TRUE
 NOTIFICATION = "Never"
 EMAIL_ADDRESS = NULL
-NICE_USER = FALSE
 CLUSTER_NUMBER_LOG = ""
 CLEAR_LINES = TRUE
 PREFIX = "job"
+NICE_USER = FALSE # Disabled, left for backwards compatibility with old configs
 
 # ---- Configuration parameters, optional templates ----
 
@@ -75,8 +75,6 @@ JOB_TEMPLATE <- c(
   "arguments = $(job)",
   "universe = vanilla",
   "batch_name  = {LABEL}",
-  "",
-  "nice_user = {ifelse(NICE_USER, 'True', 'False')}",
   "",
   "# Job log, output, and error files",
   "log = {log_dir}/{PREFIX}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
@@ -453,7 +451,6 @@ if (tools::file_ext(file_arg) == "7z") {
   if (!all(JOBS == floor(JOBS))) stop("Job numbers in JOBS must be whole numbers!")
   if (!all(JOBS < 1e6)) stop("Job numbers in JOBS must be less than 1000000 (one million)!")
   if (!all(JOBS >= 0)) stop("Job numbers in JOBS may not be negative!")
-  if (length(JOBS) > 200 && !NICE_USER) warning(str_glue("You are submitting {length(JOBS)} jobs. That's a lot. Consider being nice by configuring NICE_USER = TRUE so as to give jobs of other users priority."))
   if (!(REQUEST_MEMORY > 0)) stop("REQUEST_MEMORY should be larger than zero!")
   if (!(REQUEST_DISK > 0)) stop("REQUEST_DISK should be larger than zero!")
   if (!all(!duplicated(JOBS))) stop("Duplicate JOB numbers listed in JOBS!")
