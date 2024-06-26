@@ -72,7 +72,7 @@ Also useful for custom-scripted processing of output, with processing steps plac
 
 ### LAUNCHER
 
-Interpreter/language-runtime with which to launch the [`SCRIPT`](#script) or, when [`SCRIPT`](#script) is empty, the executable/binary to run.
+Interpreter/language-runtime with which to launch the [`SCRIPT`](#script) on the execution point or, when [`SCRIPT`](#script) is empty, the executable/binary to run on the execution point.
 
 ### ARGUMENTS
 
@@ -382,7 +382,7 @@ Name(s) of the output file(s) as produced by a job on the execution point. Will 
 ### SCRIPT
 Default value: `""`
 
-The script to launch with [`LAUNCHER`](#launcher). When empty (the default) the job is not defined by a script but rather by the executable/binary specified in the [`LAUNCHER`](#launcher) setting.
+Path to script to launch with [`LAUNCHER`](#launcher). When empty (the default) the job is not defined by a script but rather by the executable/binary specified in the [`LAUNCHER`](#launcher) setting. When not empty, the value is passed as the first argument of [`LAUNCHER`](#launcher) when invoked on the execution point.
 
 ## `Condor_run.R`-specific optional configuration parameters
 
