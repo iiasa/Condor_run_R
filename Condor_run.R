@@ -606,7 +606,7 @@ if (tools::file_ext(file_arg) == "7z") {
     tail <-  rawToChar(as.raw(tail_bytes))
     restart_version <- str_match(tail, "\x0AWEX(\\d\\d\\d)-\\d\\d\\d")[2]
     if (is.na(restart_version)) {
-      warning(str_glue("Cannot determine GAMS version that saved {in_gams_curdir{(RESTART_FILE_PATH)}"))
+      warning(str_glue("Cannot determine GAMS version that saved {in_gams_curdir(RESTART_FILE_PATH)}"))
     } else {
       if (dotless_gams_version < restart_version) {
         stop("The configured GAMS_VERSION to be invoked on the execution point is older than the GAMS version that saved the configured restart file (RESTART_FILE_PATH). GAMS will fail!")
