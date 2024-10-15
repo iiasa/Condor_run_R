@@ -1091,11 +1091,20 @@ invisible(reg.finalizer(lock, function(lock) {
 #
 # The username does not affect how jobs run. It is only used to
 # divide the execution-point-side bundle cache directory into
-# per-user subdirectories where bundles are placed. This makes
-# troubleshooting on the EP side a bit easier.
+# per-user subdirectories where bundles are placed. Obtaining the
+# uername needs doing here because the username is not available
+# as an environment variable in the job context.
 username <- Sys.getenv("USERNAME")
 if (username == "") username <- Sys.getenv("USER")
 if (username == "") stop("Cannot determine the username!")
+if (!RUN_AS_OWNER) {
+  # When not running jobs as owner, we still want the bundle to
+  # be cached in a per-user directory on the execution point, but
+  # this directory has to be named different to ensure that it
+  # can be accessed with the functional user account that
+  # HTCondor defaults to.
+  username <- str_glue("worker_{username}")
+}
 
 # Apply settings to  template and write batch file / shell script that launches jobs on the execution point
 seed_bat <- path(tempdir(), str_glue("_seed.bat"))
