@@ -7,7 +7,7 @@
 # Use:          https://github.com/iiasa/Condor_run_R#use
 #
 # Author:  Albert Brouwer
-# Release: https://github.com/iiasa/Condor_run_R/releases/tag/v2024-03-14
+# Release: https://github.com/iiasa/Condor_run_R/releases/tag/v2024-10-16
 
 # ---- Initialization ----
 
