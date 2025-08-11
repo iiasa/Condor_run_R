@@ -23,7 +23,7 @@ powershell ListOrDeleteFilesAfterNumberOfDays.ps1 -FolderPath d:\condor\bundles 
 
 ## POSIX Commands for Windows
 
-The default value for [`BAT_TEMPLATE`](configuring.md##bat_template) and [`SEED_BAT_TEMPLATE`](configuring.md##seed_bat_template) use [POSIX](https://en.wikipedia.org/wiki/POSIX) commands that are normally **not** available on a Windows execution point. For example, [touch](https://linux.die.net/man/1/touch) is used to update the timestamp of the bundle to the current time when a job launches. This ensures that that a bundle will not be auto-deleted as long as jobs continue to get launched from it.
+The default value for [`BAT_TEMPLATE`](configuring.md##bat_template) and [`SEED_BAT_TEMPLATE`](configuring.md##seed_bat_template) use [POSIX](https://en.wikipedia.org/wiki/POSIX) commands that are normally **not** available on a Windows execution point. For example, [touch](https://manpages.debian.org/trixie/coreutils/touch.1.en.html) is used to update the timestamp of the bundle to the current time when a job launches. This ensures that that a bundle will not be auto-deleted as long as jobs continue to get launched from it.
 
 Make the needed POSIX commands available on your Windows execution points by installing any of many sets of POSIX utilities and adding them to the system `PATH` environment variable. When you have GAMS installed on an execution point, you already have an adequate set of [POSIX utilities](https://www.gams.com/latest/docs/T_POSIX.html) available in the `gbin` subdirectory of the GAMS installation: add that directory to the system `PATH`.
 
