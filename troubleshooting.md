@@ -182,4 +182,4 @@ Reboot your machine and try to submit again. If that does not help, try to invok
 
 ## Further information
 
-For further information, see the [why is the job not running?](https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#why-is-the-job-not-running) section of the HTCondor manual and the [university of Liverpool Condor Troubleshooting guide](https://condor.liv.ac.uk/troubleshooting/).
+For further information, see the [why is the job not running?](https://htcondor.readthedocs.io/en/latest/users-manual/managing-a-job.html#why-is-the-job-not-running) section of the HTCondor manual.
