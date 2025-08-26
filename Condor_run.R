@@ -105,7 +105,7 @@ JOB_TEMPLATE <- c(
   "request_cpus = {REQUEST_CPUS}", # Number of "CPUs" (hardware threads) to reserve for each job
   "request_disk = {REQUEST_DISK}",
   "",
-  "run_as_owner = {ifelse(RUN_AS_OWNER, 'True', 'False')}",
+  "run_as_owner = {ifelse(RUN_AS_OWNER, 'TRUE', 'FALSE')}",
   "",
   "should_transfer_files = YES",
   "when_to_transfer_output = ON_EXIT",
@@ -184,7 +184,7 @@ SEED_JOB_TEMPLATE <- c(
   "request_cpus = 0", # We want this to get scheduled even when all CPUs are in-use, but current Condor still waits when all CPUs are partitioned.
   "request_disk = {2*floor(file_size(bundle_path)/1024)+500}", # KiB, twice needed for move, add some for the extra files
   "",
-  "run_as_owner = {ifelse(RUN_AS_OWNER, 'True', 'False')}",
+  "run_as_owner = {ifelse(RUN_AS_OWNER, 'TRUE', 'FALSE')}",
   "",
   "should_transfer_files = YES",
   'transfer_input_files = {bundle_path}',
@@ -794,7 +794,7 @@ express_identifiers <- function(requirements) {
   m <- str_match(requirements, "^[_.a-zA-Z0-9]+$")
   for (i in seq_along(m)) {
     if (!is.na(m[[i]])) {
-      requirements[[i]] <- str_c(requirements[[i]], " =?= True")
+      requirements[[i]] <- str_c(requirements[[i]], " == TRUE")
     }
   }
   rm(i)
