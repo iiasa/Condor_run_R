@@ -79,9 +79,9 @@ JOB_TEMPLATE <- c(
   "# Job log, output, and error files",
   "log = {log_dir}/{PREFIX}_$(cluster).$(job).log", # don't use $$() expansion here: Condor creates the log file before it can resolve the expansion
   "output = {log_dir}/{PREFIX}_$(cluster).$(job).out",
-  "stream_output = True",
+  "stream_output = TRUE",
   "error = {log_dir}/{PREFIX}_$(cluster).$(job).err",
-  "stream_error = True",
+  "stream_error = TRUE",
   "", # If a job goes on hold for more than JOB_RELEASE_DELAY seconds, release it up to JOB_RELEASES times
   "periodic_release = (NumJobStarts <= {JOB_RELEASES}) && ((time() - EnteredCurrentStatus) > {JOB_RELEASE_DELAY})",
   "",
@@ -459,7 +459,9 @@ if (tools::file_ext(file_arg) == "7z") {
   if (length(JOBS) > 1 && !str_detect(ARGUMENTS, fixed("%1"))) stop("Configured ARGUMENTS lack a %1 batch file argument expansion of the job number with which the job-specific (e.g. scenario) can be selected.")
   REQUIREMENTS <- c(REQUIREMENTS, "BundleCache") # Require that execution points can cache bundles
   SEEDING_REQUIREMENTS <- REQUIREMENTS[!str_detect(REQUIREMENTS, fixed("$(JOB)", ignore_case=TRUE))]
-  SEEDING_REQUIREMENTS <- c(SEEDING_REQUIREMENTS, "Draining =!= True") # Only seed EPs that are not draining
+  SEEDING_REQUIREMENTS <- c(SEEDING_REQUIREMENTS, "Draining =!= TRUE") # Only seed EPs that are not draining
+  SEEDING_REQUIREMENTS <- c(SEEDING_REQUIREMENTS, "Seeding == TRUE") # Run seeding jobs only in seeding slot
+  REQUIREMENTS <- c(REQUIREMENTS, "Seeding == FALSE") # Run jobs in non-seeding slot
   if (str_detect(CONDOR_DIR, '[<>|?*" \\t\\\\]')) stop(str_glue("Configured CONDOR_DIR has forbidden character(s)! Use / as path separator."))
   if (!is.null(BUNDLE_DIR)) {
     if (BUNDLE_DIR == "") stop("Configured BUNDLE_DIR may not be an empty path!")
@@ -633,7 +635,7 @@ delete_if_exists <- function(dir_path, file_name) {
 }
 
 # Search requirements expressions for bare ClassId identifiers and
-# convert those to `<identifier> =?= True' expressions.
+# convert those to `<identifier> == TRUE' expressions.
 express_identifiers <- function(requirements) {
   if (length(requirements) == 0) return(c())
   m <- str_match(requirements, "^[_.a-zA-Z0-9]+$")
@@ -669,7 +671,7 @@ constraints <- function(requirements) {
 # to be true.
 #
 # Any bare ClassId identifiers found in the requirements will be converted
-# to '<identifier> =?= True' expressions for convenience.
+# to '<identifier> == TRUE' expressions for convenience.
 #
 # The input host domain names are concatenated with ||.
 build_requirements_expression <- function(requirements, hostdoms) {
