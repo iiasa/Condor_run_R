@@ -33,6 +33,9 @@ For a job to run on an execution point, certain capabilities may need to be in p
 
 To advertise custom capabilities of execution points, define ClassAds in their HTCondor configuration. This is done by editing the `condor_config.local` configuration file on each host. For example, to advertise that both an R and GAMS language interpreter are available and on-path and that the execution point can receive and cache bundles, add the following lines:
 ```
+# The 'Seeding' attribute is defined per slot
+STARTD_SLOT_ATTRS = Seeding
+
 # Have a bundle cache with timed cleanup
 BundleCache = True
 
@@ -43,6 +46,7 @@ GAMS = True
 R = True
 
 STARTD_ATTRS = \
+  Seeding, \
   BundleCache, \
   GAMS, \
   R, \
@@ -70,18 +74,20 @@ The [template](configuring.md#templates) default values work with the IIASA Limp
 
 As Condor administrator, you can adjust the configuration of execution points to accommodate their seeding with bundles. Though seeding jobs request minimal resources, Condor nevertheless does not schedule them when there is not at least one unoccupied CPU (the HTCondor concept of "CPU", which is basically a single hardware thread resource) or a minimum of disk, swap, and memory available on execution points. Presumably, Condor internally amends a job's stated resource requirements to make them more realistic. Unfortunately, this means that when one or more execution points are fully occupied, submitting a new run through `Condor_run_R` scripting will have the seeding jobs of hosts remain idle (queued).
 
-The default [seed job configuration template](configuring.md#seed_job_template) has been set up to time out in that eventuality. But if that happens, only a subset of the execution points will participate in the run. And if all execution points are fully occupied, all seed jobs will time out and the submission will fail. To prevent this from happening, adjust the Condor configuration of the execution points to provide a low-resource partitionable slot to which one CPU and a *small quantity* of disk, swap, and memory are allocated. Once so reconfigured, this slot will be mostly ignored by resource-requiring jobs, and remain available for seeding jobs.
+The default [seed job configuration template](configuring.md#seed_job_template) has been set up to time out in that eventuality. But if that happens, only a subset of the execution points will participate in the run. And if all execution points are fully occupied, all seed jobs will time out and the submission will fail.
 
-To resolve the question of what constitutes a *small quantity*, the test script in [`tests/seeding`](tests/seeding/purpose.md) can be used to fully occupy a cluster or a specific execution point (use the [`HOST_REGEXP`](configuring.md#host_regexp) config setting) and subsequently try seeding. Perform a bisection search of the execution point's seeding slot disk, swap, memory resource allocation—changing the allocation between tests—to determine the rough minimum allocation values that allow seeding jobs to be accepted. These values should be minimized so as to make it unlikely that a resource-requesting job gets scheduled in the slot. The slot also needs at least one CPU dedicated to it. Make sure that the Condor daemons on the execution point being tested pick up the configuration after you change it and before running the test again.
+To prevent this from happening, adjust the Condor configuration of the execution points to provide a low-resource slot to which one CPU and a small quantity of disk, swap, and memory are allocated. Also set the Seeding attribute for only that slot to `TRUE` as per the below configuration. Only the brief seed jobs will then get scheduled to this seeding slot which will thereby remain available at nearly all times: the actual workload jobs will go to other slots.
 
-A basic configuration  with two partitionable slots, one for scheduling computational jobs, and a minimized slot 2 for receiving bundles might look like this:
+A basic configuration two slots, a partitionable slot 1 for workload jobs, and a minimized slot 2 for receiving bundles during the seeding phase might look like this:
 ```
 SLOT_TYPE_1 = cpus=63/64, ram=63/64, swap=63/64, disk=63/64
 SLOT_TYPE_2 = cpus=1/64  ram=1/4096, swap=1/4096, disk=1/4096
 NUM_SLOTS_TYPE_1 = 1
 NUM_SLOTS_TYPE_2 = 1
-SLOT_TYPE_1_PARTITIONABLE = True
-SLOT_TYPE_2_PARTITIONABLE = True
+SLOT_TYPE_1_PARTITIONABLE = TRUE
+SLOT_TYPE_2_PARTITIONABLE = FALSE
+SLOT1_Seeding = FALSE
+SLOT2_Seeding = TRUE
 ```
 These lines can be included in the `condor_config.local` file of an execution point.
 
