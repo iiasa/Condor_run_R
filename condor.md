@@ -89,7 +89,10 @@ SLOT_TYPE_2_PARTITIONABLE = FALSE
 SLOT1_Seeding = FALSE
 SLOT2_Seeding = TRUE
 ```
-These lines can be included in the `condor_config.local` file of an execution point.
+These lines can be included in the `condor_config.local` file of an execution point. You can verify how the `Seeding` attribute is set for a given slot as follows:
+```
+condor_status -af:l name Seeding
+```
 
 ## Tuning Throughput
 
