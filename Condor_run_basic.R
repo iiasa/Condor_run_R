@@ -1037,7 +1037,8 @@ if (length(clusters) == 0) {
 predicted_cluster <- max(clusters) + 1
 
 # Wait until seed jobs complete
-cat("Waiting for bundle seeding to complete...\n")
+cat(str_glue("Waiting for bundle seeding to complete or time out (up to {SEED_JOB_TIMEOUT}s)..."))
+cat("\n")
 monitor(clusters)
 rm(clusters)
 
