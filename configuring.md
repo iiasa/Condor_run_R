@@ -202,6 +202,12 @@ Default value: `FALSE`
 
 Retain the `.bat`, `.err`, `.job`, `.out`, and `.log` files involved in the seeding in the [log directory of the run](#condor_dir) when set to `TRUE`. This can be useful for troubleshooting the seeding procedure.
 
+### SEED_JOB_TIMEOUT
+
+Default value: 180
+
+Timeout for seed jobs in seconds. When an execution point does not take receipt of a bundle sent over by a seed jobs within this timeout period, the seed job will be canceled for that execution point, and jobs will not be submitted there. Jobs will still be able to run on execution points that did take receipt of the bundle.
+
 ### SEED_JOB_OVERRIDES
 
 Default value: `list()`
