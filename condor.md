@@ -94,6 +94,8 @@ These lines can be included in the `condor_config.local` file of an execution po
 condor_status -af:l name Seeding
 ```
 
+The job description of a submitted job can then include a `Seeding == FALSE` in the requirements expression to avoid scheduling to and keeping occupied the seeding slot. This is what the `Condor_run.R` and `Condor_run_basic.R` scripts do for the workload jobs while for seeding jobs, a `Seeding == TRUE` clause is included to make sure these are scheduled to a seeding slot.
+
 ## Tuning Throughput
 
 Throughput can be improved by tuning the configuration of execution points. See [this Linux performance tuning](https://wiki.archlinux.org/title/Improving_performance) or [Microsoft's Windows Server 2022 performance tuning](https://docs.microsoft.com/en-us/windows-server/administration/performance-tuning/) guide.
