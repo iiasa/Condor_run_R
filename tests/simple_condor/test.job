@@ -1,6 +1,6 @@
 executable    = job.bat
 universe      = vanilla
-requirements  = OpSys == "WINDOWS"
+requirements  = OpSys == "WINDOWS" && Seeding == FALSE
 output        = job$(Cluster).out
 stream_output = True
 error         = job$(Cluster).err
