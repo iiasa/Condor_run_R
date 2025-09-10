@@ -12,7 +12,9 @@ request_cpus = 1
 
 executable    = job.bat
 universe      = vanilla
-requirements  = OpSys == "WINDOWS" && TARGET.Machine == "limpopo6.iiasa.ac.at"
+# Schedule the job that holds on to the requested resources on a
+# specific machine (execution point), and not in the seeding slot.
+requirements  = TARGET.Machine == "limpopo6.iiasa.ac.at" && Seeding == FALSE
 output        = reserve.out
 stream_output = True
 error         = reserve.err
