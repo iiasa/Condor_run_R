@@ -206,7 +206,7 @@ Retain the `.bat`, `.err`, `.job`, `.out`, and `.log` files involved in the seed
 
 Default value: 180
 
-Timeout for seed jobs in seconds. When an execution point does not take receipt of a bundle sent over by a seed jobs within this timeout period, the seed job will be canceled for that execution point, and jobs will not be submitted there. Jobs will still be able to run on execution points that did take receipt of the bundle.
+Timeout for seed jobs in seconds. When an execution point does not take receipt of a bundle sent over by a seed job within this timeout period, the seed job will be canceled for that execution point, and jobs will not be submitted there. Jobs will still be able to run on execution points that did take receipt of the bundle.
 
 ### SEED_JOB_OVERRIDES
 
