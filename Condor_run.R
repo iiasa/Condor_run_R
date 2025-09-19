@@ -1078,7 +1078,8 @@ rm(selected_by)
 # the cluster sequence number.
 lock_file <- path(dirname(tempdir()), "Condor_run_R_submission.lock")
 while(file_exists(lock_file)) {
-  message(str_glue("Submission lock file {lock_file} exists, another submission must be ongoing."))
+  message("Submission lock file exists: either another submission is ongoing and we have to wait for it, or a prior submission was forcefully aborted and left behind a stale lockfile.")
+  message(str_glue("When you are sure there is no other ongoing submission, please manually delete the lock file {lock_file} using a separate command prompt or file explorer."))
   message("Waiting for the submission lock file to disappear...")
   Sys.sleep(30)
 }
