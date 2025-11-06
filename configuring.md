@@ -1,10 +1,10 @@
 # Configuring the Condor submit scripts
 
-Configuration is done via a separate configuration file. This page documents the configuration parameters that can be included. Some parameters are mandatory, most are optional. The path to the configuration file to use is [passed as argument to the `Condor_run_basic.R` and `Condor_run.R` submit scripts](https://github.com/iiasa/Condor_run_R#use). To quickly find the documentation of a particular parameter, click on the outline button at the top top right of this page: it is a smallish button that looks like three stacked horizontal lines with leading bullets.
+This page documents the configuration parameters of `Condor_run_basic.R` and `Condor_run.R`. These parameters specify how to submit a run of jobs. Some parameters are mandatory, most are optional. When optional configuration parameters are omitted, default values are used. To quickly find the documentation of a particular parameter and its default value, click on the outline button at the top top right of this page: it is a smallish button that looks like three stacked horizontal lines with leading bullets.
 
-To set up an initial configuration file, copy (do *not* cut) the code block with mandatory configuration parameters located between the *snippy snappy* comments from the chosen submit script (see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L19) and [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L19)) and paste it into a new file with an `.R` extension (e.g. `config.R`). The configuration settings use R syntax, so using an `.R` extension for the configuration file name will provide syntax highlighting when using a good text editor or RStudio.
+Place the configuration parameters in a configuration file with an `.R` extension and assign values using R syntax. To use a configuration, pass the path to the respective configuration file as [an argument to the `Condor_run_basic.R` and `Condor_run.R` submit scripts](https://github.com/iiasa/Condor_run_R#use). To set up an initial configuration file, copy (do *not* cut) the code block with mandatory configuration parameters located between the *snippy snappy* comments from the chosen submit script (see [`Condor_run_basic.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run_basic.R#L19) and [`Condor_run.R`](https://github.com/iiasa/Condor_run_R/blob/master/Condor_run.R#L19)) and paste it into a new file with an `.R` extension (e.g. `config.R`). Adapt the values to match your needs.
 
-After completing the above, you have the mandatory configuration parameters in your configuration flie. Their values will need to be adapted. Please see the documentation of these parameters to learn what they do. You may also wish to add some of the optional configuration parameters. Their defaults are located below the last *snippy snappy* comment. These concern configuration settings with default values that will work for most people.
+The default values of optional configuration parameters work for most people. Any optional configuration parameters whose default values you want to override will need to be added to the configuration file. See the documentation below to learn what parameters exist, what purpose they serve, and what values they can take or default to. Read the section on [path handling](#path-handling) to learn how to set parameters that take a file or directory path as a value.
 
 Your configuration may need adaptation to the particulars of your Condor cluster. For example, [`REQUIREMENTS`](#requirements) filters execution points based on their capabilities as advertised via their the Condor configuration of each execution point. Also, you may need to [adapt templates](#templates). For general information on Condor cluster configuration in support of the `Condor_run_R` submit scripts, see [this page](condor.md). For details on the specific configuration of your Condor cluster, ask your cluster administrator.
 
@@ -40,7 +40,7 @@ In summary, there are two kinds of current working directory:
 The `BUNDLE_*` parameters detailed below control which files are added to the bundle. In addition, parameters specifying the location of input and output files—when so indicated in their documentation—can cause files to be included or excluded from the bundle. For some examples of how to set this up, see [the tests](tests/tests.md). To verify what was bundled, check the `_bundle_<cluster number>_contents.txt` listing file that is written to the [log directory of the run](configuring.md#condor_dir) on submission.
 
 > [!CAUTION]
-> Avoid bundling big files that your jobs do not need. A common mistake is to bundle the output returned by previous job runs. This will make each job use an unnecesary amount of disk space, and may limit the number of jobs that can be scheduled simultaneously.
+> Avoid bundling big files that your jobs do not need. A common mistake is to bundle the output returned by previous job runs. This will make each job use an unnecessary amount of disk space, and may limit the number of jobs that can be scheduled simultaneously.
 
 ## Mandatory configuration parameters
 
@@ -64,7 +64,7 @@ When a job completes successfully, you can find its actual, requested, and alloc
 
 ### WAIT_FOR_RUN_COMPLETION
 
-If `TRUE`, wait for the run to complete while displaying progress monitoring information and, on completion, check the presence of output files, prune empty log files, and analyze resource usage. When submitting a GAMS job through `Condor_run.R`, also perform a merge of the GDX ouput when [`MERGE_GDX_OUTPUT`](#merge_gdx_output)`= TRUE`.
+If `TRUE`, wait for the run to complete while displaying progress monitoring information and, on completion, check the presence of output files, prune empty log files, and analyze resource usage. When submitting a GAMS job through `Condor_run.R`, also perform a merge of the GDX output when [`MERGE_GDX_OUTPUT`](#merge_gdx_output)`= TRUE`.
 
 Also useful for custom-scripted processing of output, with processing steps placed subsequent to the [submission invocation](https://github.com/iiasa/Condor_run_R/#use).
 
