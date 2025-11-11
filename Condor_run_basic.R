@@ -7,7 +7,7 @@
 #
 # Author:   Albert Brouwer
 # Based on: GLOBIOM-limpopo scripts by David Leclere
-# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2025-09-09
+# Release:  https://github.com/iiasa/Condor_run_R/releases/tag/v2025-11-11
 # API version: V2
 
 # Remove any objects from active environment so that below it will contain only the default configuration
